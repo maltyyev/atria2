@@ -1,0 +1,33 @@
+# Build output and local dependency caches
+bin/
+obj/
+/artifacts/
+/.packages/
+/.dotnet-home/
+/tests/**/probe/
+# Download with tools/video/fetch_codec.ps1; keep dependencies out of Git history.
+/third_party/
+
+# Local IDE state
+.vs/
+.idea/
+*.user
+*.suo
+
+# Player data and diagnostics
+playtest-data/
+*.sav
+*.log
+*.dmp
+*.dump
+
+# Local credentials (example configuration may be shared)
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+
+# OS metadata
+Thumbs.db
+.DS_Store

@@ -1,0 +1,65 @@
+using System.Buffers.Text;
+using Atria.Game.State;
+using Atria.Render.Codecs;
+using Atria.Render.UI;
+using Atria.Resources;
+
+namespace Atria.Game.Exploration;
+
+public sealed class WorldHudRenderer
+{
+    private readonly ushort[] panel;
+    private readonly SpriteFile icons;
+    private readonly BitmapFont font;
+    private static ReadOnlySpan<ushort> NumberPalette=>[0xffff,0xe7ff,0xd7ff,0xc7ff,0xb7ff,0xa7ff,0x97ff,0x97ff,0x77ff,0x67ff,0x57ff,0x47ff,0x371c,0x369a,0x3618,0x3596,0x2514,0x2492,0x2410,0x238e,0x130c,0x12cb,0x128a,0x1249,0x0208,0x01c7,0x0186,0x0145,0x0104,0x00c3,0x0082,0x0041];
+    public WorldHudRenderer(ushort[] panel565,SpriteFile panelSprites,BitmapFont activeFont)
+    {
+        if(panel565.Length<640*60 || panelSprites.Frames.Length<5) throw new InvalidDataException("Native world HUD assets incomplete.");
+        panel=panel565; icons=panelSprites; font=activeFont;
+    }
+    public static WorldHudRenderer Load(string root,BitmapFont activeFont)
+    {
+        using var bmp=BinderArchive.Open(Path.Combine(root,"AT2BMP.000"));
+        var image=BmpImage.Decode(bmp.ReadMember(bmp.FindResource("panel.bmp"u8)));
+        if(image.Width!=640 || image.Height<60) throw new InvalidDataException("PANEL bitmap lacks640x60 source region.");
+        ushort[] pixels=new ushort[640*60];
+        for(int i=0;i<pixels.Length;i++) {uint rgb=image.Pixels[i];pixels[i]=(ushort)(((rgb>>8)&0xf800)|((rgb>>5)&0x7e0)|((rgb>>3)&31));}
+        using var spr=BinderArchive.Open(Path.Combine(root,"AT2SPR.000"));
+        return new(pixels,SpriteFile.Decode(spr.ReadMember(spr.FindResource("panel.spr"u8))),activeFont);
+    }
+    public static int? OriginY(int worldY,bool modal)=>worldY>4?0:modal?null:421;
+    public static int? OriginY(int mode,int worldY,bool modal,int townAnchorY=400,int previousMode=0,bool dungeonHudEnabled=false)
+    {
+        int effective=mode==320?previousMode:mode;
+        if(mode is not (300 or 310 or 320 or 330 or 400 or 410 or 420 or 430)) return null;
+        if(mode==330 && !dungeonHudEnabled) return null;
+        bool top=effective switch {300 or 310 or 330=>worldY>4,400=>townAnchorY>=80,_=>false};
+        if(mode==320 && previousMode==330 && !modal) top=false; //429420 differs from modal4295e0 here.
+        return top?0:modal?null:421;
+    }
+    //429420 normal/4295e0 modal placement;4297c0 composition. Call after scene/dialogue/action overlays.
+    public void Draw(GameState state,ReadOnlySpan<byte> areaName,Span<ushort> target,bool modal=false,
+        int townAnchorY=400,int previousMode=0,bool dungeonHudEnabled=false)
+    {
+        if(target.Length!=640*480) throw new ArgumentException("HUD requires640x480 surface.");
+        int? origin=OriginY(state.Mode,state.WorldY,modal,townAnchorY,previousMode,dungeonHudEnabled); if(origin is not {} y) return;
+        for(int row=0;row<60 && y+row<480;row++) panel.AsSpan(row*640,640).CopyTo(target.Slice((y+row)*640,640));
+        bool title=state.Mode!=320 || previousMode is 300 or 310 or 330 or 400;
+        if(title) Styled(areaName,196,y+7,198,y+8,NativeUiPalette.Normal,target);
+        Icon(1,40,y+8,target); Number(state.ResourceCounterDc88,90,y+9,92,y+10,target);
+        Icon(2,39,y+35,target); Number(state.Money,90,y+34,92,y+35,target);
+        Icon(4,500,y+9,target); Number(state.Score,550,y+10,552,y+11,target);
+        Icon(3,500,y+32,target); Number(state.ResourceCounterFc9a,550,y+33,552,y+34,target);
+        Icon(0,240,y+37,target);
+        Span<byte> date=stackalloc byte[40]; int count=0;
+        Utf8Formatter.TryFormat(state.Year,date,out int length); count+=length; date[count++]=(byte)'.';
+        Utf8Formatter.TryFormat(state.Month,date[count..],out length); count+=length; date[count++]=(byte)'.';
+        Utf8Formatter.TryFormat(state.Day,date[count..],out length); count+=length;
+        Styled(date[..count],290,y+38,292,y+39,NativeUiPalette.Normal,target);
+    }
+    private void Number(int value,int x,int y,int shadowX,int shadowY,Span<ushort> target)
+    { Span<byte> bytes=stackalloc byte[12]; Utf8Formatter.TryFormat(value,bytes,out int count); Styled(bytes[..count],x,y,shadowX,shadowY,NumberPalette,target); }
+    private void Styled(ReadOnlySpan<byte> text,int x,int y,int shadowX,int shadowY,ReadOnlySpan<ushort> palette,Span<ushort> target)
+    { font.DrawText(text,target,640,480,640,shadowX,shadowY,0); UiRaster.DrawStyledText(font,text,palette,0,target,640,480,640,x,y); }
+    private void Icon(int frame,int x,int y,Span<ushort> target)=>SpriteRaster.Draw565(icons.Frames[frame],target,640,480,640,x,y);
+}
