@@ -61,7 +61,7 @@ public sealed class ExperienceAssets : IDisposable, IExperienceNoticeSound
         int player = sprites.FindResource("PLAYER"u8);
         Player = player < 0 ? null : SpriteFile.Decode(sprites.ReadMember(player));
         Font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(resourceRoot, "ENG1.FNT")), true);
-        Labels = LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(resourceRoot, "BATTLE.DAT")));
+        Labels = GameText.Messages(LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(resourceRoot, "BATTLE.DAT"))), "battle");
         LevelUp = audio.LoadEffect(Read(waves, "LEVELUP"));
     }
 

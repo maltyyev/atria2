@@ -1,5 +1,11 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--localization")
+{
+    Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--refactor")
 {
     Console.WriteLine(Atria.Tests.Resources.StateModelTests.Run());
@@ -157,6 +163,7 @@ if (!v.TryMapInput(2239, 1439, out int x, out int y) || x != 639 || y != 479)
 }
 
 Console.WriteLine("Presentation geometry checks passed.");
+Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Resources.StateModelTests.Run());
 Console.WriteLine(Atria.Tests.Resources.GameDefinitionTests.Run());
 Console.WriteLine(Atria.Tests.RefactoringTests.Run(args[0]));

@@ -19,16 +19,7 @@ public static class ProgressionNoticeRaster
             throw new ArgumentException("Level notice requires ENG1 small font.");
         }
 
-        Span<byte> label = stackalloc byte[10];
-        int digits = frame.Level < 10 ? 1 : 2;
-        if (digits == 2)
-        {
-            label[0] = (byte)('0' + frame.Level / 10);
-        }
-
-        label[digits - 1] = (byte)('0' + frame.Level % 10);
-        " LevelUp"u8.CopyTo(label[digits..]);
-        label = label[..(digits + 8)];
+        byte[] label = GameText.Encoding.GetBytes(GameText.Format("ui.progression.levelUp", ("level", frame.Level)));
         font.DrawText(label, target, width, height, stride, frame.ShadowX, frame.ShadowY, NativeUiPalette.Normal[31]);
         font.DrawText(label, target, width, height, stride, frame.TextX, frame.TextY, NativeUiPalette.Normal[0]);
     }

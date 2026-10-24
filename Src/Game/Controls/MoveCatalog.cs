@@ -7,13 +7,14 @@ public sealed record MoveDefinition(string Id, string Name, int Direction, int R
 {
     public bool IsMagic => Id.StartsWith("p:", StringComparison.Ordinal);
     public bool IsStrategy => Id.StartsWith("s:", StringComparison.Ordinal);
-    public string Requirement => IsMagic ? "Ранг магии " + Category + "; MP " + Cost : RequiredFlags == (int)CombatActionFlags.CanChain ? "После обычного удара" : RequiredFlags != 0 ? "Продолжение приёма" : "";
+    public string Requirement => IsMagic ? GameText.Format("ui.moves.magicRank", ("rank", Category), ("mana", Cost)) : RequiredFlags == (int)CombatActionFlags.CanChain ? GameText.Get("ui.moves.afterAttack") : RequiredFlags != 0 ? GameText.Get("ui.moves.continuation") : "";
 }
 
 public sealed class MoveCatalog
 {
     public static readonly string[] Prefixes = ["ROLAND", "MIST", "SWALLOW", "BRAIUN", "EMERALD", "TIGER"];
-    public static readonly string[] Names = ["Роланд", "Мист", "Шпионка", "Брайан", "Эмеральд", "Тигр"];
+    private static readonly string[] characterKeys = ["ui.characters.roland", "ui.characters.mist", "ui.characters.swallow", "ui.characters.brian", "ui.characters.emerald", "ui.characters.tiger"];
+    public static string Name(int character) => GameText.Get(characterKeys[character]);
     private readonly CombatInfoCharacter[,] infos = new CombatInfoCharacter[6, 5];
     private readonly IReadOnlyList<MoveDefinition>[] all = new IReadOnlyList<MoveDefinition>[6];
     public MoveCatalog(string root)
@@ -39,15 +40,15 @@ public sealed class MoveCatalog
     public IReadOnlyList<MoveDefinition> All(int party) => all[party];
     public static string DirectionName(int code) => code switch
     {
-        1 => "Вниз-назад",
-        2 => "Вниз",
-        3 => "Вниз-вперёд",
-        4 => "Назад",
-        6 => "Вперёд",
-        7 => "Вверх-назад",
-        8 => "Вверх",
-        9 => "Вверх-вперёд",
-        _ => "Удар"
+        1 => GameText.Get("ui.moves.downBack"),
+        2 => GameText.Get("ui.controls.down"),
+        3 => GameText.Get("ui.moves.downForward"),
+        4 => GameText.Get("ui.controls.back"),
+        6 => GameText.Get("ui.moves.forward"),
+        7 => GameText.Get("ui.moves.upBack"),
+        8 => GameText.Get("ui.controls.up"),
+        9 => GameText.Get("ui.moves.upForward"),
+        _ => GameText.Get("ui.controls.attack")
     };
     public static IReadOnlyList<MoveDefinition> FromInfo(CombatInfoCharacter info, int form = 1)
     {
@@ -80,17 +81,17 @@ public sealed class MoveCatalog
                     }
                 }
 
-                prerequisite = prior.Count > 0 ? " (после: " + string.Join(" / ", prior.Distinct()) + ")" : " (продолжение)";
+                prerequisite = prior.Count > 0 ? GameText.Format("ui.moves.afterPrefix", ("moves", string.Join(" / ", prior.Distinct()))) : GameText.Get("ui.moves.continuationSuffix");
             }
 
-            moves.Add(new(id, "Приём: " + DirectionName(d).ToLowerInvariant() + prerequisite, d, flags, -1, -1, 0, form));
+            moves.Add(new(id, GameText.Format("ui.moves.prefix", ("direction", DirectionName(d).ToLowerInvariant()), ("prerequisite", prerequisite)), d, flags, -1, -1, 0, form));
         }
 
         for (int i = 0; i < info.Commands.Count; i++)
         {
             var command = info.Commands[i];
             int cat = command.Category, icon = command.Icon;
-            moves.Add(new(cat == 0 ? $"s:{i}" : $"p:{icon}", cat == 0 ? "Тактика " + (i + 1) : "Способность " + icon, 0, 0, icon - 1, cat, command.ManaCost, form));
+            moves.Add(new(cat == 0 ? $"s:{i}" : $"p:{icon}", cat == 0 ? GameText.Format("ui.moves.strategy", ("strategy", i + 1)) : GameText.Format("ui.moves.ability", ("ability", icon)), 0, 0, icon - 1, cat, command.ManaCost, form));
         }
 
         return moves;

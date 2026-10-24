@@ -180,7 +180,7 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
             }
         }
 
-        Text(pixels, $"{Selection + 1}/{rows.Count}    Вверх / вниз: выбор", 48, 352, 0x9cf3, 68);
+        Text(pixels, GameText.Format("ui.controls.rowSelection", ("selected", Selection + 1), ("count", rows.Count)), 48, 352, 0x9cf3, 68);
         if (icons is not null && rows.Count > 0 && rows[Selection].Icon is int icon && icon >= 0 && icon < icons.Frames.Length)
         {
             SpriteRaster.Draw565(icons.Frames[icon], pixels, 640, 480, 640, 568, 346);
@@ -200,7 +200,7 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
             Text(pixels, ">", 572, 402, 0xffe0);
         }
 
-        Text(pixels, "Enter / A: выбрать     Esc / B: назад", 48, 426, 0xbdf7, 68);
+        Text(pixels, GameText.Get("ui.controls.acceptBack"), 48, 426, 0xbdf7, 68);
     }
 
     public static void Text(BitmapFont font, Span<ushort> pixels, string text, int x, int y, ushort color, int max = 72)

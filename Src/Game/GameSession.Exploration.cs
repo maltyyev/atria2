@@ -240,7 +240,7 @@ public sealed partial class GameSession
                 StartDungeonFromWorld(true);
                 break;
             case ExplorationInputEffect.ActionDialogue:
-                actions.OpenWorld(map!, state, explorationRenderer!.IsSceneReferenceBlocked, messages);
+                actions.OpenWorld(map!, state, explorationRenderer!.IsSceneReferenceBlocked, displayMessages);
                 break;
             case ExplorationInputEffect.Map500With300Sentinel:
                 modes.Push(GameMode.World);
@@ -270,7 +270,7 @@ public sealed partial class GameSession
         modes.ResetDepth();
         modes.Push(GameMode.World);
         EnterMode(GameMode.World);
-        RequestAutosave("Новая область карты");
+        RequestAutosave(GameText.Get("ui.autosave.worldArea"));
     }
 
     private void ComposeExploration(Span<ushort> target)
@@ -298,11 +298,11 @@ public sealed partial class GameSession
     {
         if (state.Mode == GameMode.World)
         {
-            actions.OpenWorldMessage(type, messages, map, state, explorationRenderer!.IsSceneReferenceBlocked);
+            actions.OpenWorldMessage(type, displayMessages, map, state, explorationRenderer!.IsSceneReferenceBlocked);
         }
         else
         {
-            actions.OpenWorldMessage(type, messages);
+            actions.OpenWorldMessage(type, displayMessages);
         }
     }
 

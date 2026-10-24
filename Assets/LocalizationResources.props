@@ -1,0 +1,12 @@
+<Project>
+  <ItemGroup>
+    <LocalizationResource Include="$(MSBuildThisFileDirectory)Localization/**/*.json" />
+    <Content Include="@(LocalizationResource)" Link="assets/localization/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+  <Target Name="PublishEditableLocalization" AfterTargets="Publish">
+    <!-- Existing translations are player edits. New keys fall back to the embedded baseline. -->
+    <Copy SourceFiles="%(LocalizationResource.Identity)"
+          DestinationFiles="$(PublishDir)assets/localization/%(LocalizationResource.RecursiveDir)%(LocalizationResource.Filename)%(LocalizationResource.Extension)"
+          Condition="!Exists('$(PublishDir)assets/localization/%(LocalizationResource.RecursiveDir)%(LocalizationResource.Filename)%(LocalizationResource.Extension)')" />
+  </Target>
+</Project>

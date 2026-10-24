@@ -8,7 +8,7 @@ public sealed record CombatGlobalUiAssets(BitmapFont Font, BattleMessages Messag
     public static CombatGlobalUiAssets Load(string root)
     {
         var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG1.FNT")), true);
-        var messages = new BattleMessages(LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(root, "BATTLE.DAT"))));
+        var messages = new BattleMessages(GameText.Messages(LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(root, "BATTLE.DAT"))), "battle"));
         return new(font, messages);
     }
 }

@@ -168,7 +168,7 @@ public sealed class StatusMenuRenderer
             name = name[..end];
         }
 
-        Text(name, 68, 120, palette: 0x4cc228);
+        Text(GameText.Legacy($"messages.{actor:D3}", name), 68, 120, palette: 0x4cc228);
         Text(messages[6 + kind], 68, 156, palette: 0x4cc228);
         int level = state.Party[actor].Level;
         if (level == 13)
@@ -219,7 +219,7 @@ public sealed class StatusMenuRenderer
                 }
 
                 ops.Add(new(StatusPrimitive.ItemSprite, 516, y, id + 10));
-                Pair(items.GetItem(id).Name, 496, y + 34, color: 0xffe0);
+                Pair(GameText.ItemName(items, id), 496, y + 34, color: 0xffe0);
             }
         }
 
@@ -265,7 +265,7 @@ public sealed class StatusMenuRenderer
 
             for (int line = 0; line < 10; line++)
             {
-                Pair(DatTables.GetCharacterIntroductionLine(introductions, actor, line), 196, 298 + line * 16);
+                Pair(GameText.Legacy($"characters.{actor}.introduction.{line}", DatTables.GetCharacterIntroductionLine(introductions, actor, line)), 196, 298 + line * 16);
             }
         }
         else if (runtime.Menu.Page == 1)
@@ -281,12 +281,12 @@ public sealed class StatusMenuRenderer
             {
                 if (page == 4)
                 {
-                    return (journal ?? throw new ArgumentNullException(nameof(journal))).GetHeading(id, alternateJournalHeading ? 1 : 0);
+                    return GameText.Legacy($"quests.{id:D3}.heading.{(alternateJournalHeading ? 1 : 0)}", (journal ?? throw new ArgumentNullException(nameof(journal))).GetHeading(id, alternateJournalHeading ? 1 : 0));
                 }
 
                 var bytes = state.QuestItemRecords.AsMemory(id * 74 + 4, 30);
                 int end = bytes.Span.IndexOf((byte)0);
-                return end < 0 ? bytes : bytes[..end];
+                return GameText.Legacy($"messages.{209 + id:D3}", end < 0 ? bytes : bytes[..end]);
             }
 
             ops.Add(new(StatusPrimitive.Tint, 110, 302, 420, 168, 15));
@@ -429,8 +429,8 @@ public sealed class StatusMenuRenderer
         return ops.AsReadOnly();
     }
 
-    private static readonly byte[] journalClosed = CodePagesEncodingProvider.Instance.GetEncoding(1251)!.GetBytes("Закрыто");
-    private static readonly byte[] journalActive = CodePagesEncodingProvider.Instance.GetEncoding(1251)!.GetBytes("В работе");
+    private static byte[] journalClosed => GameText.Bytes("ui.quests.closed");
+    private static byte[] journalActive => GameText.Bytes("ui.quests.active");
     private static byte[] JournalStatus(int status) => status == 4 ? journalClosed : journalActive;
     private void AppendItemList(
         List<StatusDrawCommand> ops,
@@ -481,7 +481,7 @@ public sealed class StatusMenuRenderer
             int Read(int at) => record.GetInteger((at - 30) / 4);
             ushort availabilityColor = state.AvailableItems[id] > 0 ? (ushort)0xffe0 : (ushort)0x8410;
             ops.Add(new(StatusPrimitive.ItemSprite, 72, y - 16, id + 10));
-            Pair(record.Name, 108, y - 16, color: availabilityColor);
+            Pair(GameText.ItemName(items, id), 108, y - 16, color: availabilityColor);
             Pair(messages[354], 238, y - 16, color: availabilityColor);
             Pair(
                 Join(Number(state.AvailableItems[id]), "/"u8.ToArray(), Number(state.OwnedItems[id]), " ]"u8.ToArray()),
@@ -586,7 +586,7 @@ public sealed class StatusMenuRenderer
         {
             ops.Add(new(StatusPrimitive.Fill, 62, 174, 517, 133));
             ops.Add(new(StatusPrimitive.Panel, 48, 160, 15, 3));
-            Text(items.GetItem(ids[scroll + row]).Name, 80, 182, color: 0xffff);
+            Text(GameText.ItemName(items, ids[scroll + row]), 80, 182, color: 0xffff);
             for (int line = 0; line < description.Length; line++)
             {
                 Text(description[line], 80, 206 + line * 19, 0x4cc400);

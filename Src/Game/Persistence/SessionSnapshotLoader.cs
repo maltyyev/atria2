@@ -193,8 +193,8 @@ internal sealed class SessionSnapshotLoader(
                 dungeonMap,
                 assets,
                 smallFont,
-                messages,
-                Enumerable.Range(0, ItemCatalog.Count).Select(i => items.GetItem(i).Name).ToArray(),
+                GameText.Messages(messages),
+                Enumerable.Range(0, ItemCatalog.Count).Select(i => GameText.ItemName(items, i)).ToArray(),
                 dungeonSaved.DynamicText
             );
             result.DungeonComposer.Raster.RestoreRuntime(dungeonSaved.Raster);

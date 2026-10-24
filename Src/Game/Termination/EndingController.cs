@@ -22,8 +22,9 @@ public sealed class EndingText
 {
     public const int Rows = 200, RowSize = 80;
     private readonly byte[] bytes;
-    private EndingText(byte[] bytes) => this.bytes = bytes;
-    public ReadOnlySpan<byte> this[int row] => bytes.AsSpan(checked(row * RowSize), RowSize);
+    private readonly int selection;
+    private EndingText(byte[] bytes, int selection) => (this.bytes, this.selection) = (bytes, selection);
+    public ReadOnlySpan<byte> this[int row] => GameText.Legacy($"endings.{selection}.{row:D3}", bytes.AsMemory(checked(row * RowSize), RowSize)).Span;
     public static EndingText Parse(ReadOnlySpan<byte> source, int selection)
     {
         _ = EndingCatalog.Get(selection);
@@ -42,7 +43,7 @@ public sealed class EndingText
             }
         }
 
-        return new(rows);
+        return new(rows, selection);
     }
 }
 

@@ -1,0 +1,16 @@
+{
+  "ui.validation.json": "Ошибка JSON: {detail}",
+  "ui.validation.file": "Не удалось прочитать файл перевода: {detail}",
+  "ui.validation.unknownKey": "Неизвестный ключ перевода.",
+  "ui.validation.missing": "Перевод отсутствует; используется базовый текст.",
+  "ui.validation.unknownFile": "Неизвестный файл локализации.",
+  "ui.validation.parameters": "Подстановки не совпадают. Отсутствуют: {missing}. Неизвестные: {unknown}.",
+  "ui.validation.template": "Ошибка шаблона: {detail}",
+  "ui.validation.lines": "Недопустимый перенос строки или NUL. Сохраните структуру строк и вариантов ответа.",
+  "ui.validation.length": "Текст превышает текущий предел: {limit} байт.",
+  "ui.validation.font": "Символ отсутствует в текущем шрифте CP1251. Поддержка Unicode-шрифтов пока не реализована.",
+  "ui.validation.duplicate": "Повторяющийся ключ: {key}.",
+  "ui.validation.value": "Для ключа {key} требуется строковое значение.",
+  "ui.validation.object": "Ожидается JSON-объект с текстовыми ключами и строковыми значениями.",
+  "ui.validation.summary": "Проверка локализации: ошибок — {errors}, предупреждений — {warnings}."
+}

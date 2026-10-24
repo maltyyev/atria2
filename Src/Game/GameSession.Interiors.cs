@@ -16,7 +16,7 @@ public sealed partial class GameSession
     private ShopRenderer? shopRenderer;
     private SpriteFile? itemSprites;
     private ShopStock[]? shopStocks;
-    private InteriorActionMenuAdapter InteriorActions => interiorActions ??= new(actions, interior, state, messages, () => scriptMember, choice => RunScript(choice.ScriptMember.Span, choice.Function.Span, 3), LeaveInterior, BeginTrade, () =>
+    private InteriorActionMenuAdapter InteriorActions => interiorActions ??= new(actions, interior, state, displayMessages, () => scriptMember, choice => RunScript(choice.ScriptMember.Span, choice.Function.Span, 3), LeaveInterior, BeginTrade, () =>
     {
         itemSprites = null;
         shopRenderer = null;
@@ -152,7 +152,7 @@ public sealed partial class GameSession
             BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false),
             items,
             File.ReadAllBytes(Path.Combine(root, "ITEM_EX.DAT")),
-            messages
+            displayMessages
         );
         trade = new(state, items);
         if (buying)

@@ -22,7 +22,7 @@ public sealed class InteriorTalkMenu
         var choices = new List<InteriorTalkChoice>();
         foreach (var person in state.People)
         {
-            choices.Add(new(person.DisplayName.ToArray(), currentScript.ToArray(), person.Handler.ToArray(), false));
+            choices.Add(new(GameText.Name(person.DisplayName), currentScript.ToArray(), person.Handler.ToArray(), false));
         }
 
         if (offer is not null)

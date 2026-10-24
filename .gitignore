@@ -5,6 +5,8 @@ obj/
 /.packages/
 /.dotnet-home/
 /Tests/**/probe/
+# Integration probes place disposable evidence beside the resource root.
+/Assets/audit/
 # Download with tools/video/fetch_codec.ps1; keep dependencies out of Git history.
 /third_party/
 

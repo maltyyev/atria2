@@ -58,7 +58,7 @@ public sealed partial class GameSession
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException or InvalidOperationException or ArgumentException)
         {
             Console.WriteLine("Autosave failed: " + e.Message);
-            autosaveFailure = "Не удалось создать автосохранение";
+            autosaveFailure = GameText.Get("ui.autosave.failed");
         }
     }
 
@@ -85,7 +85,7 @@ public sealed partial class GameSession
         if (call.Function is "battle_start2" or "battle_start3")
         {
             nextBattleSeed ??= ReadBattleSeed();
-            WriteAutosave("Перед боем");
+            WriteAutosave(GameText.Get("ui.autosave.beforeBattle"));
         }
     }
 
@@ -93,12 +93,12 @@ public sealed partial class GameSession
     {
         if (call.Function is "battle_start2" or "battle_start3")
         {
-            WriteAutosave("После боя");
+            WriteAutosave(GameText.Get("ui.autosave.afterBattle"));
         }
 
         if (questCompletionChanged)
         {
-            RequestAutosave("Задание завершено");
+            RequestAutosave(GameText.Get("ui.autosave.questComplete"));
         }
     }
 

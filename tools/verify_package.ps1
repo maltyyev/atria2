@@ -44,4 +44,18 @@ foreach ($name in @('Atria.exe', 'atria_video.dll', 'avcodec-63.dll', 'avutil-61
     }
 }
 
-Write-Output "Package verified: $verified unchanged resources, native executable, video dependencies and license."
+foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Localization') -Recurse -File -Filter '*.json') {
+    $relative = [IO.Path]::GetRelativePath((Join-Path $assetRoot 'Localization'), $source.FullName)
+    $deployed = Join-Path $PackageRoot ('assets/localization/' + $relative)
+    if (!(Test-Path -LiteralPath $deployed -PathType Leaf)) {
+        throw "Missing editable localization: $deployed"
+    }
+}
+
+# Player-edited translations need validation, not equality with the source files.
+& (Join-Path $PackageRoot 'Atria.exe') --validate-localization | Write-Output
+if ($LASTEXITCODE -ne 0) {
+    throw "Localization validation failed. See playtest-data/logs/localization-validation.log; existing translations were preserved."
+}
+
+Write-Output "Package verified: $verified unchanged resources, editable localization, native executable, video dependencies and license."

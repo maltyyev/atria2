@@ -81,8 +81,8 @@ public sealed partial class GameSession
             nextMap,
             assets,
             smallFont,
-            messages,
-            Enumerable.Range(0, ItemCatalog.Count).Select(i => items.GetItem(i).Name).ToArray(),
+            displayMessages,
+            Enumerable.Range(0, ItemCatalog.Count).Select(i => GameText.ItemName(items, i)).ToArray(),
             retainedMessage
         );
         int title = decoded.EmbeddedScene is { } scene ? BinaryPrimitives.ReadInt32LittleEndian(scene.Header.Span.Slice(73, 4)) : throw new InvalidDataException("Dungeon title requires actual embedded scene metadata.");
@@ -140,7 +140,7 @@ public sealed partial class GameSession
                 LeaveDungeon();
                 break;
             case DungeonCommandKind.OpenActionMenu:
-                actions.OpenDungeon(dungeon!.ActionTileIsSwitch, messages);
+                actions.OpenDungeon(dungeon!.ActionTileIsSwitch, displayMessages);
                 break;
             case DungeonCommandKind.ToggleHud:
             case DungeonCommandKind.WalkStarted:

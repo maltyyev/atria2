@@ -39,6 +39,7 @@ public sealed partial class GameSession : IScriptEffects
     private readonly DialogueRuntime dialogue;
     private readonly ItemCatalog items;
     private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages;
+    private readonly IReadOnlyList<ReadOnlyMemory<byte>> displayMessages;
     private readonly SpriteFile etc, menuSprites, fireSprites, effectSprites;
     private readonly AnimationFile fireAnimation, effectAnimation;
     private readonly BitmapFont smallFont;
@@ -94,6 +95,7 @@ public sealed partial class GameSession : IScriptEffects
         items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
         byte[] text = File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat"));
         messages = LegacyTextTables.ParseMessages(text);
+        displayMessages = GameText.Messages(messages);
         var originalBindings = ControlBindings.Parse(File.ReadAllBytes(Path.Combine(root, "BATTLE.CFG")));
         var configuredBindings = InitializeSettings(Path.Combine(sessionOutputDirectory, "config"), originalBindings);
         bindings = controlsFile is null ? configuredBindings : ControlBindings.Parse(File.ReadAllBytes(controlsFile));
@@ -760,7 +762,7 @@ public sealed partial class GameSession : IScriptEffects
         if (oldMode != mode && (oldMode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town)
 && (mode is GameMode.World or GameMode.Dungeon or GameMode.Town))
         {
-            RequestAutosave("Переход локации");
+            RequestAutosave(GameText.Get("ui.autosave.location"));
         }
     }
 
@@ -808,7 +810,7 @@ public sealed partial class GameSession : IScriptEffects
                 objectActionField = command.Value;
                 break;
             case TownEffectKind.OpenActionMenu:
-                actions.Open(0, 0, 5, command.Value, command.Value2, messages, state.Mode);
+                actions.Open(0, 0, 5, command.Value, command.Value2, displayMessages, state.Mode);
                 break;
             case TownEffectKind.CloseActionMenus:
                 actions.CloseAll();

@@ -31,7 +31,7 @@ public sealed partial class GameSession
             smallFont,
             BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false),
             items,
-            messages,
+            displayMessages,
             File.ReadAllBytes(Path.Combine(root, "CHARINTR.DAT"))
         );
         var journal = QuestJournalCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "DANGEL.DAT")));

@@ -306,7 +306,7 @@ public sealed class CombatActorController : ICombatActorActions
 
         moveContexts[player] = input.ContextVersion(player);
         moveActors[player] = actorIndex;
-        input.Notice = result ? "" : "Приём сейчас недоступен: состояние героя, ранг или MP";
+        input.Notice = result ? "" : GameText.Get("ui.combat.moveUnavailable");
         if (result)
         {
             input.Rumble(player);

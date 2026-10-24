@@ -63,7 +63,7 @@ public static class SodScenePresentation
         var anchor = GetSelectionAnchor(scene, sprites, selectedObject);
         int x = checked(anchor.X + motionX), y = checked(anchor.Y + motionY);
         SpriteRaster.Draw565(etc.Frames[13], target, width, height, stride, x, y, SpriteBlend.Copy, clip: clip);
-        ReadOnlySpan<byte> label = scene.GetObject(selectedObject).GetString(4).Span;
+        ReadOnlySpan<byte> label = GameText.Name(scene.GetObject(selectedObject).GetString(4)).Span;
         int length = label.Length * 8;
         int textX = checked(x + (anchor.X + 32 + length < 631 ? 32 : -length));
         smallFont.DrawText(label, target, width, height, stride, checked(textX + 1), checked(y - 1), 0, clip);

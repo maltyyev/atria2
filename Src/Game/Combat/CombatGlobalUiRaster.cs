@@ -1,4 +1,3 @@
-using System.Buffers.Text;
 using Atria.Render;
 using Atria.Render.Codecs;
 
@@ -53,28 +52,13 @@ public sealed class CombatGlobalUiRaster(CombatGlobalUiAssets assets)
 
     public static int FormatSettings(int detail, int period, Span<byte> text)
     {
-        ReadOnlySpan<byte> first = "Detail Level "u8, second = "  Speed="u8;
         if (text.Length < SettingsTextCapacity)
         {
             throw new ArgumentException("Settings text scratch must contain64 bytes.");
         }
 
-        first.CopyTo(text);
-        int length = first.Length;
-        if (!Utf8Formatter.TryFormat(detail, text[length..], out int written))
-        {
-            throw new InvalidOperationException("Detail text did not fit.");
-        }
-
-        length += written;
-        second.CopyTo(text[length..]);
-        length += second.Length;
-        if (!Utf8Formatter.TryFormat(period, text[length..], out written))
-        {
-            throw new InvalidOperationException("Speed text did not fit.");
-        }
-
-        return length + written;
+        string label = GameText.Format("ui.combat.settings", ("detail", detail), ("period", period));
+        return GameText.Encoding.GetBytes(label.AsSpan(0, Math.Min(label.Length, text.Length)), text);
     }
 
     private void Text(ReadOnlySpan<byte> text, int x, int y, ushort color, Span<ushort> target) => assets.Font.DrawText(text, target, LogicalScreen.Width, LogicalScreen.Height, LogicalScreen.Width, x, y, color);

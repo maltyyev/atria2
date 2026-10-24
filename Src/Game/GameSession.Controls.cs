@@ -65,14 +65,14 @@ public sealed partial class GameSession
             {
                 var rows = new List<ControlRow>
                 {
-                    new("Продолжить", "", () => done = true),
-                    new("Настройки", "", () => ShowSettingsModal(background)),
-                    new("Справочник приёмов", "", () => ShowMoveReference(0, alreadyPaused: true))
+                    new(GameText.Get("ui.pause.resume"), "", () => done = true),
+                    new(GameText.Get("ui.settings.title"), "", () => ShowSettingsModal(background)),
+                    new(GameText.Get("ui.controls.reference"), "", () => ShowMoveReference(0, alreadyPaused: true))
                 };
                 if (!battle && !dialogueActive && actions.Depth < 0
 && state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town or GameMode.Interior or GameMode.Inn)
                 {
-                    rows.Add(new("Игровое меню / сохранение", "", () =>
+                    rows.Add(new(GameText.Get("ui.pause.gameMenu"), "", () =>
                     {
                         openMenu = true;
                         done = true;
@@ -82,18 +82,18 @@ public sealed partial class GameSession
                 if (battle && combat is not null)
                 {
                     rows.Add(new(
-                        "Автобой",
-                        combat.Execution.Controller.AutomationEnabled ? "Вкл" : "Выкл",
+                        GameText.Get("ui.controls.automation"),
+                        combat.Execution.Controller.AutomationEnabled ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"),
                         () => combat.Execution.Controller.SetAutomation(!combat.Execution.Controller.AutomationEnabled)
                     ));
                     rows.Add(new(
-                        "Детализация",
+                        GameText.Get("ui.combat.detail"),
                         combat.Execution.VisualDetail.ToString(),
                         Adjust: d => combat.Execution.VisualDetail = Math.Clamp(combat.Execution.VisualDetail + d, 0, 3)
                     ));
                     rows.Add(new(
-                        "Период старой отрисовки",
-                        combat.Ui.Schedule.Period + " мс",
+                        GameText.Get("ui.combat.legacyFramePeriod"),
+                        GameText.Format("ui.units.milliseconds", ("amount", combat.Ui.Schedule.Period)),
                         Adjust: d => combat.Ui.Schedule.PollSpeedKeys(scan => scan == (d < 0 ? 0x12 : 0x13), gate.Clock.Milliseconds)
                     ));
                 }
@@ -106,9 +106,9 @@ public sealed partial class GameSession
                 background.CopyTo(host.FrameBuffer);
                 panel.Draw(
                     host.FrameBuffer,
-                    controls.FocusPauseRequested ? "Пауза: фокус или контроллер потерян" : "Пауза",
+                    controls.FocusPauseRequested ? GameText.Get("ui.pause.focusLost") : GameText.Get("ui.pause.title"),
                     rows,
-                    "Состояние боя и игровые таймеры остановлены"
+                    GameText.Get("ui.pause.timersStopped")
                 );
             });
         }
@@ -166,28 +166,28 @@ public sealed partial class GameSession
             {
                 var rows = new List<ControlRow>
                 {
-                    new("Герой", MoveCatalog.Names[party], Adjust: d =>
+                    new(GameText.Get("ui.common.hero"), MoveCatalog.Name(party), Adjust: d =>
                     {
                         party = (party + d + 6) % 6;
                     }),
-                    new("Развитие: набор", form + " / 5", Adjust: d => form = Math.Clamp(form + d, 1, 5)),
-                    new("Обычные удары", controls.Hint(0, GameAction.Attack)),
-                    new("Прыжок / удар в воздухе", controls.Hint(0, GameAction.Jump) + " / " + controls.Hint(0, GameAction.Attack)),
-                    new("Бег / удар с разбега", controls.Hint(0, GameAction.Run) + " / " + controls.Hint(0, GameAction.Attack))
+                    new(GameText.Get("ui.controls.form"), form + " / 5", Adjust: d => form = Math.Clamp(form + d, 1, 5)),
+                    new(GameText.Get("ui.controls.basicAttacks"), controls.Hint(0, GameAction.Attack)),
+                    new(GameText.Get("ui.controls.jumpAttack"), controls.Hint(0, GameAction.Jump) + " / " + controls.Hint(0, GameAction.Attack)),
+                    new(GameText.Get("ui.controls.runningAttack"), controls.Hint(0, GameAction.Run) + " / " + controls.Hint(0, GameAction.Attack))
                 };
                 foreach (var move in MoveCatalog.FromInfo(Moves.Info(party, form), form))
                 {
-                    rows.Add(new(move.Name, move.IsMagic ? move.Cost + " MP" : move.IsStrategy ? "Отряд" : ""));
+                    rows.Add(new(move.Name, move.IsMagic ? GameText.Format("ui.units.mana", ("amount", move.Cost)) : move.IsStrategy ? GameText.Get("ui.combat.party") : ""));
                 }
 
                 done = panel.Input(controls, rows) || controls.Press(0, GameAction.Reference);
                 background.CopyTo(host.FrameBuffer);
                 panel.Draw(
                     host.FrameBuffer,
-                    "Приёмы: " + MoveCatalog.Names[party],
+                    GameText.Format("ui.controls.movesFor", ("character", MoveCatalog.Name(party))),
                     rows,
-                    "Назначение: Q / LB. Запуск: 1-4 / RT + крестовина",
-                    "Быстрые слоты выполняют нужные удары из покоя"
+                    GameText.Get("ui.controls.shortcutsHelp"),
+                    GameText.Get("ui.controls.shortcutsExplanation")
                 );
             });
         }

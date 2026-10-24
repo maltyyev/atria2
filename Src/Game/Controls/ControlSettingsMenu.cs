@@ -17,7 +17,7 @@ public sealed class ControlSettingsMenu
         Root, Player, Bindings, Moves
     }
     private Page page;
-    private string title = "Настройки", notice = "";
+    private string title = GameText.Get("ui.settings.title"), notice = "";
     private int player, column, party;
     private InputBinding[]? capture;
     private string? captureId;
@@ -69,7 +69,7 @@ public sealed class ControlSettingsMenu
             if (input.Take(1))
             {
                 capture = null;
-                notice = "Назначение отменено";
+                notice = GameText.Get("ui.settings.cancelled");
                 input.Clear();
                 return;
             }
@@ -78,7 +78,7 @@ public sealed class ControlSettingsMenu
             {
                 capture[column] = default;
                 capture = null;
-                notice = "Назначение удалено";
+                notice = GameText.Get("ui.settings.removed");
                 return;
             }
 
@@ -135,7 +135,7 @@ public sealed class ControlSettingsMenu
             capture[column] = b;
             p.Preset = "Custom";
             capture = null;
-            notice = swapped ? "Конфликт: назначения обменены" : "Назначено: " + b;
+            notice = swapped ? GameText.Get("ui.settings.swapped") : GameText.Format("ui.settings.assigned", ("binding", b));
             input.Clear();
             return;
         }
@@ -164,7 +164,7 @@ public sealed class ControlSettingsMenu
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
         {
-            notice = "Не удалось сохранить настройки. Проверьте доступ к папке и свободное место.";
+            notice = GameText.Get("ui.settings.saveFailed");
             Console.WriteLine("Settings were not applied: " + error.Message);
         }
     }
@@ -191,55 +191,55 @@ public sealed class ControlSettingsMenu
 
     private void BuildRootRows()
     {
-        title = "Настройки";
-        Add("Музыка", Audio.Music.ToString(), adjust: d => Audio.Set((byte)Math.Clamp(Audio.Music + d, 0, 4), Audio.Effects, Audio.ThirdOption));
+        title = GameText.Get("ui.settings.title");
+        Add(GameText.Get("ui.settings.music"), Audio.Music.ToString(), adjust: d => Audio.Set((byte)Math.Clamp(Audio.Music + d, 0, 4), Audio.Effects, Audio.ThirdOption));
         Add(
-            "Звуковые эффекты",
+            GameText.Get("ui.settings.effects"),
             Audio.Effects.ToString(),
             adjust: d => Audio.Set(Audio.Music, (byte)Math.Clamp(Audio.Effects + d, 0, 4), Audio.ThirdOption)
         );
         Add(
-            "Количество игроков",
+            GameText.Get("ui.settings.players"),
             Audio.PlayerCount.ToString(),
             adjust: d => Audio.Set(Audio.Music, Audio.Effects, (byte)Math.Clamp(Audio.PlayerCount + d, 1, 2))
         );
         for (int i = 0; i < 2; i++)
         {
             int j = i;
-            Add("Управление игрока " + (j + 1), "Открыть", () =>
+            Add(GameText.Format("ui.settings.playerControls", ("player", j + 1)), GameText.Get("ui.common.open"), () =>
             {
                 player = j;
                 Go(Page.Player);
             });
         }
 
-        Add("Подсказки", Draft.Hints ? "Вкл" : "Выкл", () => Draft.Hints = !Draft.Hints);
-        Add("Мёртвая зона стиков", Draft.DeadZone.ToString(), adjust: d => Draft.DeadZone = Math.Clamp(Draft.DeadZone + d * 1000, 2000, 20000));
+        Add(GameText.Get("ui.settings.hints"), Draft.Hints ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => Draft.Hints = !Draft.Hints);
+        Add(GameText.Get("ui.settings.deadZone"), Draft.DeadZone.ToString(), adjust: d => Draft.DeadZone = Math.Clamp(Draft.DeadZone + d * 1000, 2000, 20000));
         Add(
-            "Порог триггеров",
+            GameText.Get("ui.settings.triggerThreshold"),
             Draft.TriggerThreshold.ToString(),
             adjust: d => Draft.TriggerThreshold = Math.Clamp(Draft.TriggerThreshold + d * 10, 10, 240)
         );
-        Add("Вибрация", Draft.Vibration ? "Вкл" : "Выкл", () => Draft.Vibration = !Draft.Vibration);
-        Add("Автосохранений", Draft.AutosaveLimit.ToString(), adjust: d => Draft.AutosaveLimit = Math.Clamp(Draft.AutosaveLimit + d, 1, 5));
-        Add("Применить и вернуться", "", ApplyChanges);
-        Add("Сбросить управление", "Modern", () =>
+        Add(GameText.Get("ui.settings.vibration"), Draft.Vibration ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => Draft.Vibration = !Draft.Vibration);
+        Add(GameText.Get("ui.settings.autosaveCount"), Draft.AutosaveLimit.ToString(), adjust: d => Draft.AutosaveLimit = Math.Clamp(Draft.AutosaveLimit + d, 1, 5));
+        Add(GameText.Get("ui.settings.apply"), "", ApplyChanges);
+        Add(GameText.Get("ui.settings.reset"), GameText.Get("ui.profiles.Modern"), () =>
         {
             int limit = Draft.AutosaveLimit;
             Draft = ControlProfile.Defaults(legacy);
             Draft.AutosaveLimit = limit;
-            notice = "Сброшено. Нажмите Применить для сохранения.";
+            notice = GameText.Get("ui.settings.resetNotice");
         });
-        Add("Отменить изменения", "", () => Closed = true);
+        Add(GameText.Get("ui.settings.cancel"), "", () => Closed = true);
     }
 
     private void BuildPlayerRows()
     {
         var p = Draft.Players[player];
 
-        title = "Управление: игрок " + (player + 1);
-        Add("Клавиатура и мышь", p.Keyboard ? "Вкл" : "Выкл", () => p.Keyboard = !p.Keyboard);
-        Add("Контроллер", p.PadSlot < 0 ? "Нет" : "Xbox " + (p.PadSlot + 1) + (input.Connected(p.PadSlot) ? " подключён" : " не подключён"), adjust: d =>
+        title = GameText.Format("ui.settings.playerTitle", ("player", player + 1));
+        Add(GameText.Get("ui.settings.keyboardMouse"), p.Keyboard ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => p.Keyboard = !p.Keyboard);
+        Add(GameText.Get("ui.settings.controller"), p.PadSlot < 0 ? GameText.Get("ui.common.none") : GameText.Format(input.Connected(p.PadSlot) ? "ui.settings.controllerConnected" : "ui.settings.controllerDisconnected", ("slot", p.PadSlot + 1)), adjust: d =>
         {
             int next = Math.Clamp(p.PadSlot + d, -1, 3);
             if (next >= 0 && Draft.Players[1 - player].PadSlot == next)
@@ -249,26 +249,26 @@ public sealed class ControlSettingsMenu
 
             p.PadSlot = next;
         });
-        Add("Профиль", p.Preset, () =>
+        Add(GameText.Get("ui.settings.profile"), GameText.Get("ui.profiles." + (p.Preset is "Modern" or "Classic" ? p.Preset : "Custom")), () =>
         {
             int slot = p.PadSlot;
             bool keyboard = p.Keyboard;
             Draft.ResetPlayer(player, !p.Classic, legacy);
             Draft.Players[player].PadSlot = slot;
             Draft.Players[player].Keyboard = keyboard;
-            notice = "Профиль сброшен; доступно переназначение.";
+            notice = GameText.Get("ui.settings.profileReset");
         });
-        Add("Кнопки и действия", "Открыть", () => Go(Page.Bindings));
-        Add("Герой для приёмов", MoveCatalog.Names[party], adjust: d => party = (party + d + 6) % 6);
-        Add("Назначить отдельные приёмы", "Открыть", () => Go(Page.Moves));
-        Add("Назад", "", () => Go(Page.Root));
+        Add(GameText.Get("ui.settings.bindings"), GameText.Get("ui.common.open"), () => Go(Page.Bindings));
+        Add(GameText.Get("ui.settings.moveHero"), MoveCatalog.Name(party), adjust: d => party = (party + d + 6) % 6);
+        Add(GameText.Get("ui.settings.moveBindings"), GameText.Get("ui.common.open"), () => Go(Page.Moves));
+        Add(GameText.Get("ui.controls.back"), "", () => Go(Page.Root));
     }
 
     private void BuildBindingsRows()
     {
         var p = Draft.Players[player];
 
-        title = $"Игрок {player + 1}: " + (column == 0 ? "основная кнопка" : column == 1 ? "дополнительная кнопка" : "Xbox");
+        title = GameText.Format("ui.settings.bindingTitle", ("player", player + 1), ("column", column == 0 ? GameText.Get("ui.settings.primaryButton") : column == 1 ? GameText.Get("ui.settings.secondaryButton") : GameText.Get("ui.settings.xbox")));
         for (int i = 0; i < (int)GameAction.Count; i++)
         {
             int a = i;
@@ -277,7 +277,7 @@ public sealed class ControlSettingsMenu
             {
                 capture = row;
                 captureId = null;
-                notice = "Нажмите кнопку; Esc: отмена; Backspace: удалить";
+                notice = GameText.Get("ui.settings.captureHint");
                 input.Clear();
             }, d => column = (column + d + 3) % 3);
         }
@@ -288,7 +288,7 @@ public sealed class ControlSettingsMenu
     {
         var p = Draft.Players[player];
 
-        title = MoveCatalog.Names[party] + ": " + (column == 0 ? "основная" : column == 1 ? "дополнительная" : "Xbox");
+        title = GameText.Format("ui.settings.moveBindingTitle", ("character", MoveCatalog.Name(party)), ("column", column == 0 ? GameText.Get("ui.settings.primary") : column == 1 ? GameText.Get("ui.settings.secondary") : GameText.Get("ui.settings.xbox")));
         foreach (var move in catalog.All(party))
         {
             string key = party + "/" + move.Id;
@@ -302,7 +302,7 @@ public sealed class ControlSettingsMenu
             {
                 capture = row;
                 captureId = key;
-                notice = "Назначить: кнопка; Esc: отмена; Backspace: удалить";
+                notice = GameText.Get("ui.settings.assignHint");
                 input.Clear();
             }, d => column = (column + d + 3) % 3);
         }
@@ -316,8 +316,8 @@ public sealed class ControlSettingsMenu
             pixels,
             title,
             rows,
-            "Влево / вправо: значение или столбец назначения",
-            capture is null ? notice : "Нажмите кнопку. Esc: отмена; Backspace: удалить"
+            GameText.Get("ui.settings.columnHint"),
+            capture is null ? notice : GameText.Get("ui.settings.capturePrompt")
         );
     }
 }

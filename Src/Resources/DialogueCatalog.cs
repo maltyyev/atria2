@@ -75,6 +75,9 @@ public sealed class DialogueCatalog
     }
 
     public bool TryGetText(ReadOnlySpan<byte> rawKey, out ReadOnlyMemory<byte> text)
+        => TryGetText(rawKey, out text, out _);
+
+    public bool TryGetText(ReadOnlySpan<byte> rawKey, out ReadOnlyMemory<byte> text, out int entryIndex)
     {
         rawKey = RawBytes.NullTerminated(rawKey);
         if (buckets.TryGetValue(Hash(rawKey), out List<int>? bucket))
@@ -84,12 +87,14 @@ public sealed class DialogueCatalog
                 if (entries[i].RawKey.Span.SequenceEqual(rawKey))
                 {
                     text = GetText(i);
+                    entryIndex = i;
                     return true;
                 }
             }
         }
 
         text = default;
+        entryIndex = -1;
         return false;
     }
 

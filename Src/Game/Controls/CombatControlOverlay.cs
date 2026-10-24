@@ -120,7 +120,7 @@ public sealed class CombatControlOverlay
             {
                 input.Profile.Players[owner].Quick[party][q] = moves[panel.Selection].Id;
                 save();
-                notice = "Назначено в слот " + (q + 1);
+                notice = GameText.Format("ui.combat.slotAssigned", ("slot", q + 1));
             }
         }
 
@@ -134,23 +134,23 @@ public sealed class CombatControlOverlay
         foreach (var m in moves)
         {
             var move = m;
-            string value = m.IsMagic ? (m.Category > rank ? "Нужен ранг " + m.Category : m.Cost + " MP") : m.IsStrategy ? "Отряд" : "";
+            string value = m.IsMagic ? (m.Category > rank ? GameText.Format("ui.combat.rankRequired", ("rank", m.Category)) : GameText.Format("ui.units.mana", ("amount", m.Cost))) : m.IsStrategy ? GameText.Get("ui.combat.party") : "";
             rows.Add(new(m.Name, value, () => controller.SelectedMoves[owner][party] = move.Id, Icon: m.Icon));
         }
 
-        rows.Add(new("Автобой", controller.AutomationEnabled ? "Вкл" : "Выкл", () => controller.SetAutomation(!controller.AutomationEnabled)));
+        rows.Add(new(GameText.Get("ui.controls.automation"), controller.AutomationEnabled ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => controller.SetAutomation(!controller.AutomationEnabled)));
     }
 
     public void Draw(Span<ushort> pixels)
     {
         if (owner >= 0)
         {
-            string requirement = panel.Selection < moves.Count ? (moves[panel.Selection].Id.StartsWith("v:", StringComparison.Ordinal) ? "Из покоя: цепочка ударов автоматически" : moves[panel.Selection].Requirement) : "";
+            string requirement = panel.Selection < moves.Count ? (moves[panel.Selection].Id.StartsWith("v:", StringComparison.Ordinal) ? GameText.Get("ui.combat.automaticChain") : moves[panel.Selection].Requirement) : "";
             panel.Draw(
                 pixels,
-                $"Игрок {owner + 1}: {MoveCatalog.Names[party]}",
+                GameText.Format("ui.combat.playerCharacter", ("player", owner + 1), ("character", MoveCatalog.Name(party))),
                 rows,
-                "Назначить: 1-4/крест. Выполнить: 1-4/RT+крест.",
+                GameText.Get("ui.combat.bindHint"),
                 notice.Length > 0 ? notice : requirement,
                 icons
             );
@@ -171,7 +171,7 @@ public sealed class CombatControlOverlay
             }
 
             int member = index - runtime.Scene.PartyStartIndex;
-            string basic = $"P{p + 1} {input.Hint(p, GameAction.Attack)} удар   {input.Hint(p, GameAction.Jump)} прыжок   {input.Hint(p, GameAction.Selector)} приёмы   {input.Hint(p, GameAction.Pause)} пауза";
+            string basic = GameText.Format("ui.combat.inputHints", ("player", p + 1), ("attack", input.Hint(p, GameAction.Attack)), ("jump", input.Hint(p, GameAction.Jump)), ("moves", input.Hint(p, GameAction.Selector)), ("pause", input.Hint(p, GameAction.Pause)));
             int y = 84 + p * 58;
             for (int yy = y - 2; yy < y + 52; yy++)
             {
@@ -196,8 +196,8 @@ public sealed class CombatControlOverlay
         return parts.Length < 2 ? "--" : parts[0] switch
         {
             "v" => int.TryParse(parts[1], out int d) ? MoveCatalog.DirectionName(d) : "--",
-            "p" => "MP " + parts[1],
-            "s" => "Тактика " + parts[1],
+            "p" => GameText.Format("ui.moves.magicShortcut", ("ability", parts[1])),
+            "s" => GameText.Format("ui.moves.strategy", ("strategy", parts[1])),
             _ => "--"
         };
     }

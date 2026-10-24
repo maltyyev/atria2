@@ -26,7 +26,7 @@ public sealed record CombatSelectionAssets(SpriteFile Etc, SpriteFile Player, Bi
             Read("ETC"u8),
             Read("PLAYER"u8),
             BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG1.FNT")), true),
-            LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(root, "BATTLE.DAT")))
+            GameText.Messages(LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(root, "BATTLE.DAT"))), "battle")
         );
     }
 }
@@ -37,9 +37,9 @@ public sealed class CombatSelectionRaster(CombatSelectionAssets assets)
     public void DrawControls(InputRouter input, Span<ushort> target)
     {
         Fill(target, 70, 330, 570, 404, 0x1082);
-        ControlPanel.Text(assets.Font, target, "Вверх / вниз: герой; щелчок: участие", 82, 336, 0xffff, 60);
-        ControlPanel.Text(assets.Font, target, input.Hint(0, GameAction.Attack) + ": включить / исключить героя", 82, 354, 0xffff, 60);
-        ControlPanel.Text(assets.Font, target, "Начать бой: " + input.Hint(0, GameAction.Confirm), 130, 380, 0xffe0, 54);
+        ControlPanel.Text(assets.Font, target, GameText.Get("ui.combat.selectHero"), 82, 336, 0xffff, 60);
+        ControlPanel.Text(assets.Font, target, GameText.Format("ui.combat.toggleHero", ("button", input.Hint(0, GameAction.Attack))), 82, 354, 0xffff, 60);
+        ControlPanel.Text(assets.Font, target, GameText.Format("ui.combat.start", ("button", input.Hint(0, GameAction.Confirm))), 130, 380, 0xffe0, 54);
     }
 
     public void Draw(CombatPartySelection selection, Span<ushort> target)

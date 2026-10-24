@@ -55,15 +55,9 @@ public sealed class ExperienceAllocationRaster(SpriteFile etc, BitmapFont smallF
             text[length++] = (byte)'/';
             Append(next, text, ref length);
             smallFont.DrawText(text[..length], target, width, height, stride, 419, row - 12, NativeUiPalette.Normal[4]);
-            "Lv "u8.CopyTo(text);
-            length = 3;
-            if (level is >= 0 and < 10)
-            {
-                text[length++] = (byte)' ';
-            }
-
-            Append(level, text, ref length);
-            smallFont.DrawText(text[..length], target, width, height, stride, 207, row - 12, 0xffe0);
+            string rank = level.ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(2);
+            byte[] levelLabel = GameText.Encoding.GetBytes(GameText.Format("ui.progression.level", ("level", rank)));
+            smallFont.DrawText(levelLabel, target, width, height, stride, 207, row - 12, 0xffe0);
             int earnedEnd = 252 + Math.Min(ExperienceBarMath.Ratio(155, next, xp, precision), 155);
             int awardEnd = Math.Min(unchecked(earnedEnd - ExperienceBarMath.Ratio(-155, next, allocation[actor], precision)), 407);
             if (earnedEnd > 252)

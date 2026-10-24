@@ -67,9 +67,9 @@ public sealed class DungeonModalRenderer(SpriteFile tiles, BitmapFont font, IRea
         byte[] Number(int value) => Encoding.ASCII.GetBytes(value.ToString(CultureInfo.InvariantCulture));
         return effect.Kind switch
         {
-            DungeonArrivalEffectKind.TreasureMoney => Join(Number(effect.Value), "GOLD"u8, []),
+            DungeonArrivalEffectKind.TreasureMoney => Join(Number(effect.Value), GameText.Bytes("ui.units.gold"), []),
             DungeonArrivalEffectKind.TreasureItem => Join(itemNames[effect.Value].Span, Number(effect.Value2), []),
-            DungeonArrivalEffectKind.TreasureTorch => Join(messages[193].Span, "TORCH"u8, Number(effect.Value)),
+            DungeonArrivalEffectKind.TreasureTorch => Join(messages[193].Span, GameText.Bytes("ui.units.torch"), Number(effect.Value)),
             _ => throw new ArgumentException("Effect has no dungeon dynamic message.")
         };
     }

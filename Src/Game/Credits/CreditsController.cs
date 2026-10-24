@@ -5,7 +5,7 @@ public sealed class CreditsText
     public const int RowCount = 400, RowBytes = 80, HeaderBytes = 100;
     private readonly byte[] rows;
     private CreditsText(byte[] rows) => this.rows = rows;
-    public ReadOnlySpan<byte> this[int index] => rows.AsSpan(checked(index * RowBytes), RowBytes);
+    public ReadOnlySpan<byte> this[int index] => GameText.Legacy($"credits.{index:D3}", rows.AsMemory(checked(index * RowBytes), RowBytes)).Span;
     public static CreditsText Parse(ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length < HeaderBytes + RowCount * RowBytes)

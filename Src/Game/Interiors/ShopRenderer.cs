@@ -147,7 +147,7 @@ public sealed class ShopRenderer
         foreach (var row in session.VisibleRows())
         {
             Sprite(true, row.SpriteFrame, row.X, row.Y);
-            Pair(items.GetItem(row.ItemId).Name, 180, row.Y + 8, true, ShopTextStyle.Selected);
+            Pair(GameText.ItemName(items, row.ItemId), 180, row.Y + 8, true, ShopTextStyle.Selected);
             Pair(Number(row.Quantity), 356, row.Y + 5, false, ShopTextStyle.Selected);
         }
 
@@ -163,7 +163,7 @@ public sealed class ShopRenderer
         {
             for (int line = 0; line < 3; line++)
             {
-                Pair(DatTables.GetItemExtraLine(itemExtra, id, line), 448, 120 + line * 16, true, ShopTextStyle.Normal);
+                Pair(GameText.Legacy($"items.{id:D2}.extra.{line}", DatTables.GetItemExtraLine(itemExtra, id, line)), 448, 120 + line * 16, true, ShopTextStyle.Normal);
             }
 
             int modifiers = Int(58);

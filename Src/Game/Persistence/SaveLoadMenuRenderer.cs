@@ -104,7 +104,7 @@ public sealed class SaveLoadMenuRenderer
         Pair(messages[frame.Kind == SaveLoadMenuKind.Save ? 362 : 260], 156, 390, SaveMenuTextStyle.Selected);
         if (slots.Count == 0)
         {
-            Text(Russian("Нет сохранений"), 210, 195, sm: true, color: 0xffff);
+            Text(Russian(GameText.Get("ui.saves.empty")), 210, 195, sm: true, color: 0xffff);
         }
 
         Text(Encoding.ASCII.GetBytes($"{(slots.Count == 0 ? 0 : frame.Selection + 1)} / {slots.Count}"), 440, 350, sm: true, color: 0xffff);
@@ -116,7 +116,7 @@ public sealed class SaveLoadMenuRenderer
             int y = 99 + (i - frame.Top) * 48;
             if (slots[i].IsNew)
             {
-                Outline(Russian("Новое сохранение"), 140, y, style, flash);
+                Outline(Russian(GameText.Get("ui.saves.new")), 140, y, style, flash);
                 continue;
             }
 
@@ -124,7 +124,7 @@ public sealed class SaveLoadMenuRenderer
             {
                 if (slots[i].Status is SaveSlotStatus.Invalid or SaveSlotStatus.Unreadable)
                 {
-                    Outline(Russian("Ошибка чтения"), 208, y + 1, style, flash);
+                    Outline(Russian(GameText.Get("ui.saves.readFailed")), 208, y + 1, style, flash);
                     continue;
                 }
 
@@ -136,11 +136,11 @@ public sealed class SaveLoadMenuRenderer
                     label = messages[361];
                 }
 
-                Outline(label, 208, y + 1, style, flash);
+                Outline(GameText.Name(label), 208, y + 1, style, flash);
                 continue;
             }
 
-            Outline(metadata.PrimaryName, 140, y, style, flash);
+            Outline(GameText.Name(metadata.PrimaryName), 140, y, style, flash);
             Pair(Join(messages[310], " "u8.ToArray(), Number(metadata.ActorZeroLevel)), 440, y + 1, style, flash: flash, shadowX: -1, shadowY: -1);
             var date = slots[i].Date;
             var dateText = Join(
@@ -162,7 +162,7 @@ public sealed class SaveLoadMenuRenderer
                 Pair(dateText, 190, y + 26, style, true);
             }
 
-            Text(Russian(slots[i].Automatic ? "АВТО" : "РУЧ."), 478, y + 26, sm: true, color: slots[i].Automatic ? (ushort)0x354a : (ushort)0x443e);
+            Text(Russian(slots[i].Automatic ? GameText.Get("ui.saves.automatic") : GameText.Get("ui.saves.manual")), 478, y + 26, sm: true, color: slots[i].Automatic ? (ushort)0x354a : (ushort)0x443e);
         }
 
         if (slots.Count > 0 && !slots[frame.Selection].IsNew)

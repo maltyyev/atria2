@@ -13,7 +13,7 @@ public sealed class TownLeaveModalRenderer
     {
         this.etc = etc;
         font = activeFont;
-        var messages = LegacyTextTables.ParseMessages(textMessages);
+        var messages = GameText.Messages(LegacyTextTables.ParseMessages(textMessages));
         // Native41d570 strings454cf8/454d48: message slots171/172.
         yes = messages[171];
         no = messages[172];

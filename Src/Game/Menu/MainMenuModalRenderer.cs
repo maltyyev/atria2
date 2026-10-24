@@ -13,7 +13,7 @@ public sealed class MainMenuModalRenderer
     {
         tiles = etc;
         this.font = font;
-        var messages = LegacyTextTables.ParseMessages(textMessages);
+        var messages = GameText.Messages(LegacyTextTables.ParseMessages(textMessages));
         // Native message base451788, stride80:456b48/456b98/456be8.
         heading = messages[268];
         yesText = messages[269];

@@ -53,7 +53,7 @@ public sealed partial class GameSession
     {
         MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, menuSprites, fireAnimation, fireSprites, target, menuModal.Draw);
         terminationLargeFont ??= BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false);
-        TerminationRenderer.DrawQuit(quit, etc, terminationLargeFont, messages, target);
+        TerminationRenderer.DrawQuit(quit, etc, terminationLargeFont, displayMessages, target);
     }
 
     private ushort[] LoadTerminationBackground(ReadOnlySpan<byte> name)

@@ -27,7 +27,7 @@ public sealed partial class GameSession
         nextBattleSeed ??= ReadBattleSeed();
         if (activeScriptHost is null)
         {
-            WriteAutosave("Перед боем");
+            WriteAutosave(GameText.Get("ui.autosave.beforeBattle"));
         }
 
         uint encounterSeed = nextBattleSeed.Value;
@@ -173,7 +173,7 @@ public sealed partial class GameSession
 
         if (activeScriptHost is null && state.Mode != GameMode.Defeat)
         {
-            WriteAutosave("После боя");
+            WriteAutosave(GameText.Get("ui.autosave.afterBattle"));
         }
     }
 

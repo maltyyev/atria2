@@ -4,6 +4,7 @@
     <AssemblyName>Atria.Tests</AssemblyName>
     <RootNamespace>Atria.Tests</RootNamespace>
   </PropertyGroup>
+  <Import Project="../Assets/LocalizationResources.props" />
   <ItemGroup>
     <ProjectReference Include="../Src/Atria.Game.csproj" />
   </ItemGroup>

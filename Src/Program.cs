@@ -12,10 +12,27 @@ internal static class Program
     {
         try
         {
+            if (args.Length > 0 && args[0] == "--validate-localization")
+            {
+                CommandLineConsole.AttachToParent();
+                string localizationRoot = args.Length > 1 ? Path.GetFullPath(args[1]) : LocalizationDirectory;
+                GameText.Use(new LocalizationCatalog(localizationRoot));
+                var issues = LocalizationCatalog.Validate(localizationRoot);
+                string report = string.Join(Environment.NewLine, issues.Select(i => i.ToString()).Append(GameText.Format("ui.validation.summary", ("errors", issues.Count(i => i.IsError)), ("warnings", issues.Count(i => !i.IsError)))));
+                string log = Path.Combine(AppContext.BaseDirectory, "playtest-data", "logs", "localization-validation.log");
+                Directory.CreateDirectory(Path.GetDirectoryName(log)!);
+                File.WriteAllText(log, report, System.Text.Encoding.UTF8);
+                Console.WriteLine(report);
+                Console.WriteLine(log);
+                return issues.Any(i => i.IsError) ? 1 : 0;
+            }
+
             if (args.Length == 0 || (args.Length == 1 && args[0] == "--playtest"))
             {
                 return RunPlaytest();
             }
+
+            GameText.Use(new LocalizationCatalog(LocalizationDirectory));
 
             if (args.Length >= 3 && args[0] == "--session-probe")
             {
@@ -167,6 +184,8 @@ internal static class Program
         }
     }
 
+    private static string LocalizationDirectory => Path.Combine(AppContext.BaseDirectory, "assets", "localization");
+
     private static int RunPlaytest()
     {
         string output = Path.Combine(AppContext.BaseDirectory, "playtest-data");
@@ -184,6 +203,18 @@ internal static class Program
             Console.SetError(log);
             try
             {
+                var localization = new LocalizationCatalog(LocalizationDirectory);
+                GameText.Use(localization);
+                foreach (var issue in localization.Issues)
+                {
+                    Console.WriteLine(issue);
+                }
+
+                if (localization.Issues.Count > 0)
+                {
+                    ShowLaunchError(0, GameText.Format("ui.localization.warning", ("count", localization.Issues.Count), ("logPath", logPath)), "Atria II", 0x30);
+                }
+
                 string resources = Path.Combine(AppContext.BaseDirectory, "assets", "game");
                 string music = Path.Combine(AppContext.BaseDirectory, "assets", "music");
                 Console.WriteLine($"Atria {BuildInfo.Version}; {DateTimeOffset.Now:O}; dynamicCode={System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}");
@@ -204,7 +235,7 @@ internal static class Program
         }
         catch (Exception e)
         {
-            ShowLaunchError(0, $"Atria {BuildInfo.Version}\n{e.Message}\n\nЖурнал: {logPath}", "Atria II", 0x10);
+            ShowLaunchError(0, GameText.Format("ui.launch.failure", ("version", BuildInfo.Version), ("message", e.Message), ("logPath", logPath)), "Atria II", 0x10);
             return 1;
         }
     }

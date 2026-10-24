@@ -37,7 +37,7 @@ public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, I
                 throw Error("STRING_CAPACITY", "Dialogue key exceeds recovered destination.");
             }
 
-            if (!catalog.TryGetText(key.Span, out ReadOnlyMemory<byte> text))
+            if (!catalog.TryGetText(key.Span, out ReadOnlyMemory<byte> text, out int entryIndex))
             {
                 throw Error("MISSING_DIALOGUE", "Dialogue key was not found.");
             }
@@ -47,19 +47,19 @@ public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, I
             {
                 if (text.Span[i] == 13 && i + 1 < text.Length && text.Span[i + 1] == 10)
                 {
-                    Add(text.Slice(start, i - start));
+                    Add(GameText.Legacy($"dialogue.{entryIndex:D4}.{lineCount:D2}", text.Slice(start, i - start)));
                     i++;
                     start = i + 1;
                 }
             }
 
-            Add(text[start..]); // Native 42c5c0 keeps the empty line after a final CRLF.
+            Add(GameText.Legacy($"dialogue.{entryIndex:D4}.{lineCount:D2}", text[start..])); // Preserve the final empty choice/line.
         }
         else
         {
             for (int i = 2; i < call.Arguments.Count; i++)
             {
-                Add(Bytes(i));
+                Add(GameText.Legacy($"scripts.{call.Member}.{call.ByteOffset}.{i}", Bytes(i)));
             }
         }
 
