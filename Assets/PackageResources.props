@@ -1,0 +1,73 @@
+<Project>
+  <!-- Explicit inputs make an incomplete local asset set fail the build. No legacy executables or player data. -->
+  <ItemGroup>
+    <GameResource Include="
+      $(MSBuildThisFileDirectory)Game/ANI.000;
+      $(MSBuildThisFileDirectory)Game/AT2AMF.000;
+      $(MSBuildThisFileDirectory)Game/AT2BMP.000;
+      $(MSBuildThisFileDirectory)Game/AT2SOD.000;
+      $(MSBuildThisFileDirectory)Game/AT2SPR.000;
+      $(MSBuildThisFileDirectory)Game/AT2WAV.000;
+      $(MSBuildThisFileDirectory)Game/ATITEM.DAT;
+      $(MSBuildThisFileDirectory)Game/BATTLE.CFG;
+      $(MSBuildThisFileDirectory)Game/BATTLE.DAT;
+      $(MSBuildThisFileDirectory)Game/BMP.000;
+      $(MSBuildThisFileDirectory)Game/CHARINTR.DAT;
+      $(MSBuildThisFileDirectory)Game/CREDIT.DAT;
+      $(MSBuildThisFileDirectory)Game/DANGEL.DAT;
+      $(MSBuildThisFileDirectory)Game/EITEM.DAT;
+      $(MSBuildThisFileDirectory)Game/END.DAT;
+      $(MSBuildThisFileDirectory)Game/eng.fnt;
+      $(MSBuildThisFileDirectory)Game/eng1.fnt;
+      $(MSBuildThisFileDirectory)Game/face.SPR;
+      $(MSBuildThisFileDirectory)Game/han.FNT;
+      $(MSBuildThisFileDirectory)Game/HAN1.FNT;
+      $(MSBuildThisFileDirectory)Game/INF.000;
+      $(MSBuildThisFileDirectory)Game/ITEM_EX.DAT;
+      $(MSBuildThisFileDirectory)Game/jamie1.jad;
+      $(MSBuildThisFileDirectory)Game/logo.jad;
+      $(MSBuildThisFileDirectory)Game/medal.jad;
+      $(MSBuildThisFileDirectory)Game/ROLAND.DAT;
+      $(MSBuildThisFileDirectory)Game/roland.idx;
+      $(MSBuildThisFileDirectory)Game/SCRIPT.000;
+      $(MSBuildThisFileDirectory)Game/SHOP.DAT;
+      $(MSBuildThisFileDirectory)Game/SOD.000;
+      $(MSBuildThisFileDirectory)Game/SPR.000;
+      $(MSBuildThisFileDirectory)Game/TEXTmsg.dat;
+      $(MSBuildThisFileDirectory)Game/WAV.000" />
+    <MusicResource Include="
+      $(MSBuildThisFileDirectory)Music/Track02.wav;
+      $(MSBuildThisFileDirectory)Music/Track03.wav;
+      $(MSBuildThisFileDirectory)Music/Track04.wav;
+      $(MSBuildThisFileDirectory)Music/Track05.wav;
+      $(MSBuildThisFileDirectory)Music/Track06.wav;
+      $(MSBuildThisFileDirectory)Music/Track07.wav;
+      $(MSBuildThisFileDirectory)Music/Track08.wav;
+      $(MSBuildThisFileDirectory)Music/Track09.wav;
+      $(MSBuildThisFileDirectory)Music/Track10.wav;
+      $(MSBuildThisFileDirectory)Music/Track11.wav;
+      $(MSBuildThisFileDirectory)Music/Track12.wav;
+      $(MSBuildThisFileDirectory)Music/Track13.wav;
+      $(MSBuildThisFileDirectory)Music/Track14.wav;
+      $(MSBuildThisFileDirectory)Music/Track15.wav;
+      $(MSBuildThisFileDirectory)Music/Track16.wav;
+      $(MSBuildThisFileDirectory)Music/Track17.wav;
+      $(MSBuildThisFileDirectory)Music/Track18.wav;
+      $(MSBuildThisFileDirectory)Music/Track19.wav;
+      $(MSBuildThisFileDirectory)Music/Track20.wav;
+      $(MSBuildThisFileDirectory)Music/Track21.wav;
+      $(MSBuildThisFileDirectory)Music/Track22.wav;
+      $(MSBuildThisFileDirectory)Music/Track23.wav;
+      $(MSBuildThisFileDirectory)Music/Track24.wav;
+      $(MSBuildThisFileDirectory)Music/Track25.wav;
+      $(MSBuildThisFileDirectory)Music/Track26.wav;
+      $(MSBuildThisFileDirectory)Music/Track27.wav;
+      $(MSBuildThisFileDirectory)Music/Track28.wav" />
+    <Content Include="@(GameResource)" Link="assets/game/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="@(MusicResource)" Link="assets/music/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="ValidatePackageResources" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('%(GameResource.Identity)')" Text="Missing game resource: %(GameResource.Identity). See docs/PORTABLE_PACKAGE_044.md for local asset setup." />
+    <Error Condition="!Exists('%(MusicResource.Identity)')" Text="Missing music resource: %(MusicResource.Identity). See docs/PORTABLE_PACKAGE_044.md for local asset setup." />
+  </Target>
+</Project>

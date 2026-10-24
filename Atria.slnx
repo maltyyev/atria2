@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="src/Atria.Game.csproj" />
-  <Project Path="tests/Atria.Tests.csproj" />
+  <Project Path="Src/Atria.Game.csproj" />
+  <Project Path="Tests/Atria.Tests.csproj" />
 </Solution>

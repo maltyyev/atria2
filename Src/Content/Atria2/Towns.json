@@ -1,0 +1,265 @@
+{
+  "Source": "Original EXE table 0x44d4c0; logical CD track IDs. Town names are TEXTmsg.dat entries.",
+  "Towns": [
+    {
+      "Id": 0,
+      "NameMessageId": 119,
+      "MusicTrack": 1
+    },
+    {
+      "Id": 1,
+      "NameMessageId": 120,
+      "MusicTrack": 10
+    },
+    {
+      "Id": 2,
+      "NameMessageId": 121,
+      "MusicTrack": 9
+    },
+    {
+      "Id": 3,
+      "NameMessageId": 122,
+      "MusicTrack": 9
+    },
+    {
+      "Id": 4,
+      "NameMessageId": 123,
+      "MusicTrack": 10
+    },
+    {
+      "Id": 5,
+      "NameMessageId": 124,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 6,
+      "NameMessageId": 125,
+      "MusicTrack": 12
+    },
+    {
+      "Id": 7,
+      "NameMessageId": 126,
+      "MusicTrack": 11
+    },
+    {
+      "Id": 8,
+      "NameMessageId": 127,
+      "MusicTrack": 12
+    },
+    {
+      "Id": 9,
+      "NameMessageId": 128,
+      "MusicTrack": 18
+    },
+    {
+      "Id": 10,
+      "NameMessageId": 129,
+      "MusicTrack": 9
+    },
+    {
+      "Id": 11,
+      "NameMessageId": 130,
+      "MusicTrack": 10
+    },
+    {
+      "Id": 12,
+      "NameMessageId": 131,
+      "MusicTrack": 16
+    },
+    {
+      "Id": 13,
+      "NameMessageId": 132,
+      "MusicTrack": 17
+    },
+    {
+      "Id": 14,
+      "NameMessageId": 133,
+      "MusicTrack": 12
+    },
+    {
+      "Id": 15,
+      "NameMessageId": 134,
+      "MusicTrack": 12
+    },
+    {
+      "Id": 16,
+      "NameMessageId": 135,
+      "MusicTrack": 13
+    },
+    {
+      "Id": 17,
+      "NameMessageId": 136,
+      "MusicTrack": 10
+    },
+    {
+      "Id": 18,
+      "NameMessageId": 137,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 19,
+      "NameMessageId": 138,
+      "MusicTrack": 17
+    },
+    {
+      "Id": 20,
+      "NameMessageId": 139,
+      "MusicTrack": 12
+    },
+    {
+      "Id": 21,
+      "NameMessageId": 140,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 22,
+      "NameMessageId": 141,
+      "MusicTrack": 17
+    },
+    {
+      "Id": 23,
+      "NameMessageId": 142,
+      "MusicTrack": 16
+    },
+    {
+      "Id": 24,
+      "NameMessageId": 143,
+      "MusicTrack": 13
+    },
+    {
+      "Id": 25,
+      "NameMessageId": 144,
+      "MusicTrack": 17
+    },
+    {
+      "Id": 26,
+      "NameMessageId": 145,
+      "MusicTrack": 17
+    },
+    {
+      "Id": 27,
+      "NameMessageId": 146,
+      "MusicTrack": 10
+    },
+    {
+      "Id": 28,
+      "NameMessageId": 147,
+      "MusicTrack": 16
+    },
+    {
+      "Id": 29,
+      "NameMessageId": 148,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 30,
+      "NameMessageId": 149,
+      "MusicTrack": 18
+    },
+    {
+      "Id": 31,
+      "NameMessageId": 150,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 32,
+      "NameMessageId": 151,
+      "MusicTrack": 13
+    },
+    {
+      "Id": 33,
+      "NameMessageId": 152,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 34,
+      "NameMessageId": 153,
+      "MusicTrack": 15
+    },
+    {
+      "Id": 35,
+      "NameMessageId": 154,
+      "MusicTrack": 13
+    },
+    {
+      "Id": 36,
+      "NameMessageId": 155,
+      "MusicTrack": 12
+    },
+    {
+      "Id": 37,
+      "NameMessageId": 156,
+      "MusicTrack": 16
+    },
+    {
+      "Id": 38,
+      "NameMessageId": 157,
+      "MusicTrack": 13
+    },
+    {
+      "Id": 39,
+      "NameMessageId": 158,
+      "MusicTrack": 9
+    },
+    {
+      "Id": 40,
+      "NameMessageId": 159,
+      "MusicTrack": 17
+    },
+    {
+      "Id": 41,
+      "NameMessageId": 160,
+      "MusicTrack": 10
+    },
+    {
+      "Id": 42,
+      "NameMessageId": 161,
+      "MusicTrack": 13
+    },
+    {
+      "Id": 43,
+      "NameMessageId": 162,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 44,
+      "NameMessageId": 163,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 45,
+      "NameMessageId": 164,
+      "MusicTrack": 16
+    },
+    {
+      "Id": 46,
+      "NameMessageId": 165,
+      "MusicTrack": 17
+    },
+    {
+      "Id": 47,
+      "NameMessageId": 166,
+      "MusicTrack": 18
+    },
+    {
+      "Id": 48,
+      "NameMessageId": 167,
+      "MusicTrack": 14
+    },
+    {
+      "Id": 49,
+      "NameMessageId": 168,
+      "MusicTrack": 9
+    },
+    {
+      "Id": 50,
+      "NameMessageId": 169,
+      "MusicTrack": 19
+    },
+    {
+      "Id": 51,
+      "NameMessageId": 170,
+      "MusicTrack": 1
+    }
+  ]
+}

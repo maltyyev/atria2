@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Atria.Tests</AssemblyName>
+    <RootNamespace>Atria.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Src/Atria.Game.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Video/Fixtures/*.framemd5" Link="VideoFixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Video/Fixtures/*.audio.sha256" Link="VideoFixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,306 @@
+{
+  "Source": "0x413cf0 initialized growth table; level index is the newly reached rank.",
+  "Thresholds": [
+    1000,
+    2000,
+    4000,
+    8000,
+    16000,
+    32000,
+    48000,
+    64000,
+    80000,
+    96000,
+    112000,
+    128000,
+    999999
+  ],
+  "RankQuestItems": [
+    3,
+    8,
+    12,
+    17,
+    20,
+    24,
+    29,
+    34,
+    40,
+    45,
+    46,
+    47
+  ],
+  "Classes": [
+    {
+      "Class": 0,
+      "Levels": [
+        {},
+        {},
+        {
+          "Strength": 1,
+          "Endurance": 1
+        },
+        {
+          "Intelligence": 1,
+          "Dexterity": 1
+        },
+        {
+          "Strength": 1,
+          "Luck": 1
+        },
+        {
+          "Intelligence": 1,
+          "Endurance": 1
+        },
+        {
+          "Strength": 1,
+          "Dexterity": 1
+        },
+        {
+          "Intelligence": 1,
+          "Luck": 1
+        },
+        {
+          "Strength": 1,
+          "Endurance": 1
+        },
+        {
+          "Intelligence": 1,
+          "Dexterity": 1
+        },
+        {
+          "Strength": 1,
+          "Luck": 1
+        },
+        {
+          "Intelligence": 1,
+          "Endurance": 1
+        },
+        {
+          "Strength": 1,
+          "Dexterity": 1,
+          "Luck": 1
+        }
+      ]
+    },
+    {
+      "Class": 1,
+      "Levels": [
+        {
+          "Immunity": 2
+        },
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {
+          "Strength": 2
+        },
+        {
+          "Strength": 1,
+          "Endurance": 1
+        },
+        {
+          "Strength": 2
+        },
+        {
+          "Strength": 1,
+          "Endurance": 1
+        },
+        {
+          "Strength": 2
+        },
+        {
+          "Strength": 1,
+          "Dexterity": 1
+        }
+      ]
+    },
+    {
+      "Class": 2,
+      "Levels": [
+        {
+          "Immunity": 2
+        },
+        {},
+        {
+          "Intelligence": 2
+        },
+        {
+          "Intelligence": 1,
+          "Spirit": 1
+        },
+        {
+          "Intelligence": 2
+        },
+        {
+          "Intelligence": 1,
+          "Dexterity": 1
+        },
+        {
+          "Intelligence": 2
+        },
+        {
+          "Intelligence": 1,
+          "Luck": 1
+        },
+        {
+          "Intelligence": 2
+        },
+        {
+          "Intelligence": 1,
+          "Endurance": 1
+        },
+        {
+          "Intelligence": 2
+        },
+        {
+          "Intelligence": 1,
+          "Strength": 1
+        },
+        {
+          "Intelligence": 2,
+          "Endurance": 1
+        }
+      ]
+    },
+    {
+      "Class": 3,
+      "Levels": [
+        {
+          "Immunity": 2
+        },
+        {},
+        {},
+        {},
+        {
+          "Dexterity": 2
+        },
+        {
+          "Dexterity": 1,
+          "Strength": 1
+        },
+        {
+          "Dexterity": 1,
+          "Luck": 1
+        },
+        {
+          "Dexterity": 1,
+          "Luck": 1
+        },
+        {
+          "Dexterity": 1,
+          "Strength": 1
+        },
+        {
+          "Dexterity": 1,
+          "Spirit": 1
+        },
+        {
+          "Dexterity": 1,
+          "Luck": 1
+        },
+        {
+          "Dexterity": 1,
+          "Intelligence": 1
+        },
+        {
+          "Dexterity": 1,
+          "Endurance": 1,
+          "Leadership": 1
+        }
+      ]
+    },
+    {
+      "Class": 4,
+      "Levels": [
+        {
+          "Immunity": 2
+        },
+        {},
+        {},
+        {},
+        {},
+        {
+          "Luck": 1,
+          "Strength": 1
+        },
+        {
+          "Intelligence": 1,
+          "Dexterity": 1
+        },
+        {
+          "Luck": 1,
+          "Spirit": 1
+        },
+        {
+          "Intelligence": 1,
+          "Endurance": 1
+        },
+        {
+          "Luck": 2,
+          "Spirit": 1
+        },
+        {
+          "Intelligence": 1,
+          "Strength": 1
+        },
+        {
+          "Luck": 1,
+          "Endurance": 1
+        },
+        {
+          "Intelligence": 1,
+          "Spirit": 1,
+          "Leadership": 2
+        }
+      ]
+    },
+    {
+      "Class": 5,
+      "Levels": [
+        {
+          "Immunity": 2
+        },
+        {},
+        {},
+        {},
+        {},
+        {
+          "Spirit": 1,
+          "Strength": 1
+        },
+        {
+          "Dexterity": 1,
+          "Endurance": 1
+        },
+        {
+          "Spirit": 1,
+          "Strength": 1
+        },
+        {
+          "Dexterity": 1,
+          "Endurance": 1
+        },
+        {
+          "Spirit": 1,
+          "Strength": 1
+        },
+        {
+          "Dexterity": 1,
+          "Endurance": 1
+        },
+        {
+          "Spirit": 1,
+          "Strength": 1
+        },
+        {
+          "Dexterity": 1,
+          "Endurance": 1,
+          "Luck": 1
+        }
+      ]
+    }
+  ]
+}

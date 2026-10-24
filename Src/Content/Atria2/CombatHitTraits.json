@@ -1,0 +1,525 @@
+{
+  "Source": "0x406d40 character-specific hit rules; extracted as traits without changing branch/RNG order.",
+  "Actors": [
+    {
+      "Type": 0,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 1,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 2,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 3,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 4,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 5,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 6,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 7,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 8,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 9,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 10,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 11,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 12,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": true
+    },
+    {
+      "Type": 13,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": true,
+      "IgnoresNormalReaction": true,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 14,
+      "SlowsTarget": true,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 15,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 16,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 17,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 18,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 19,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 20,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 21,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": true,
+      "MayResistReaction": false,
+      "VulnerableToSilver": true
+    },
+    {
+      "Type": 22,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": true,
+      "MayResistReaction": false,
+      "VulnerableToSilver": true
+    },
+    {
+      "Type": 23,
+      "SlowsTarget": true,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": true,
+      "MayResistReaction": false,
+      "VulnerableToSilver": true
+    },
+    {
+      "Type": 24,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 25,
+      "SlowsTarget": false,
+      "PoisonsTarget": true,
+      "AllowsStatusOnlyHit": true,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 26,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": true,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 27,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 28,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 29,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 30,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 31,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 32,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 33,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 34,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 35,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": true,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 36,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": true,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 37,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": true,
+      "VulnerableToSilver": true
+    },
+    {
+      "Type": 38,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 39,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": true,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 40,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 41,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 42,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 43,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 44,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": true,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 45,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": true,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 46,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 47,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 48,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 49,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 50,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    },
+    {
+      "Type": 51,
+      "SlowsTarget": false,
+      "PoisonsTarget": false,
+      "AllowsStatusOnlyHit": false,
+      "IgnoresNormalReaction": false,
+      "Undead": false,
+      "MayResistReaction": false,
+      "VulnerableToSilver": false
+    }
+  ]
+}

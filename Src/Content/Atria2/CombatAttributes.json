@@ -1,0 +1,2709 @@
+{
+  "Source": "Original EXE table 0x44b5c8; consumed fields expressed in final stat units.",
+  "Actors": [
+    {
+      "Type": 0,
+      "Health": 0,
+      "Attack": 0,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 450,
+      "MagicRank": 0,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 1,
+      "Health": 0,
+      "Attack": 0,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 600,
+      "MagicRank": 0,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 2,
+      "Health": 0,
+      "Attack": 0,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 400,
+      "MagicRank": 0,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 3,
+      "Health": 0,
+      "Attack": 0,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 400,
+      "MagicRank": 0,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 4,
+      "Health": 0,
+      "Attack": 0,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 500,
+      "MagicRank": 0,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 5,
+      "Health": 0,
+      "Attack": 0,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 450,
+      "MagicRank": 0,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 6,
+      "Health": 0,
+      "Attack": 0,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 0,
+      "MagicRank": 0,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 7,
+      "Health": 0,
+      "Attack": 0,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 0,
+      "MagicRank": 0,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 8,
+      "Health": 50,
+      "Attack": 28,
+      "Defense": 0,
+      "CriticalChance": 5,
+      "RecoveryInterval": 500,
+      "MagicRank": 1,
+      "AwardBonus": 10,
+      "RegionGrowth": [
+        {
+          "Health": 20,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 10
+        }
+      ]
+    },
+    {
+      "Type": 9,
+      "Health": 40,
+      "Attack": 24,
+      "Defense": 0,
+      "CriticalChance": 2,
+      "RecoveryInterval": 900,
+      "MagicRank": 1,
+      "AwardBonus": 5,
+      "RegionGrowth": [
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 5
+        }
+      ]
+    },
+    {
+      "Type": 10,
+      "Health": 100,
+      "Attack": 32,
+      "Defense": 1,
+      "CriticalChance": 10,
+      "RecoveryInterval": 400,
+      "MagicRank": 1,
+      "AwardBonus": 30,
+      "RegionGrowth": [
+        {
+          "Health": 60,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 100,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 100,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 120,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 30
+        }
+      ]
+    },
+    {
+      "Type": 11,
+      "Health": 30,
+      "Attack": 16,
+      "Defense": 0,
+      "CriticalChance": 1,
+      "RecoveryInterval": 700,
+      "MagicRank": 1,
+      "AwardBonus": 5,
+      "RegionGrowth": [
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 5
+        }
+      ]
+    },
+    {
+      "Type": 12,
+      "Health": 70,
+      "Attack": 24,
+      "Defense": 1,
+      "CriticalChance": 1,
+      "RecoveryInterval": 600,
+      "MagicRank": 1,
+      "AwardBonus": 10,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 10
+        }
+      ]
+    },
+    {
+      "Type": 13,
+      "Health": 10,
+      "Attack": 8,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 700,
+      "MagicRank": 1,
+      "AwardBonus": 1,
+      "RegionGrowth": [
+        {
+          "Health": 10,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 10,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 10,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        }
+      ]
+    },
+    {
+      "Type": 14,
+      "Health": 60,
+      "Attack": 32,
+      "Defense": 1,
+      "CriticalChance": 2,
+      "RecoveryInterval": 400,
+      "MagicRank": 1,
+      "AwardBonus": 50,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 50
+        }
+      ]
+    },
+    {
+      "Type": 15,
+      "Health": 45,
+      "Attack": 12,
+      "Defense": 1,
+      "CriticalChance": 1,
+      "RecoveryInterval": 500,
+      "MagicRank": 1,
+      "AwardBonus": 1,
+      "RegionGrowth": [
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 10,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        }
+      ]
+    },
+    {
+      "Type": 16,
+      "Health": 75,
+      "Attack": 32,
+      "Defense": 1,
+      "CriticalChance": 5,
+      "RecoveryInterval": 300,
+      "MagicRank": 1,
+      "AwardBonus": 100,
+      "RegionGrowth": [
+        {
+          "Health": 30,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 100
+        }
+      ]
+    },
+    {
+      "Type": 17,
+      "Health": 25,
+      "Attack": 16,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 300,
+      "MagicRank": 1,
+      "AwardBonus": 3,
+      "RegionGrowth": [
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 3
+        }
+      ]
+    },
+    {
+      "Type": 18,
+      "Health": 35,
+      "Attack": 4,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 300,
+      "MagicRank": 1,
+      "AwardBonus": 1,
+      "RegionGrowth": [
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        }
+      ]
+    },
+    {
+      "Type": 19,
+      "Health": 2,
+      "Attack": 8,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 500,
+      "MagicRank": 1,
+      "AwardBonus": 1,
+      "RegionGrowth": [
+        {
+          "Health": 10,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 10,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        }
+      ]
+    },
+    {
+      "Type": 20,
+      "Health": 50,
+      "Attack": 40,
+      "Defense": 1,
+      "CriticalChance": 5,
+      "RecoveryInterval": 500,
+      "MagicRank": 1,
+      "AwardBonus": 15,
+      "RegionGrowth": [
+        {
+          "Health": 60,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 15
+        }
+      ]
+    },
+    {
+      "Type": 21,
+      "Health": 70,
+      "Attack": 24,
+      "Defense": 0,
+      "CriticalChance": 3,
+      "RecoveryInterval": 500,
+      "MagicRank": 1,
+      "AwardBonus": 5,
+      "RegionGrowth": [
+        {
+          "Health": 20,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 5
+        }
+      ]
+    },
+    {
+      "Type": 22,
+      "Health": 90,
+      "Attack": 28,
+      "Defense": 0,
+      "CriticalChance": 3,
+      "RecoveryInterval": 500,
+      "MagicRank": 1,
+      "AwardBonus": 10,
+      "RegionGrowth": [
+        {
+          "Health": 32,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 32,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 32,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 32,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 32,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 10
+        }
+      ]
+    },
+    {
+      "Type": 23,
+      "Health": 100,
+      "Attack": 32,
+      "Defense": 0,
+      "CriticalChance": 5,
+      "RecoveryInterval": 500,
+      "MagicRank": 1,
+      "AwardBonus": 15,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 34,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 34,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 34,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 15
+        }
+      ]
+    },
+    {
+      "Type": 24,
+      "Health": 400,
+      "Attack": 36,
+      "Defense": 2,
+      "CriticalChance": 10,
+      "RecoveryInterval": 300,
+      "MagicRank": 1,
+      "AwardBonus": 500,
+      "RegionGrowth": [
+        {
+          "Health": 100,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 100,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 100,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 100,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 100,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 100,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 500
+        }
+      ]
+    },
+    {
+      "Type": 25,
+      "Health": 30,
+      "Attack": 4,
+      "Defense": 0,
+      "CriticalChance": 0,
+      "RecoveryInterval": 500,
+      "MagicRank": 1,
+      "AwardBonus": 5,
+      "RegionGrowth": [
+        {
+          "Health": 10,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 10,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 10,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 10,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 10,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 10,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 5
+        }
+      ]
+    },
+    {
+      "Type": 26,
+      "Health": 150,
+      "Attack": 8,
+      "Defense": 1,
+      "CriticalChance": 0,
+      "RecoveryInterval": 200,
+      "MagicRank": 1,
+      "AwardBonus": 50,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 50
+        }
+      ]
+    },
+    {
+      "Type": 27,
+      "Health": 80,
+      "Attack": 28,
+      "Defense": 1,
+      "CriticalChance": 15,
+      "RecoveryInterval": 400,
+      "MagicRank": 3,
+      "AwardBonus": 40,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 40
+        }
+      ]
+    },
+    {
+      "Type": 28,
+      "Health": 70,
+      "Attack": 20,
+      "Defense": 0,
+      "CriticalChance": 20,
+      "RecoveryInterval": 500,
+      "MagicRank": 2,
+      "AwardBonus": 20,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 20
+        }
+      ]
+    },
+    {
+      "Type": 29,
+      "Health": 70,
+      "Attack": 20,
+      "Defense": 0,
+      "CriticalChance": 20,
+      "RecoveryInterval": 550,
+      "MagicRank": 2,
+      "AwardBonus": 20,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 24,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 24,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 24,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 20
+        }
+      ]
+    },
+    {
+      "Type": 30,
+      "Health": 130,
+      "Attack": 28,
+      "Defense": 1,
+      "CriticalChance": 15,
+      "RecoveryInterval": 300,
+      "MagicRank": 5,
+      "AwardBonus": 200,
+      "RegionGrowth": [
+        {
+          "Health": 50,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 30,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 50,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 50,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 50,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 200
+        }
+      ]
+    },
+    {
+      "Type": 31,
+      "Health": 100,
+      "Attack": 32,
+      "Defense": 2,
+      "CriticalChance": 25,
+      "RecoveryInterval": 350,
+      "MagicRank": 6,
+      "AwardBonus": 1000,
+      "RegionGrowth": [
+        {
+          "Health": 80,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1000
+        }
+      ]
+    },
+    {
+      "Type": 32,
+      "Health": 70,
+      "Attack": 20,
+      "Defense": 0,
+      "CriticalChance": 5,
+      "RecoveryInterval": 500,
+      "MagicRank": 2,
+      "AwardBonus": 20,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 20
+        }
+      ]
+    },
+    {
+      "Type": 33,
+      "Health": 75,
+      "Attack": 20,
+      "Defense": 0,
+      "CriticalChance": 5,
+      "RecoveryInterval": 450,
+      "MagicRank": 2,
+      "AwardBonus": 10,
+      "RegionGrowth": [
+        {
+          "Health": 50,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 50,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 30,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 30,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 30,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 30,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 10
+        }
+      ]
+    },
+    {
+      "Type": 34,
+      "Health": 70,
+      "Attack": 8,
+      "Defense": 0,
+      "CriticalChance": 5,
+      "RecoveryInterval": 400,
+      "MagicRank": 3,
+      "AwardBonus": 10,
+      "RegionGrowth": [
+        {
+          "Health": 14,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 14,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 14,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 14,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 14,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 20,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 10
+        }
+      ]
+    },
+    {
+      "Type": 35,
+      "Health": 800,
+      "Attack": 52,
+      "Defense": 3,
+      "CriticalChance": 20,
+      "RecoveryInterval": 300,
+      "MagicRank": 3,
+      "AwardBonus": 5000,
+      "RegionGrowth": [
+        {
+          "Health": 140,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 140,
+          "Attack": 5,
+          "Defense": 1
+        },
+        {
+          "Health": 140,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 140,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 140,
+          "Attack": 5,
+          "Defense": 1
+        },
+        {
+          "Health": 140,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 140,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 5000
+        }
+      ]
+    },
+    {
+      "Type": 36,
+      "Health": 440,
+      "Attack": 36,
+      "Defense": 3,
+      "CriticalChance": 10,
+      "RecoveryInterval": 250,
+      "MagicRank": 3,
+      "AwardBonus": 5000,
+      "RegionGrowth": [
+        {
+          "Health": 90,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 90,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 90,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 90,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 90,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 2,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 5000
+        }
+      ]
+    },
+    {
+      "Type": 37,
+      "Health": 600,
+      "Attack": 68,
+      "Defense": 3,
+      "CriticalChance": 15,
+      "RecoveryInterval": 250,
+      "MagicRank": 3,
+      "AwardBonus": 3000,
+      "RegionGrowth": [
+        {
+          "Health": 90,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 90,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 90,
+          "Attack": 4,
+          "Defense": 1
+        },
+        {
+          "Health": 90,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 90,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 3000
+        }
+      ]
+    },
+    {
+      "Type": 38,
+      "Health": 400,
+      "Attack": 20,
+      "Defense": 2,
+      "CriticalChance": 0,
+      "RecoveryInterval": 100,
+      "MagicRank": 6,
+      "AwardBonus": 5000,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 5000
+        }
+      ]
+    },
+    {
+      "Type": 39,
+      "Health": 1100,
+      "Attack": 56,
+      "Defense": 5,
+      "CriticalChance": 0,
+      "RecoveryInterval": 100,
+      "MagicRank": 8,
+      "AwardBonus": 8000,
+      "RegionGrowth": [
+        {
+          "Health": 22,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 22,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 22,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 22,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 22,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 22,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 8000
+        }
+      ]
+    },
+    {
+      "Type": 40,
+      "Health": 300,
+      "Attack": 16,
+      "Defense": 1,
+      "CriticalChance": 0,
+      "RecoveryInterval": 400,
+      "MagicRank": 6,
+      "AwardBonus": 500,
+      "RegionGrowth": [
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 500
+        }
+      ]
+    },
+    {
+      "Type": 41,
+      "Health": 300,
+      "Attack": 16,
+      "Defense": 1,
+      "CriticalChance": 0,
+      "RecoveryInterval": 400,
+      "MagicRank": 6,
+      "AwardBonus": 500,
+      "RegionGrowth": [
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 500
+        }
+      ]
+    },
+    {
+      "Type": 42,
+      "Health": 300,
+      "Attack": 16,
+      "Defense": 1,
+      "CriticalChance": 0,
+      "RecoveryInterval": 300,
+      "MagicRank": 6,
+      "AwardBonus": 500,
+      "RegionGrowth": [
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 60,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 500
+        }
+      ]
+    },
+    {
+      "Type": 43,
+      "Health": 420,
+      "Attack": 16,
+      "Defense": 1,
+      "CriticalChance": 0,
+      "RecoveryInterval": 250,
+      "MagicRank": 6,
+      "AwardBonus": 1000,
+      "RegionGrowth": [
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 80,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1000
+        }
+      ]
+    },
+    {
+      "Type": 44,
+      "Health": 8000,
+      "Attack": 60,
+      "Defense": 7,
+      "CriticalChance": 20,
+      "RecoveryInterval": 200,
+      "MagicRank": 9,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 45,
+      "Health": 300,
+      "Attack": 36,
+      "Defense": 2,
+      "CriticalChance": 15,
+      "RecoveryInterval": 250,
+      "MagicRank": 6,
+      "AwardBonus": 0,
+      "RegionGrowth": [
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 20,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 0,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 0
+        }
+      ]
+    },
+    {
+      "Type": 46,
+      "Health": 180,
+      "Attack": 20,
+      "Defense": 2,
+      "CriticalChance": 5,
+      "RecoveryInterval": 500,
+      "MagicRank": 6,
+      "AwardBonus": 100,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 100
+        }
+      ]
+    },
+    {
+      "Type": 47,
+      "Health": 300,
+      "Attack": 24,
+      "Defense": 2,
+      "CriticalChance": 5,
+      "RecoveryInterval": 400,
+      "MagicRank": 6,
+      "AwardBonus": 200,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 200
+        }
+      ]
+    },
+    {
+      "Type": 48,
+      "Health": 300,
+      "Attack": 24,
+      "Defense": 2,
+      "CriticalChance": 5,
+      "RecoveryInterval": 400,
+      "MagicRank": 6,
+      "AwardBonus": 100,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 100
+        }
+      ]
+    },
+    {
+      "Type": 49,
+      "Health": 300,
+      "Attack": 24,
+      "Defense": 2,
+      "CriticalChance": 5,
+      "RecoveryInterval": 400,
+      "MagicRank": 6,
+      "AwardBonus": 200,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 3,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 200
+        }
+      ]
+    },
+    {
+      "Type": 50,
+      "Health": 300,
+      "Attack": 24,
+      "Defense": 2,
+      "CriticalChance": 5,
+      "RecoveryInterval": 400,
+      "MagicRank": 6,
+      "AwardBonus": 200,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 200
+        }
+      ]
+    },
+    {
+      "Type": 51,
+      "Health": 400,
+      "Attack": 24,
+      "Defense": 2,
+      "CriticalChance": 5,
+      "RecoveryInterval": 400,
+      "MagicRank": 6,
+      "AwardBonus": 200,
+      "RegionGrowth": [
+        {
+          "Health": 0,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 1,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 1
+        },
+        {
+          "Health": 40,
+          "Attack": 2,
+          "Defense": 0
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 1
+        },
+        {
+          "Health": 0,
+          "Attack": 0,
+          "Defense": 200
+        }
+      ]
+    }
+  ]
+}

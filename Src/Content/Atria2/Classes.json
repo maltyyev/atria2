@@ -1,0 +1,223 @@
+{
+  "Source": "0x4141f0 class initialization, 0x414700 capacity, 0x4029c0 derived combat attributes.",
+  "Classes": [
+    {
+      "Id": 0,
+      "Name": "Fighter",
+      "AccuracyBonus": 20,
+      "MagicAffinityBonus": 15,
+      "MagicDefenseBonus": 10,
+      "ImmunityBonus": 10,
+      "HealthPerLevel": 8,
+      "ManaPerLevel": 8,
+      "UsesSpiritForMana": false,
+      "UnarmedAttack": 1,
+      "UnarmoredDefense": 0,
+      "EquipmentCategories": [
+        0,
+        5,
+        7,
+        8,
+        7,
+        9
+      ],
+      "EquipmentCapacity": [
+        {
+          "Level": 1,
+          "Slots": 3
+        },
+        {
+          "Level": 4,
+          "Slots": 4
+        },
+        {
+          "Level": 6,
+          "Slots": 5
+        },
+        {
+          "Level": 10,
+          "Slots": 6
+        }
+      ]
+    },
+    {
+      "Id": 1,
+      "Name": "Knight",
+      "AccuracyBonus": 20,
+      "MagicAffinityBonus": 5,
+      "MagicDefenseBonus": 10,
+      "ImmunityBonus": 15,
+      "HealthPerLevel": 10,
+      "ManaPerLevel": 4,
+      "UsesSpiritForMana": false,
+      "UnarmedAttack": 3,
+      "UnarmoredDefense": 0,
+      "EquipmentCategories": [
+        1,
+        5,
+        7,
+        8,
+        7,
+        7
+      ],
+      "EquipmentCapacity": [
+        {
+          "Level": 1,
+          "Slots": 4
+        },
+        {
+          "Level": 8,
+          "Slots": 5
+        },
+        {
+          "Level": 10,
+          "Slots": 6
+        }
+      ]
+    },
+    {
+      "Id": 2,
+      "Name": "Wizard",
+      "AccuracyBonus": 5,
+      "MagicAffinityBonus": 20,
+      "MagicDefenseBonus": 20,
+      "ImmunityBonus": 5,
+      "HealthPerLevel": 4,
+      "ManaPerLevel": 10,
+      "UsesSpiritForMana": false,
+      "UnarmedAttack": 1,
+      "UnarmoredDefense": 0,
+      "EquipmentCategories": [
+        3,
+        6,
+        9,
+        8,
+        8,
+        9
+      ],
+      "EquipmentCapacity": [
+        {
+          "Level": 1,
+          "Slots": 4
+        },
+        {
+          "Level": 8,
+          "Slots": 5
+        },
+        {
+          "Level": 10,
+          "Slots": 6
+        }
+      ]
+    },
+    {
+      "Id": 3,
+      "Name": "Thief",
+      "AccuracyBonus": 15,
+      "MagicAffinityBonus": 5,
+      "MagicDefenseBonus": 10,
+      "ImmunityBonus": 5,
+      "HealthPerLevel": 6,
+      "ManaPerLevel": 6,
+      "UsesSpiritForMana": false,
+      "UnarmedAttack": 1,
+      "UnarmoredDefense": 0,
+      "EquipmentCategories": [
+        0,
+        6,
+        8,
+        8,
+        7,
+        9
+      ],
+      "EquipmentCapacity": [
+        {
+          "Level": 1,
+          "Slots": 3
+        },
+        {
+          "Level": 6,
+          "Slots": 4
+        },
+        {
+          "Level": 8,
+          "Slots": 5
+        },
+        {
+          "Level": 12,
+          "Slots": 6
+        }
+      ]
+    },
+    {
+      "Id": 4,
+      "Name": "Priest",
+      "AccuracyBonus": 10,
+      "MagicAffinityBonus": 15,
+      "MagicDefenseBonus": 15,
+      "ImmunityBonus": 10,
+      "HealthPerLevel": 8,
+      "ManaPerLevel": 10,
+      "UsesSpiritForMana": false,
+      "UnarmedAttack": 1,
+      "UnarmoredDefense": 0,
+      "EquipmentCategories": [
+        3,
+        6,
+        8,
+        8,
+        7,
+        8
+      ],
+      "EquipmentCapacity": [
+        {
+          "Level": 1,
+          "Slots": 4
+        },
+        {
+          "Level": 6,
+          "Slots": 5
+        },
+        {
+          "Level": 10,
+          "Slots": 6
+        }
+      ]
+    },
+    {
+      "Id": 5,
+      "Name": "Monk",
+      "AccuracyBonus": 15,
+      "MagicAffinityBonus": 15,
+      "MagicDefenseBonus": 10,
+      "ImmunityBonus": 10,
+      "HealthPerLevel": 8,
+      "ManaPerLevel": 8,
+      "UsesSpiritForMana": true,
+      "UnarmedAttack": 5,
+      "UnarmoredDefense": 3,
+      "EquipmentCategories": [
+        2,
+        8,
+        8,
+        7,
+        8,
+        7
+      ],
+      "EquipmentCapacity": [
+        {
+          "Level": 1,
+          "Slots": 4
+        },
+        {
+          "Level": 8,
+          "Slots": 5
+        },
+        {
+          "Level": 10,
+          "Slots": 6
+        }
+      ]
+    }
+  ]
+}

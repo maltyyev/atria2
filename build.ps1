@@ -9,6 +9,8 @@ $env:DOTNET_NOLOGO='1'
 Push-Location $projectRoot
 try {
     if($Action -ne 'probe') {
+        $codecHeader=Join-Path $projectRoot 'third_party/ffmpeg/ffmpeg-n9.0.2-33-g4cf298e66a-win64-lgpl-shared-9.0/include/libavcodec/avcodec.h'
+        if(!(Test-Path -LiteralPath $codecHeader)) { & "$projectRoot/tools/video/fetch_codec.ps1" }
         & "$projectRoot/tools/video/build_codec.cmd"
         if($LASTEXITCODE -ne 0) { throw 'Native video adapter build failed.' }
     }
@@ -18,21 +20,16 @@ try {
             if ($LASTEXITCODE -eq 0) { & "$workspaceRoot/audit/csharp-probe/publish/Probe.exe" }
         }
         'build' { & dotnet build Atria.slnx -c Release -m:1 -nr:false }
-        'test' { & dotnet run --project tests/Atria.Tests.csproj -c Release -- "$workspaceRoot/Atria 2" "$workspaceRoot/music" }
+        'test' { & dotnet run --project Tests/Atria.Tests.csproj -c Release -- "$projectRoot/Assets/Game" "$projectRoot/Assets/Music" }
         'test-aot' {
-            & dotnet publish tests/Atria.Tests.csproj -c Release -r win-x64 -p:PublishAot=true -m:1 -nr:false -o artifacts/tests-aot
-            if($LASTEXITCODE -eq 0) { & "$projectRoot/artifacts/tests-aot/Atria.Tests.exe" "$workspaceRoot/Atria 2" "$workspaceRoot/music" }
+            & dotnet publish Tests/Atria.Tests.csproj -c Release -r win-x64 -p:PublishAot=true -m:1 -nr:false -o artifacts/tests-aot
+            if($LASTEXITCODE -eq 0) { & "$projectRoot/artifacts/tests-aot/Atria.Tests.exe" "$projectRoot/Assets/Game" "$projectRoot/Assets/Music" }
         }
-        'publish' { & dotnet publish src/Atria.Game.csproj -c Release -m:1 -nr:false -o artifacts/win-x64 }
+        'publish' { & dotnet publish Src/Atria.Game.csproj -c Release -m:1 -nr:false -o artifacts/win-x64 }
     }
     if ($LASTEXITCODE -ne 0) { throw "Action $Action failed with exit code $LASTEXITCODE" }
     if($Action -eq 'publish') {
-        $publishedMusic=Join-Path $projectRoot 'artifacts/win-x64/assets/music'
-        New-Item -ItemType Directory -Path $publishedMusic -Force | Out-Null
-        foreach($trackNumber in 2..28) {
-            $trackName='Track{0:00}.wav' -f $trackNumber
-            Copy-Item -LiteralPath (Join-Path "$workspaceRoot/music" $trackName) -Destination (Join-Path $publishedMusic $trackName) -Force
-        }
+        & "$projectRoot/tools/verify_package.ps1"
         $publishedExe=Join-Path $projectRoot 'artifacts/win-x64/Atria.exe'
         $publishedVersion=(Get-Item -LiteralPath $publishedExe).VersionInfo.ProductVersion
         [ordered]@{
