@@ -47,6 +47,7 @@ public static class UnicodeTextTests
         Check(!original.SequenceEqual(modern), "Unicode reaches actual control panel renderer");
 
         ushort[] background = MainMenuArtwork.Load(Path.Combine(AppContext.BaseDirectory, "assets"));
+        CheckMenuBounds();
         ulong previous = 0;
         for (int item = 0; item < 6; item++)
         {
@@ -65,6 +66,58 @@ public static class UnicodeTextTests
             }
         }
         return "Unicode: native shaping/fallback, top-down masks, grapheme fitting, wrapping, clipping, cache, Russian pixel parity and 48 menu frames passed.";
+    }
+
+    private static void CheckMenuBounds()
+    {
+        // Independent visible plaque rectangles measured on the text-free menu artwork.
+        (int Left, int Top, int Right, int Bottom)[] bounds =
+        [
+            (148, 220, 216, 244), (220, 286, 276, 345), (366, 286, 424, 345),
+            (432, 220, 500, 244), (366, 147, 408, 189), (229, 147, 273, 191)
+        ];
+        void Verify()
+        {
+            ushort[] inactive = new ushort[640 * 480];
+            MainMenuArtwork.DrawLabels(-1, inactive, 640, 480, 640, null);
+            for (int item = 0; item < bounds.Length; item++)
+            {
+                ushort[] selected = new ushort[640 * 480];
+                MainMenuArtwork.DrawLabels(item, selected, 640, 480, 640, null);
+                var box = bounds[item];
+                Check(selected.Where((pixel, i) => pixel != inactive[i]).Any(), "Selected plaque is visibly highlighted");
+                for (int i = 0; i < selected.Length; i++)
+                {
+                    if (selected[i] == inactive[i]) continue;
+                    Check(i % 640 >= box.Left && i % 640 < box.Right && i / 640 >= box.Top && i / 640 < box.Bottom, "Caption stays on its plaque");
+                }
+                Array.Clear(selected);
+                MainMenuArtwork.DrawTitle(item, 7, selected, 640, 480, 640, null);
+                Check(selected.Where((pixel, i) => i % 640 < 232 || i % 640 >= 408 || i / 640 < 190 || i / 640 >= 250).All(pixel => pixel == 0), "Central caption fits its panel");
+            }
+        }
+        Verify();
+        var previous = GameText.Current;
+        string directory = Path.Combine(Path.GetTempPath(), "atria-menu-bounds-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(directory, "ru-RU"));
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "ru-RU", "menu.json"), """
+                {"ui.mainMenu.new":"Начать совершенно новое приключение",
+                 "ui.mainMenu.load":"Продолжить сохранённое приключение",
+                 "ui.mainMenu.save":"Записать текущее состояние приключения",
+                 "ui.mainMenu.quit":"Завершить приложение и вернуться на рабочий стол",
+                 "ui.mainMenu.credits":"製作者についての詳細な情報",
+                 "ui.mainMenu.settings":"Дополнительные настройки управления и звука"}
+                """);
+            GameText.Use(new LocalizationCatalog(directory));
+            Verify();
+        }
+        finally
+        {
+            GameText.Use(previous);
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     private static void SaveBitmap(string path, ushort[] pixels)

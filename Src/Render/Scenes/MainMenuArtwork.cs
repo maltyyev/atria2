@@ -9,12 +9,12 @@ public static class MainMenuArtwork
 {
     private const int Width = 640, Height = 480;
     private const int MaximumCachedLabels = 64;
-    private const string FontFamily = "Georgia";
+    private const string LabelFont = "Bahnschrift", TitleFont = "Palatino Linotype";
     private static readonly string[] keys = ["ui.mainMenu.new", "ui.mainMenu.load", "ui.mainMenu.save", "ui.mainMenu.quit", "ui.mainMenu.credits", "ui.mainMenu.settings"];
-    private static readonly (int X, int Y, int Angle)[] anchors =
+    private static readonly (int X, int Y, int Angle, int Width, int Height)[] anchors =
     [
-        (181, 233, 0), (248, 315, -48), (394, 316, 48),
-        (465, 233, 0), (384, 165, -48), (244, 165, 48)
+        (181, 233, 0, 60, 15), (248, 315, -48, 58, 15), (394, 315, 48, 58, 15),
+        (465, 233, 0, 62, 15), (386, 167, -48, 32, 12), (250, 168, 48, 34, 12)
     ];
     private static readonly Dictionary<(string Text, int Item), TextMask> labels = new();
 
@@ -46,25 +46,23 @@ public static class MainMenuArtwork
             var anchor = anchors[item];
             int x = anchor.X - mask.Width / 2 + DirectWriteRasterizer.MaskPadding;
             int y = anchor.Y - mask.Height / 2 + DirectWriteRasterizer.MaskPadding;
-            UnicodeText.Draw(mask, target, width, height, stride, x + 1, y + 2, 0, clip);
-            UnicodeText.Draw(mask, target, width, height, stride, x, y, item == selected ? (ushort)0xff76 : (ushort)0x9c09, clip);
+            DrawEmbossed(mask, target, width, height, stride, x, y, item == selected, clip);
         }
     }
 
     public static void DrawTitle(int item, int reveal, Span<ushort> target, int width, int height, int stride, RasterClip? clip)
     {
-        const int maximumTitleWidth = 174, revealSteps = 8;
+        const int revealSteps = 8;
         string text = Caption(item);
-        float size = 28;
-        var mask = UnicodeText.Layout(text, size, FontFamily, bold: true);
-        while (mask.Advance > maximumTitleWidth && size > 10)
+        TextMask mask;
+        lock (labels)
         {
-            mask = UnicodeText.Layout(text, --size, FontFamily, bold: true);
-        }
-
-        if (mask.Advance > maximumTitleWidth)
-        {
-            mask = Truncated(text, size, maximumTitleWidth);
+            if (!labels.TryGetValue((text, -1), out mask!))
+            {
+                mask = Fit(text, TitleFont, 40, 168, 42);
+                if (labels.Count >= MaximumCachedLabels) labels.Clear();
+                labels[(text, -1)] = mask;
+            }
         }
 
         RasterClip bounds = clip ?? new(0, 0, width, height);
@@ -75,8 +73,7 @@ public static class MainMenuArtwork
         }
         int x = 320 - mask.Advance / 2;
         int y = 224 - (mask.Height - DirectWriteRasterizer.MaskPadding * 2) / 2;
-        UnicodeText.Draw(mask, target, width, height, stride, x + 2, y + 2, 0, bounds);
-        UnicodeText.Draw(mask, target, width, height, stride, x, y, 0xff76, bounds);
+        DrawEmbossed(mask, target, width, height, stride, x, y, true, bounds);
     }
 
     private static string Caption(int item) => GameText.Get(keys[item]);
@@ -91,18 +88,8 @@ public static class MainMenuArtwork
                 return cached;
             }
 
-            const int maximumLabelWidth = 66;
-            float size = 15;
-            var mask = UnicodeText.Layout(text, size, FontFamily, bold: true);
-            while (mask.Advance > maximumLabelWidth && size > 8)
-            {
-                mask = UnicodeText.Layout(text, --size, FontFamily, bold: true);
-            }
-            if (mask.Advance > maximumLabelWidth)
-            {
-                mask = Truncated(text, size, maximumLabelWidth);
-            }
-
+            var anchor = anchors[item];
+            var mask = Fit(text, LabelFont, 18, anchor.Width, anchor.Height);
             var result = Rotate(mask, anchors[item].Angle);
             if (labels.Count >= MaximumCachedLabels)
             {
@@ -113,10 +100,56 @@ public static class MainMenuArtwork
         }
     }
 
-    private static TextMask Truncated(string text, float size, int maximumWidth)
+    private static void DrawEmbossed(TextMask mask, Span<ushort> target, int width, int height, int stride,
+        int x, int y, bool selected, RasterClip? clip)
     {
-        string shortened = UnicodeText.Fit(text, maximumWidth, value => UnicodeText.Layout(value, size, FontFamily, bold: true).Advance);
-        return UnicodeText.Layout(shortened, size, FontFamily, bold: true);
+        const ushort bronze = 0x9387, litGold = 0xfed0, bronzeEdge = 0xbccc, goldEdge = 0xff79, recess = 0x2080;
+        UnicodeText.Draw(mask, target, width, height, stride, x + 1, y + 2, 0, clip);
+        UnicodeText.Draw(mask, target, width, height, stride, x + 1, y + 1, recess, clip);
+        UnicodeText.Draw(mask, target, width, height, stride, x - 1, y - 1, selected ? goldEdge : bronzeEdge, clip);
+        UnicodeText.Draw(mask, target, width, height, stride, x, y, selected ? litGold : bronze, clip);
+    }
+
+    private static TextMask Fit(string text, string family, float size, int maximumWidth, int maximumHeight)
+    {
+        var mask = Tighten(UnicodeText.Layout(text, size, family, bold: true));
+        while ((mask.Advance > maximumWidth || mask.Height - DirectWriteRasterizer.MaskPadding * 2 > maximumHeight) && size > 8)
+        {
+            mask = Tighten(UnicodeText.Layout(text, --size, family, bold: true));
+        }
+        if (mask.Advance > maximumWidth)
+        {
+            text = UnicodeText.Fit(text, maximumWidth, value => Tighten(UnicodeText.Layout(value, size, family, bold: true)).Advance);
+            mask = Tighten(UnicodeText.Layout(text, size, family, bold: true));
+        }
+        return mask;
+    }
+
+    // Font line boxes include unused ascender/descender space; center the visible ink on each plaque.
+    private static TextMask Tighten(TextMask source)
+    {
+        int left = source.Width, top = source.Height, right = -1, bottom = -1;
+        for (int y = 0; y < source.Height; y++)
+        {
+            for (int x = 0; x < source.Width; x++)
+            {
+                if (source.Coverage[y * source.Width + x] == 0) continue;
+                left = Math.Min(left, x);
+                top = Math.Min(top, y);
+                right = Math.Max(right, x);
+                bottom = Math.Max(bottom, y);
+            }
+        }
+        if (right < left) return source;
+        int padding = DirectWriteRasterizer.MaskPadding;
+        int inkWidth = right - left + 1, inkHeight = bottom - top + 1;
+        int width = inkWidth + padding * 2, height = inkHeight + padding * 2;
+        byte[] coverage = new byte[width * height];
+        for (int y = 0; y < inkHeight; y++)
+        {
+            source.Coverage.AsSpan((top + y) * source.Width + left, inkWidth).CopyTo(coverage.AsSpan((y + padding) * width + padding));
+        }
+        return new(width, height, inkWidth, coverage, source.MissingGlyphs, source.Lines);
     }
 
     private static TextMask Rotate(TextMask source, int degrees)
