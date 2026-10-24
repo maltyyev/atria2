@@ -67,7 +67,7 @@
     <Content Include="@(MusicResource)" Link="assets/music/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <Target Name="ValidatePackageResources" BeforeTargets="PrepareForBuild">
-    <Error Condition="!Exists('%(GameResource.Identity)')" Text="Missing game resource: %(GameResource.Identity). See docs/PORTABLE_PACKAGE_044.md for local asset setup." />
-    <Error Condition="!Exists('%(MusicResource.Identity)')" Text="Missing music resource: %(MusicResource.Identity). See docs/PORTABLE_PACKAGE_044.md for local asset setup." />
+    <Error Condition="!Exists('%(GameResource.Identity)')" Text="Missing game resource: %(GameResource.Identity). Install Git LFS and run git lfs pull." />
+    <Error Condition="!Exists('%(MusicResource.Identity)')" Text="Missing music resource: %(MusicResource.Identity). Install Git LFS and run git lfs pull." />
   </Target>
 </Project>

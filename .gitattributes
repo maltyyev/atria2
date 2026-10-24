@@ -1,0 +1,2 @@
+/Assets/Game/* filter=lfs diff=lfs merge=lfs -text
+/Assets/Music/* filter=lfs diff=lfs merge=lfs -text

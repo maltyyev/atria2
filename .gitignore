@@ -8,10 +8,6 @@ obj/
 # Download with tools/video/fetch_codec.ps1; keep dependencies out of Git history.
 /third_party/
 
-# Local copies of original game data and supplied music; never commit these binaries.
-/Assets/Game/
-/Assets/Music/
-
 # Local IDE state
 /Backup/
 /UpgradeLog*.htm

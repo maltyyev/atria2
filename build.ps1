@@ -1,4 +1,5 @@
 param([ValidateSet('probe','build','test','test-aot','publish')][string]$Action='build')
+# Clone with Git LFS installed. For an existing checkout, run git lfs pull before building.
 $ErrorActionPreference='Stop'
 $projectRoot=$PSScriptRoot
 $workspaceRoot=Split-Path -Parent $projectRoot
@@ -9,6 +10,23 @@ $env:DOTNET_NOLOGO='1'
 Push-Location $projectRoot
 try {
     if($Action -ne 'probe') {
+        [xml]$assets = Get-Content -LiteralPath "$projectRoot/Assets/PackageResources.props" -Raw
+        foreach ($entry in @($assets.Project.ItemGroup.GameResource.Include, $assets.Project.ItemGroup.MusicResource.Include)) {
+            foreach ($resource in $entry.Split(';', [StringSplitOptions]::RemoveEmptyEntries)) {
+                $assetPath = $resource.Trim().Replace('$(MSBuildThisFileDirectory)', "$projectRoot/Assets/")
+                if (!(Test-Path -LiteralPath $assetPath -PathType Leaf)) {
+                    throw "Missing asset: $assetPath. Install Git LFS and run git lfs pull."
+                }
+                $stream = [IO.File]::OpenRead($assetPath)
+                try {
+                    $header = [byte[]]::new(64)
+                    $length = $stream.Read($header, 0, $header.Length)
+                    if ([Text.Encoding]::ASCII.GetString($header, 0, $length).StartsWith('version https://git-lfs.github.com/spec/v1')) {
+                        throw "Asset contains a Git LFS pointer: $assetPath. Run git lfs pull to download the actual game resources."
+                    }
+                } finally { $stream.Dispose() }
+            }
+        }
         $codecHeader=Join-Path $projectRoot 'third_party/ffmpeg/ffmpeg-n9.0.2-33-g4cf298e66a-win64-lgpl-shared-9.0/include/libavcodec/avcodec.h'
         if(!(Test-Path -LiteralPath $codecHeader)) { & "$projectRoot/tools/video/fetch_codec.ps1" }
         & "$projectRoot/tools/video/build_codec.cmd"
