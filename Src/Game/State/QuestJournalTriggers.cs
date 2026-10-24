@@ -24,14 +24,18 @@ public static class QuestJournalTriggers
         using var document = JsonDocument.Parse(stream);
         return document.RootElement.EnumerateArray().Select(entry => new Trigger(
             entry.GetProperty("member").GetString()!, entry.GetProperty("offset").GetInt32(), entry.GetProperty("function").GetString()!,
-            entry.GetProperty("quest").GetInt32(), entry.GetProperty("milestone").GetString() switch
+            entry.GetProperty("quest").GetInt32(), ParseMilestone(entry.GetProperty("milestone").GetString()))).ToArray();
+    }
+
+    internal static QuestMilestones ParseMilestone(string? name) => name switch
             {
                 "started" => QuestMilestones.Started,
+                "objectiveReached" => QuestMilestones.ObjectiveReached,
+                "completed" => QuestMilestones.Completed,
                 "leadFound" => QuestMilestones.LeadFound,
                 "pursuitContinued" => QuestMilestones.PursuitContinued,
                 "declined" => QuestMilestones.Declined,
                 "stopped" => QuestMilestones.Stopped,
                 _ => throw new InvalidDataException("Unknown journal milestone.")
-            })).ToArray();
-    }
+            };
 }

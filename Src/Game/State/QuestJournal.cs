@@ -18,11 +18,14 @@ public sealed class QuestJournal
 {
     private readonly Dictionary<int, QuestMilestones> entries = [];
     public IReadOnlyDictionary<int, QuestMilestones> Entries => entries;
+    public static int MaximumEntries => GameState.EventStatusCount + StoryQuests.Ids.Count();
+    public int CompletionRevision { get; private set; }
 
     public QuestMilestones Progress(GameState state, int id)
     {
         var observed = entries.GetValueOrDefault(id);
-        return observed.HasFlag(QuestMilestones.Declined) ? QuestMilestones.None : observed | FromStatus(state.EventStatuses[id]);
+        var current = (uint)id < GameState.EventStatusCount ? FromStatus(state.EventStatuses[id]) : StoryQuests.Infer(state, id);
+        return observed.HasFlag(QuestMilestones.Declined) ? QuestMilestones.None : observed | current;
     }
 
     public void ObserveStatus(GameState state, int id, int status)
@@ -39,7 +42,7 @@ public sealed class QuestJournal
         }
         if (progress != QuestMilestones.None)
         {
-            entries[id] = progress;
+            Store(id, progress);
         }
     }
 
@@ -55,7 +58,7 @@ public sealed class QuestJournal
     {
         const QuestMilestones known = QuestMilestones.Started | QuestMilestones.ObjectiveReached | QuestMilestones.Completed
             | QuestMilestones.Stopped | QuestMilestones.LeadFound | QuestMilestones.PursuitContinued | QuestMilestones.Declined;
-        if ((uint)id >= GameState.EventStatusCount || (progress & ~known) != 0
+        if ((uint)id >= GameState.EventStatusCount && !StoryQuests.Contains(id) || (progress & ~known) != 0
             || !progress.HasFlag(QuestMilestones.Started) && progress != QuestMilestones.Declined)
         {
             throw new InvalidDataException("Invalid saved quest journal milestone.");
@@ -68,14 +71,24 @@ public sealed class QuestJournal
 
     public void Record(GameState state, int id, QuestMilestones milestone)
     {
-        entries[id] = milestone == QuestMilestones.Declined ? milestone : Progress(state, id) | QuestMilestones.Started | milestone;
+        Store(id, milestone == QuestMilestones.Declined ? milestone : Progress(state, id) | QuestMilestones.Started | milestone);
+    }
+
+    private void Store(int id, QuestMilestones progress)
+    {
+        if (progress.HasFlag(QuestMilestones.Completed) && !entries.GetValueOrDefault(id).HasFlag(QuestMilestones.Completed)) CompletionRevision++;
+        entries[id] = progress;
     }
 
     public void CopyFrom(QuestJournal source)
     {
-        entries.Clear();
+        Clear();
         foreach (var entry in source.entries) entries.Add(entry.Key, entry.Value);
     }
 
-    public void Clear() => entries.Clear();
+    public void Clear()
+    {
+        entries.Clear();
+        CompletionRevision = 0;
+    }
 }

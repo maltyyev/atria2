@@ -1,0 +1,826 @@
+[
+  {
+    "id": 1000,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 905,
+            "minimum": 1,
+            "maximum": 3
+          }
+        ]
+      },
+      {
+        "milestone": "objectiveReached",
+        "all": [
+          {
+            "bank": "global",
+            "index": 905,
+            "minimum": 2,
+            "maximum": 3
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "global",
+            "index": 905,
+            "minimum": 3,
+            "maximum": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1001,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "event",
+            "index": 83,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "event",
+            "index": 83,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 84,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "global",
+            "index": 936,
+            "minimum": 0,
+            "maximum": 0
+          }
+        ]
+      },
+      {
+        "milestone": "stopped",
+        "all": [
+          {
+            "bank": "event",
+            "index": 83,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "global",
+            "index": 936,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1002,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 903,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "global",
+            "index": 903,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 16,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1003,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 904,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "global",
+            "index": 904,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 15,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1004,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 645,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "objectiveReached",
+        "all": [
+          {
+            "bank": "global",
+            "index": 645,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 4,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "global",
+            "index": 645,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 5,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1005,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "item",
+            "index": 13,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1006,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 586,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "objectiveReached",
+        "all": [
+          {
+            "bank": "global",
+            "index": 586,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 26,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "global",
+            "index": 814,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1007,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "event",
+            "index": 353,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1008,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 828,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "global",
+            "index": 828,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 441,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1009,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "event",
+            "index": 461,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "objectiveReached",
+        "all": [
+          {
+            "bank": "event",
+            "index": 461,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 48,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "global",
+            "index": 832,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1010,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "event",
+            "index": 14,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "objectiveReached",
+        "all": [
+          {
+            "bank": "event",
+            "index": 14,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 61,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "event",
+            "index": 14,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 61,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "global",
+            "index": 520,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1011,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 641,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "leadFound",
+        "all": [
+          {
+            "bank": "global",
+            "index": 641,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 242,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "objectiveReached",
+        "all": [
+          {
+            "bank": "global",
+            "index": 641,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 3,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 8,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 12,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 17,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 20,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 24,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 29,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 34,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 40,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 45,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 46,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 47,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "global",
+            "index": 641,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 3,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 8,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 12,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 17,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 20,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 24,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 29,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 34,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 40,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 45,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 46,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 47,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 22,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 181,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 281,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 411,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 452,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1012,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "event",
+            "index": 161,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "objectiveReached",
+        "all": [
+          {
+            "bank": "event",
+            "index": 161,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 171,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "event",
+            "index": 161,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "item",
+            "index": 20,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1013,
+    "rules": [
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "event",
+            "index": 211,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ],
+        "requiresStarted": true
+      }
+    ]
+  },
+  {
+    "id": 1014,
+    "rules": [
+      {
+        "milestone": "leadFound",
+        "all": [
+          {
+            "bank": "global",
+            "index": 529,
+            "minimum": 1,
+            "maximum": 2
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "event",
+            "index": 91,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1015,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "event",
+            "index": 41,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "event",
+            "index": 41,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 51,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 1016,
+    "rules": [
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 590,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "started",
+        "all": [
+          {
+            "bank": "global",
+            "index": 818,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "objectiveReached",
+        "all": [
+          {
+            "bank": "item",
+            "index": 27,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      },
+      {
+        "milestone": "completed",
+        "all": [
+          {
+            "bank": "event",
+            "index": 241,
+            "minimum": 1,
+            "maximum": 1
+          }
+        ]
+      }
+    ]
+  }
+]

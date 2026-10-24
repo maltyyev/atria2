@@ -10,7 +10,7 @@ public sealed partial class GameSession
     private CheckpointScriptHost? activeScriptHost;
     private ScriptCheckpoint? activeScriptIdentity, resumeScript;
     private bool loadingSnapshot;
-    private bool questCompletionChanged;
+    private int questCompletionBeforeCall;
     private Atria.Game.World.WorldSceneReference? scriptReturnLocation;
     private uint? nextBattleSeed;
     private void RequestAutosave(string reason)
@@ -80,8 +80,7 @@ public sealed partial class GameSession
 
     private void BeforeScenarioCall(ScriptCall call)
     {
-        questCompletionChanged = call.Function == "set_eventstatus" && call.Arguments.Count == 2 && call.Arguments[1].Integer == 4
-&& (uint)call.Arguments[0].Integer < (uint)state.EventStatuses.Length && state.EventStatuses[call.Arguments[0].Integer] != 4;
+        questCompletionBeforeCall = state.Journal.CompletionRevision;
         if (call.Function is "battle_start2" or "battle_start3")
         {
             nextBattleSeed ??= ReadBattleSeed();
@@ -96,7 +95,7 @@ public sealed partial class GameSession
             WriteAutosave(GameText.Get("ui.autosave.afterBattle"));
         }
 
-        if (questCompletionChanged)
+        if (state.Journal.CompletionRevision != questCompletionBeforeCall)
         {
             RequestAutosave(GameText.Get("ui.autosave.questComplete"));
         }

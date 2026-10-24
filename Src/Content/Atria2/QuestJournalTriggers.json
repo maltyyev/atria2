@@ -124,5 +124,47 @@
     "function": "set_eventstatus",
     "quest": 62,
     "milestone": "stopped"
+  },
+  {
+    "member": "10_REIDE",
+    "offset": 754,
+    "function": "lost_eventitem",
+    "quest": 1005,
+    "milestone": "completed"
+  },
+  {
+    "member": "42_THIEF",
+    "offset": 2057,
+    "function": "dialogue_script2",
+    "quest": 1007,
+    "milestone": "completed"
+  },
+  {
+    "member": "42_THIEF",
+    "offset": 1215,
+    "function": "set_event",
+    "quest": 1007,
+    "milestone": "stopped"
+  },
+  {
+    "member": "21_CHIEF",
+    "offset": 578,
+    "function": "dialogue_script2",
+    "quest": 1013,
+    "milestone": "started"
+  },
+  {
+    "member": "09_BAR",
+    "offset": 936,
+    "function": "lost_eventitem",
+    "quest": 1014,
+    "milestone": "started"
+  },
+  {
+    "member": "04_CHIEF",
+    "offset": 2213,
+    "function": "dialogue_script2",
+    "quest": 1015,
+    "milestone": "leadFound"
   }
 ]

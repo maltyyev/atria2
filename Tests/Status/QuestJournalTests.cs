@@ -11,6 +11,7 @@ public static class QuestJournalTests
 {
     public static string Run(string root)
     {
+        StoryQuestTests.Run(root);
         static void Check(bool condition, string message)
         {
             if (!condition) throw new InvalidOperationException("Quest journal: " + message);

@@ -34,6 +34,16 @@ public sealed class ScriptStateHost(GameState state, IScriptEffects? effects = n
 && name is "enter_out" or "dialogue_script" or "dialogue_script2" or "question_dialog" or "question_dialog2" or "battle_start" or "battle_start2" or "battle_start3" or "get_xp" or "dungeon_enter" or "change_chip" or "game_end";
     public int Invoke(ScriptCall call)
     {
+        int result = InvokeCore(call);
+        if (call.Function is "set_global" or "set_event" or "eventflag_check" or "get_eventitem" or "lost_eventitem")
+        {
+            StoryQuests.Observe(state);
+        }
+        return result;
+    }
+
+    private int InvokeCore(ScriptCall call)
+    {
         if (SkipArguments(call.Function))
         {
             if (call.Function == "enter_out")

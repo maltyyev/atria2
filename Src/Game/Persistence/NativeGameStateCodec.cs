@@ -139,7 +139,7 @@ public static class NativeGameStateCodec
                     throw new InvalidDataException("Unknown native journal extension.");
                 }
                 int entries = reader.ReadInt32();
-                if ((uint)entries > GameState.EventStatusCount) throw new InvalidDataException("Saved journal entry count exceeds capacity.");
+                if ((uint)entries > QuestJournal.MaximumEntries) throw new InvalidDataException("Saved journal entry count exceeds capacity.");
                 for (int i = 0; i < entries; i++) s.Journal.Restore(reader.ReadInt32(), (QuestMilestones)reader.ReadByte());
             }
             if (stream.Position != stream.Length)

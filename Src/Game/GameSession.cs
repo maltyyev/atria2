@@ -628,7 +628,7 @@ public sealed partial class GameSession : IScriptEffects
                 resumeScript = null;
                 nextBattleSeed = null;
                 scriptReturnLocation = null;
-                questCompletionChanged = false;
+                questCompletionBeforeCall = state.Journal.CompletionRevision;
                 InitialGameState.ResetRecoveredCore(state, items, messages);
                 NewGameSceneReset.Apply(state, town, actions, ref previousTown);
                 areas.ResetNames(messages);

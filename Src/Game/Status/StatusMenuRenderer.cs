@@ -282,7 +282,7 @@ public sealed class StatusMenuRenderer
             {
                 if (page == 4)
                 {
-                    return GameText.Decode(GameText.Legacy($"quests.{id:D3}.heading.{(alternateJournalHeading ? 1 : 0)}", (journal ?? throw new ArgumentNullException(nameof(journal))).GetHeading(id, alternateJournalHeading ? 1 : 0)).Span);
+                    return GameText.Get($"quests.{id:D3}.heading.{(alternateJournalHeading ? 1 : 0)}");
                 }
 
                 var bytes = state.QuestItemRecords.AsMemory(id * 74 + 4, 30);
@@ -329,7 +329,7 @@ public sealed class StatusMenuRenderer
                 }, sm: false);
                 if (page == 4 && id != 0)
                 {
-                    Pair(QuestJournalText.Status(state, id), 136, 348 + row * 48, color: state.EventStatuses[id] == 4 ? (ushort)0x8410 : (ushort)0x07ff);
+                    Pair(QuestJournalText.Status(state, id), 136, 348 + row * 48, color: state.Journal.Progress(state, id).HasFlag(QuestMilestones.Completed) ? (ushort)0x8410 : (ushort)0x07ff);
                 }
             }
 
