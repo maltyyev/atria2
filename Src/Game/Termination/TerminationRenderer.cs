@@ -23,7 +23,7 @@ public static class TerminationRenderer
     public static void DrawEnding(EndingText text, int textY, BitmapFont font, Span<ushort> target)
     {
         var clip = new RasterClip(0, 150, 640, 351);
-        for (int row = 0; row < EndingText.Rows; row++)
+        for (int row = 0; row < text.Flow.Lines.Count; row++)
         {
             int y = textY + row * 24;
             if (y < 130)
@@ -36,8 +36,8 @@ public static class TerminationRenderer
                 break;
             }
 
-            font.DrawText(text[row], target, 640, 480, 640, 101, y + 1, 0, clip);
-            font.DrawText(text[row], target, 640, 480, 640, 100, y, 0xffff, clip);
+            font.DrawText(text.Flow.Lines[row], target, 640, 480, 640, 101, y + 1, 0, clip);
+            font.DrawText(text.Flow.Lines[row], target, 640, 480, 640, 100, y, 0xffff, clip);
         }
     }
 }

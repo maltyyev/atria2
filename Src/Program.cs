@@ -12,6 +12,14 @@ internal static class Program
     {
         try
         {
+            if (args.Length > 0 && args[0] == "--upgrade-localization")
+            {
+                CommandLineConsole.AttachToParent();
+                string localizationRoot = args.Length > 1 ? Path.GetFullPath(args[1]) : LocalizationDirectory;
+                Console.WriteLine($"Localization files upgraded: {TextResourceSchema.UpgradeFiles(localizationRoot)}. Previous files retained as .bak.");
+                return 0;
+            }
+
             if (args.Length > 0 && args[0] == "--validate-localization")
             {
                 CommandLineConsole.AttachToParent();

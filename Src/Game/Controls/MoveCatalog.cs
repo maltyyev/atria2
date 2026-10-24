@@ -81,7 +81,7 @@ public sealed class MoveCatalog
                     }
                 }
 
-                prerequisite = prior.Count > 0 ? GameText.Format("ui.moves.afterPrefix", ("moves", string.Join(" / ", prior.Distinct()))) : GameText.Get("ui.moves.continuationSuffix");
+                prerequisite = " " + (prior.Count > 0 ? GameText.Format("ui.moves.afterPrefix", ("moves", string.Join(" / ", prior.Distinct()))) : GameText.Get("ui.moves.continuationSuffix"));
             }
 
             moves.Add(new(id, GameText.Format("ui.moves.prefix", ("direction", DirectionName(d).ToLowerInvariant()), ("prerequisite", prerequisite)), d, flags, -1, -1, 0, form));

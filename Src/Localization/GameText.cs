@@ -9,6 +9,7 @@ public static class GameText
     public static LocalizationCatalog Current => current ??= new LocalizationCatalog();
     public static void Use(LocalizationCatalog catalog) => current = catalog;
     public static string Get(string key) => Current.Get(key);
+    public static string Paragraph(string key, string fallback = "") => Current.TryGet(key, out var text) ? text : fallback;
     public static string Format(string key, params (string Name, object? Value)[] arguments) => TextTemplate.Format(Get(key), arguments);
     public static ReadOnlyMemory<byte> Legacy(string key, ReadOnlyMemory<byte> original) => Current.Legacy(key, original);
     public static byte[] Bytes(string key) => Current.Bytes(key);

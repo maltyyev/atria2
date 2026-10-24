@@ -1,0 +1,878 @@
+{
+  "questionDialogueRecords": [
+    3256,
+    3258,
+    3269,
+    3274,
+    3290,
+    3292,
+    3300,
+    3350,
+    3354,
+    3364,
+    3368,
+    3383,
+    3387,
+    3399,
+    3402,
+    3410,
+    3412,
+    3416,
+    3425,
+    3432,
+    3436,
+    3444,
+    3449,
+    3453,
+    3462,
+    3466,
+    3476,
+    3478
+  ],
+  "questionScriptCalls": [
+    "scripts.SUBEVENT.10079",
+    "scripts.SUBEVENT.107432",
+    "scripts.SUBEVENT.114093",
+    "scripts.SUBEVENT.114578",
+    "scripts.SUBEVENT.120047",
+    "scripts.SUBEVENT.120511",
+    "scripts.SUBEVENT.125523",
+    "scripts.SUBEVENT.126040",
+    "scripts.SUBEVENT.131623",
+    "scripts.SUBEVENT.132102",
+    "scripts.SUBEVENT.136628",
+    "scripts.SUBEVENT.13807",
+    "scripts.SUBEVENT.141709",
+    "scripts.SUBEVENT.142169",
+    "scripts.SUBEVENT.14295",
+    "scripts.SUBEVENT.146673",
+    "scripts.SUBEVENT.147185",
+    "scripts.SUBEVENT.155888",
+    "scripts.SUBEVENT.159877",
+    "scripts.SUBEVENT.160340",
+    "scripts.SUBEVENT.167085",
+    "scripts.SUBEVENT.171008",
+    "scripts.SUBEVENT.171519",
+    "scripts.SUBEVENT.175540",
+    "scripts.SUBEVENT.175998",
+    "scripts.SUBEVENT.18048",
+    "scripts.SUBEVENT.181372",
+    "scripts.SUBEVENT.181820",
+    "scripts.SUBEVENT.18531",
+    "scripts.SUBEVENT.187568",
+    "scripts.SUBEVENT.188067",
+    "scripts.SUBEVENT.195828",
+    "scripts.SUBEVENT.198254",
+    "scripts.SUBEVENT.198744",
+    "scripts.SUBEVENT.202856",
+    "scripts.SUBEVENT.203403",
+    "scripts.SUBEVENT.206821",
+    "scripts.SUBEVENT.207320",
+    "scripts.SUBEVENT.211734",
+    "scripts.SUBEVENT.215808",
+    "scripts.SUBEVENT.219648",
+    "scripts.SUBEVENT.220145",
+    "scripts.SUBEVENT.224299",
+    "scripts.SUBEVENT.224813",
+    "scripts.SUBEVENT.230564",
+    "scripts.SUBEVENT.233666",
+    "scripts.SUBEVENT.234157",
+    "scripts.SUBEVENT.238696",
+    "scripts.SUBEVENT.239188",
+    "scripts.SUBEVENT.243520",
+    "scripts.SUBEVENT.243954",
+    "scripts.SUBEVENT.250080",
+    "scripts.SUBEVENT.252606",
+    "scripts.SUBEVENT.255479",
+    "scripts.SUBEVENT.259438",
+    "scripts.SUBEVENT.266698",
+    "scripts.SUBEVENT.274563",
+    "scripts.SUBEVENT.276813",
+    "scripts.SUBEVENT.279958",
+    "scripts.SUBEVENT.282727",
+    "scripts.SUBEVENT.286761",
+    "scripts.SUBEVENT.29189",
+    "scripts.SUBEVENT.293727",
+    "scripts.SUBEVENT.294264",
+    "scripts.SUBEVENT.29658",
+    "scripts.SUBEVENT.299640",
+    "scripts.SUBEVENT.299982",
+    "scripts.SUBEVENT.303775",
+    "scripts.SUBEVENT.304096",
+    "scripts.SUBEVENT.308733",
+    "scripts.SUBEVENT.309079",
+    "scripts.SUBEVENT.314356",
+    "scripts.SUBEVENT.318045",
+    "scripts.SUBEVENT.318600",
+    "scripts.SUBEVENT.321809",
+    "scripts.SUBEVENT.322360",
+    "scripts.SUBEVENT.325504",
+    "scripts.SUBEVENT.326072",
+    "scripts.SUBEVENT.329234",
+    "scripts.SUBEVENT.329802",
+    "scripts.SUBEVENT.332583",
+    "scripts.SUBEVENT.333067",
+    "scripts.SUBEVENT.336108",
+    "scripts.SUBEVENT.336571",
+    "scripts.SUBEVENT.339386",
+    "scripts.SUBEVENT.339848",
+    "scripts.SUBEVENT.342534",
+    "scripts.SUBEVENT.342996",
+    "scripts.SUBEVENT.345692",
+    "scripts.SUBEVENT.346153",
+    "scripts.SUBEVENT.34822",
+    "scripts.SUBEVENT.348841",
+    "scripts.SUBEVENT.349303",
+    "scripts.SUBEVENT.352616",
+    "scripts.SUBEVENT.353077",
+    "scripts.SUBEVENT.355884",
+    "scripts.SUBEVENT.356346",
+    "scripts.SUBEVENT.359226",
+    "scripts.SUBEVENT.359687",
+    "scripts.SUBEVENT.362380",
+    "scripts.SUBEVENT.362842",
+    "scripts.SUBEVENT.365565",
+    "scripts.SUBEVENT.366117",
+    "scripts.SUBEVENT.371346",
+    "scripts.SUBEVENT.371720",
+    "scripts.SUBEVENT.379118",
+    "scripts.SUBEVENT.379459",
+    "scripts.SUBEVENT.385804",
+    "scripts.SUBEVENT.390744",
+    "scripts.SUBEVENT.391076",
+    "scripts.SUBEVENT.394198",
+    "scripts.SUBEVENT.394530",
+    "scripts.SUBEVENT.39508",
+    "scripts.SUBEVENT.398131",
+    "scripts.SUBEVENT.398482",
+    "scripts.SUBEVENT.39928",
+    "scripts.SUBEVENT.401552",
+    "scripts.SUBEVENT.401930",
+    "scripts.SUBEVENT.406936",
+    "scripts.SUBEVENT.409119",
+    "scripts.SUBEVENT.409915",
+    "scripts.SUBEVENT.410233",
+    "scripts.SUBEVENT.417184",
+    "scripts.SUBEVENT.417488",
+    "scripts.SUBEVENT.419978",
+    "scripts.SUBEVENT.43635",
+    "scripts.SUBEVENT.441",
+    "scripts.SUBEVENT.44127",
+    "scripts.SUBEVENT.484664",
+    "scripts.SUBEVENT.500930",
+    "scripts.SUBEVENT.50157",
+    "scripts.SUBEVENT.50706",
+    "scripts.SUBEVENT.55424",
+    "scripts.SUBEVENT.62617",
+    "scripts.SUBEVENT.66614",
+    "scripts.SUBEVENT.67073",
+    "scripts.SUBEVENT.70052",
+    "scripts.SUBEVENT.70588",
+    "scripts.SUBEVENT.73575",
+    "scripts.SUBEVENT.74125",
+    "scripts.SUBEVENT.81134",
+    "scripts.SUBEVENT.86456",
+    "scripts.SUBEVENT.91720",
+    "scripts.SUBEVENT.9672",
+    "scripts.SUBEVENT.98429"
+  ],
+  "scrollBlocks": {
+    "credits.000.text": [
+      "credits.000",
+      "credits.001",
+      "credits.002"
+    ],
+    "credits.030.text": [
+      "credits.030",
+      "credits.031",
+      "credits.032"
+    ],
+    "credits.060.text": [
+      "credits.060",
+      "credits.061",
+      "credits.062"
+    ],
+    "credits.090.text": [
+      "credits.090",
+      "credits.091",
+      "credits.092"
+    ],
+    "credits.120.text": [
+      "credits.120",
+      "credits.121",
+      "credits.122"
+    ],
+    "credits.150.text": [
+      "credits.150",
+      "credits.151",
+      "credits.152"
+    ],
+    "credits.180.text": [
+      "credits.180",
+      "credits.181",
+      "credits.182"
+    ],
+    "credits.210.text": [
+      "credits.210",
+      "credits.211",
+      "credits.212"
+    ],
+    "credits.240.text": [
+      "credits.240",
+      "credits.241",
+      "credits.242"
+    ],
+    "credits.270.text": [
+      "credits.270",
+      "credits.271",
+      "credits.272"
+    ],
+    "credits.303.text": [
+      "credits.303"
+    ],
+    "credits.306.text": [
+      "credits.306",
+      "credits.307"
+    ],
+    "credits.309.text": [
+      "credits.309",
+      "credits.310"
+    ],
+    "credits.312.text": [
+      "credits.312",
+      "credits.313"
+    ],
+    "credits.315.text": [
+      "credits.315",
+      "credits.316"
+    ],
+    "credits.318.text": [
+      "credits.318",
+      "credits.319"
+    ],
+    "credits.321.text": [
+      "credits.321",
+      "credits.322"
+    ],
+    "credits.325.text": [
+      "credits.325"
+    ],
+    "credits.327.text": [
+      "credits.327"
+    ],
+    "credits.329.text": [
+      "credits.329"
+    ],
+    "credits.331.text": [
+      "credits.331"
+    ],
+    "credits.333.text": [
+      "credits.333"
+    ],
+    "credits.335.text": [
+      "credits.335"
+    ],
+    "credits.337.text": [
+      "credits.337"
+    ],
+    "credits.339.text": [
+      "credits.339"
+    ],
+    "credits.341.text": [
+      "credits.341"
+    ],
+    "credits.343.text": [
+      "credits.343"
+    ],
+    "credits.350.text": [
+      "credits.350"
+    ],
+    "credits.352.text": [
+      "credits.352"
+    ],
+    "credits.354.text": [
+      "credits.354"
+    ],
+    "endings.1.000.text": [
+      "endings.1.000"
+    ],
+    "endings.1.002.text": [
+      "endings.1.002"
+    ],
+    "endings.1.004.text": [
+      "endings.1.004",
+      "endings.1.005"
+    ],
+    "endings.1.007.text": [
+      "endings.1.007"
+    ],
+    "endings.1.011.text": [
+      "endings.1.011"
+    ],
+    "endings.1.013.text": [
+      "endings.1.013"
+    ],
+    "endings.1.017.text": [
+      "endings.1.017",
+      "endings.1.018"
+    ],
+    "endings.1.020.text": [
+      "endings.1.020",
+      "endings.1.021",
+      "endings.1.022",
+      "endings.1.023"
+    ],
+    "endings.1.027.text": [
+      "endings.1.027",
+      "endings.1.028",
+      "endings.1.029"
+    ],
+    "endings.1.031.text": [
+      "endings.1.031",
+      "endings.1.032"
+    ],
+    "endings.1.036.text": [
+      "endings.1.036",
+      "endings.1.037"
+    ],
+    "endings.1.039.text": [
+      "endings.1.039"
+    ],
+    "endings.1.042.text": [
+      "endings.1.042"
+    ],
+    "endings.1.045.text": [
+      "endings.1.045"
+    ],
+    "endings.1.048.text": [
+      "endings.1.048",
+      "endings.1.049"
+    ],
+    "endings.1.052.text": [
+      "endings.1.052",
+      "endings.1.053",
+      "endings.1.054"
+    ],
+    "endings.1.056.text": [
+      "endings.1.056",
+      "endings.1.057"
+    ],
+    "endings.1.062.text": [
+      "endings.1.062",
+      "endings.1.063"
+    ],
+    "endings.1.065.text": [
+      "endings.1.065"
+    ],
+    "endings.1.067.text": [
+      "endings.1.067",
+      "endings.1.068"
+    ],
+    "endings.1.072.text": [
+      "endings.1.072"
+    ],
+    "endings.1.076.text": [
+      "endings.1.076"
+    ],
+    "endings.1.078.text": [
+      "endings.1.078"
+    ],
+    "endings.2.000.text": [
+      "endings.2.000",
+      "endings.2.001"
+    ],
+    "endings.2.003.text": [
+      "endings.2.003"
+    ],
+    "endings.2.005.text": [
+      "endings.2.005",
+      "endings.2.006",
+      "endings.2.007"
+    ],
+    "endings.2.009.text": [
+      "endings.2.009",
+      "endings.2.010"
+    ],
+    "endings.2.014.text": [
+      "endings.2.014",
+      "endings.2.015",
+      "endings.2.016"
+    ],
+    "endings.2.020.text": [
+      "endings.2.020",
+      "endings.2.021",
+      "endings.2.022"
+    ],
+    "endings.2.025.text": [
+      "endings.2.025",
+      "endings.2.026",
+      "endings.2.027"
+    ],
+    "endings.2.030.text": [
+      "endings.2.030"
+    ],
+    "endings.2.033.text": [
+      "endings.2.033",
+      "endings.2.034"
+    ],
+    "endings.2.036.text": [
+      "endings.2.036"
+    ],
+    "endings.2.038.text": [
+      "endings.2.038"
+    ],
+    "endings.2.040.text": [
+      "endings.2.040"
+    ],
+    "endings.3.000.text": [
+      "endings.3.000"
+    ],
+    "endings.3.004.text": [
+      "endings.3.004",
+      "endings.3.005",
+      "endings.3.006"
+    ],
+    "endings.3.010.text": [
+      "endings.3.010",
+      "endings.3.011",
+      "endings.3.012"
+    ],
+    "endings.3.014.text": [
+      "endings.3.014"
+    ],
+    "endings.3.018.text": [
+      "endings.3.018",
+      "endings.3.019"
+    ],
+    "endings.3.021.text": [
+      "endings.3.021",
+      "endings.3.022"
+    ],
+    "endings.3.026.text": [
+      "endings.3.026"
+    ],
+    "endings.3.028.text": [
+      "endings.3.028"
+    ],
+    "endings.3.031.text": [
+      "endings.3.031",
+      "endings.3.032"
+    ],
+    "endings.3.036.text": [
+      "endings.3.036"
+    ],
+    "endings.3.040.text": [
+      "endings.3.040"
+    ],
+    "endings.3.042.text": [
+      "endings.3.042",
+      "endings.3.043"
+    ],
+    "endings.4.000.text": [
+      "endings.4.000",
+      "endings.4.001"
+    ],
+    "endings.4.003.text": [
+      "endings.4.003"
+    ],
+    "endings.4.007.text": [
+      "endings.4.007",
+      "endings.4.008",
+      "endings.4.009"
+    ],
+    "endings.4.013.text": [
+      "endings.4.013",
+      "endings.4.014",
+      "endings.4.015"
+    ],
+    "endings.4.017.text": [
+      "endings.4.017"
+    ],
+    "endings.4.021.text": [
+      "endings.4.021",
+      "endings.4.022"
+    ],
+    "endings.4.024.text": [
+      "endings.4.024",
+      "endings.4.025"
+    ],
+    "endings.4.028.text": [
+      "endings.4.028",
+      "endings.4.029"
+    ],
+    "endings.4.032.text": [
+      "endings.4.032",
+      "endings.4.033",
+      "endings.4.034",
+      "endings.4.035"
+    ],
+    "endings.4.038.text": [
+      "endings.4.038",
+      "endings.4.039"
+    ],
+    "endings.4.042.text": [
+      "endings.4.042",
+      "endings.4.043"
+    ],
+    "endings.4.045.text": [
+      "endings.4.045",
+      "endings.4.046"
+    ],
+    "endings.4.048.text": [
+      "endings.4.048",
+      "endings.4.049"
+    ],
+    "endings.4.051.text": [
+      "endings.4.051",
+      "endings.4.052",
+      "endings.4.053",
+      "endings.4.054"
+    ],
+    "endings.4.056.text": [
+      "endings.4.056"
+    ],
+    "endings.4.060.text": [
+      "endings.4.060",
+      "endings.4.061"
+    ],
+    "endings.4.065.text": [
+      "endings.4.065"
+    ],
+    "endings.4.067.text": [
+      "endings.4.067"
+    ],
+    "endings.5.000.text": [
+      "endings.5.000",
+      "endings.5.001"
+    ],
+    "endings.5.005.text": [
+      "endings.5.005",
+      "endings.5.006",
+      "endings.5.007"
+    ],
+    "endings.5.011.text": [
+      "endings.5.011",
+      "endings.5.012",
+      "endings.5.013"
+    ],
+    "endings.5.015.text": [
+      "endings.5.015"
+    ],
+    "endings.5.019.text": [
+      "endings.5.019",
+      "endings.5.020"
+    ],
+    "endings.5.022.text": [
+      "endings.5.022",
+      "endings.5.023"
+    ],
+    "endings.5.027.text": [
+      "endings.5.027",
+      "endings.5.028"
+    ],
+    "endings.5.031.text": [
+      "endings.5.031"
+    ],
+    "endings.5.035.text": [
+      "endings.5.035",
+      "endings.5.036"
+    ],
+    "endings.5.040.text": [
+      "endings.5.040"
+    ],
+    "endings.5.044.text": [
+      "endings.5.044"
+    ],
+    "endings.6.000.text": [
+      "endings.6.000"
+    ],
+    "endings.6.002.text": [
+      "endings.6.002"
+    ],
+    "endings.6.004.text": [
+      "endings.6.004"
+    ],
+    "endings.6.008.text": [
+      "endings.6.008",
+      "endings.6.009",
+      "endings.6.010"
+    ],
+    "endings.6.014.text": [
+      "endings.6.014",
+      "endings.6.015"
+    ],
+    "endings.6.017.text": [
+      "endings.6.017",
+      "endings.6.018",
+      "endings.6.019"
+    ],
+    "endings.6.023.text": [
+      "endings.6.023",
+      "endings.6.024"
+    ],
+    "endings.6.027.text": [
+      "endings.6.027",
+      "endings.6.028",
+      "endings.6.029"
+    ],
+    "endings.6.033.text": [
+      "endings.6.033"
+    ],
+    "endings.6.035.text": [
+      "endings.6.035"
+    ],
+    "endings.6.037.text": [
+      "endings.6.037"
+    ],
+    "endings.6.041.text": [
+      "endings.6.041"
+    ],
+    "endings.6.043.text": [
+      "endings.6.043"
+    ],
+    "endings.6.045.text": [
+      "endings.6.045"
+    ],
+    "endings.6.047.text": [
+      "endings.6.047"
+    ],
+    "endings.6.050.text": [
+      "endings.6.050"
+    ],
+    "endings.7.000.text": [
+      "endings.7.000"
+    ],
+    "endings.7.004.text": [
+      "endings.7.004"
+    ],
+    "endings.7.008.text": [
+      "endings.7.008",
+      "endings.7.009",
+      "endings.7.010"
+    ],
+    "endings.7.014.text": [
+      "endings.7.014",
+      "endings.7.015",
+      "endings.7.016"
+    ],
+    "endings.7.020.text": [
+      "endings.7.020",
+      "endings.7.021",
+      "endings.7.022"
+    ],
+    "endings.7.026.text": [
+      "endings.7.026",
+      "endings.7.027",
+      "endings.7.028"
+    ],
+    "endings.7.030.text": [
+      "endings.7.030",
+      "endings.7.031",
+      "endings.7.032"
+    ],
+    "endings.7.036.text": [
+      "endings.7.036"
+    ],
+    "endings.7.038.text": [
+      "endings.7.038",
+      "endings.7.039"
+    ],
+    "endings.7.043.text": [
+      "endings.7.043"
+    ],
+    "endings.7.049.text": [
+      "endings.7.049"
+    ],
+    "endings.7.052.text": [
+      "endings.7.052",
+      "endings.7.053"
+    ],
+    "endings.7.056.text": [
+      "endings.7.056"
+    ],
+    "endings.7.059.text": [
+      "endings.7.059"
+    ],
+    "endings.8.000.text": [
+      "endings.8.000"
+    ],
+    "endings.8.002.text": [
+      "endings.8.002"
+    ],
+    "endings.8.004.text": [
+      "endings.8.004",
+      "endings.8.005",
+      "endings.8.006"
+    ],
+    "endings.8.008.text": [
+      "endings.8.008",
+      "endings.8.009",
+      "endings.8.010"
+    ],
+    "endings.8.012.text": [
+      "endings.8.012",
+      "endings.8.013"
+    ],
+    "endings.8.016.text": [
+      "endings.8.016",
+      "endings.8.017",
+      "endings.8.018"
+    ],
+    "endings.8.020.text": [
+      "endings.8.020",
+      "endings.8.021",
+      "endings.8.022"
+    ],
+    "endings.8.024.text": [
+      "endings.8.024"
+    ],
+    "endings.8.026.text": [
+      "endings.8.026",
+      "endings.8.027"
+    ],
+    "endings.8.029.text": [
+      "endings.8.029"
+    ],
+    "endings.9.000.text": [
+      "endings.9.000",
+      "endings.9.001"
+    ],
+    "endings.9.003.text": [
+      "endings.9.003"
+    ],
+    "endings.9.007.text": [
+      "endings.9.007",
+      "endings.9.008",
+      "endings.9.009"
+    ],
+    "endings.9.013.text": [
+      "endings.9.013",
+      "endings.9.014",
+      "endings.9.015"
+    ],
+    "endings.9.017.text": [
+      "endings.9.017"
+    ],
+    "endings.9.021.text": [
+      "endings.9.021",
+      "endings.9.022"
+    ],
+    "endings.9.024.text": [
+      "endings.9.024",
+      "endings.9.025"
+    ],
+    "endings.9.028.text": [
+      "endings.9.028",
+      "endings.9.029"
+    ],
+    "endings.9.032.text": [
+      "endings.9.032",
+      "endings.9.033",
+      "endings.9.034",
+      "endings.9.035"
+    ],
+    "endings.9.038.text": [
+      "endings.9.038",
+      "endings.9.039"
+    ],
+    "endings.9.043.text": [
+      "endings.9.043"
+    ],
+    "endings.9.045.text": [
+      "endings.9.045"
+    ],
+    "endings.9.047.text": [
+      "endings.9.047"
+    ],
+    "endings.9.052.text": [
+      "endings.9.052"
+    ],
+    "endings.9.054.text": [
+      "endings.9.054",
+      "endings.9.055"
+    ],
+    "endings.9.058.text": [
+      "endings.9.058",
+      "endings.9.059"
+    ],
+    "endings.9.063.text": [
+      "endings.9.063"
+    ],
+    "endings.9.067.text": [
+      "endings.9.067"
+    ],
+    "endings.9.069.text": [
+      "endings.9.069",
+      "endings.9.070"
+    ],
+    "endings.9.072.text": [
+      "endings.9.072"
+    ],
+    "endings.9.075.text": [
+      "endings.9.075"
+    ],
+    "endings.9.077.text": [
+      "endings.9.077"
+    ],
+    "endings.9.082.text": [
+      "endings.9.082"
+    ],
+    "endings.9.085.text": [
+      "endings.9.085",
+      "endings.9.086"
+    ],
+    "endings.9.089.text": [
+      "endings.9.089"
+    ],
+    "endings.9.093.text": [
+      "endings.9.093"
+    ],
+    "endings.9.096.text": [
+      "endings.9.096",
+      "endings.9.097"
+    ],
+    "endings.9.099.text": [
+      "endings.9.099"
+    ],
+    "endings.9.101.text": [
+      "endings.9.101"
+    ],
+    "endings.9.103.text": [
+      "endings.9.103"
+    ],
+    "endings.9.105.text": [
+      "endings.9.105"
+    ],
+    "endings.9.108.text": [
+      "endings.9.108"
+    ],
+    "endings.9.111.text": [
+      "endings.9.111",
+      "endings.9.112"
+    ],
+    "endings.9.114.text": [
+      "endings.9.114"
+    ],
+    "endings.9.117.text": [
+      "endings.9.117",
+      "endings.9.118",
+      "endings.9.119"
+    ],
+    "endings.9.121.text": [
+      "endings.9.121"
+    ],
+    "endings.9.125.text": [
+      "endings.9.125",
+      "endings.9.126"
+    ],
+    "endings.9.128.text": [
+      "endings.9.128"
+    ],
+    "endings.9.130.text": [
+      "endings.9.130"
+    ],
+    "endings.9.133.text": [
+      "endings.9.133"
+    ]
+  }
+}

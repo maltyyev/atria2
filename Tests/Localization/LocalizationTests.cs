@@ -17,6 +17,7 @@ public static class LocalizationTests
 {
     public static string Run(string resources)
     {
+        _ = TextFlowTests.Run(resources);
         var previous = GameText.Current;
         string temporary = Path.Combine(Path.GetTempPath(), "atria-localization-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(temporary, LocalizationCatalog.BaseLanguage));
@@ -55,14 +56,14 @@ public static class LocalizationTests
             ControlPanel.Text(font, beforePixels, MoveCatalog.Name(0), 20, 20, 0xffff);
             Edit("ui.json", "ui.characters.roland", "Проверка");
             Edit("ui.json", "ui.combat.playerCharacter", "{character}: игрок {player}");
-            Edit("dialogue.json", "dialogue.0000.00", "Исправленная реплика");
-            Edit("scripts.json", "scripts.AED00.1085.2", "Прямая реплика");
+            Edit("dialogue.json", "dialogue.0000.text", "Исправленная реплика");
+            Edit("scripts.json", "scripts.AED00.1085.text", "Прямая реплика");
             Edit("items.json", "items.00.name", "Новый предмет");
-            Edit("items.json", "items.00.description.0", "Описание предмета");
-            Edit("quests.json", "quests.000.description.0", "Описание задания");
+            Edit("items.json", "items.00.description", "Описание предмета");
+            Edit("quests.json", "quests.000.description", "Описание задания");
             Edit("messages.json", "messages.119", "Новый город");
-            Edit("credits.json", "credits.000", "Автор");
-            Edit("endings.json", "endings.1.000", "Конец");
+            Edit("credits.json", "credits.000.text", "Автор");
+            Edit("endings.json", "endings.1.000.text", "Конец");
             var edited = new LocalizationCatalog(temporary);
             Check(edited.Issues.Count == 0, "valid edits accepted");
             Edit("validation.json", "ui.validation.unknownKey", "Unknown translation key.");
@@ -73,16 +74,16 @@ public static class LocalizationTests
             ControlPanel.Text(font, afterPixels, MoveCatalog.Name(0), 20, 20, 0xffff);
             Check(!beforePixels.SequenceEqual(afterPixels), "edited label changes rendered pixels");
             var after = DialogueRequest.Create(indexed, dialogue);
-            Check(Decode(after.Lines[0].Span) == "Исправленная реплика" && before.Lines.Count == after.Lines.Count, "indexed dialogue changes text without changing line/choice count");
+            Check(after.Paragraph == "Исправленная реплика" && before.Lines.Count == after.Lines.Count, "indexed dialogue changes text without changing line/choice count");
             var direct = new ScriptEffect(ScriptEffectKind.DialogueText,
                 new ScriptCall("AED00", "dialogue_script", 1085, [new(-1), new(-1), new("unchanged source"u8.ToArray())]));
-            Check(Decode(DialogueRequest.Create(direct, dialogue).Lines[0].Span) == "Прямая реплика", "script-offset translation reaches dialogue");
+            Check(DialogueRequest.Create(direct, dialogue).Paragraph == "Прямая реплика", "script-offset translation reaches dialogue");
             Check(Decode(GameText.ItemName(items, 0).Span) == "Новый предмет", "item name display");
-            Check(Decode(StatusTextList.LoadDescription(1, 0, items, Read("EITEM.DAT"), journal)[0].Span) == "Описание предмета", "inventory description display");
-            Check(Decode(StatusTextList.LoadDescription(4, 0, items, Read("EITEM.DAT"), journal)[0].Span) == "Описание задания", "quest description display");
+            Check(StatusTextList.LoadDescription(1, 0, items, Read("EITEM.DAT"), journal) == "Описание предмета", "inventory description display");
+            Check(StatusTextList.LoadDescription(4, 0, items, Read("EITEM.DAT"), journal) == "Описание задания", "quest description display");
             Check(Decode(GameText.Name(messages[119]).Span) == "Новый город", "raw saved location name maps to translated display");
-            Check(Decode(CreditsText.Parse(Read("CREDIT.DAT"))[0]) == "Автор", "credits display");
-            Check(Decode(EndingText.Parse(Read("END.DAT"), 1)[0]) == "Конец", "ending display");
+            Check(CreditsText.Parse(Read("CREDIT.DAT")).Flow.Lines[0] == "Автор", "credits display");
+            Check(EndingText.Parse(Read("END.DAT"), 1).Flow.Lines[0] == "Конец", "ending display");
             Check(rawItem.SequenceEqual(items.GetItem(0).Raw.ToArray()) && rawDialogue.SequenceEqual(dialogue.GetText(0).ToArray()), "raw item stats and dialogue data remain unchanged");
             Check(GameText.Messages(messages)[119].Span.SequenceEqual(GameText.Encoding.GetBytes("Новый город")) && !messages[119].Span.SequenceEqual(GameText.Encoding.GetBytes("Новый город")), "display view does not mutate source messages");
 
@@ -105,10 +106,10 @@ public static class LocalizationTests
             CheckRejected("ui.characters.roland", "строка\nстрока");
             CheckRejected("ui.characters.roland", "строка\0");
             CheckRejected("ui.characters.roland", new string('x', 1025));
-            Edit("dialogue.json", "dialogue.0000.00", new string('x', DialogueRequest.LineByteCapacity));
+            Edit("dialogue.json", "dialogue.0000.text", new string('x', 16_385));
             var longDialogue = new LocalizationCatalog(temporary);
-            Check(longDialogue.Issues.Any(i => i.IsError && i.Key == "dialogue.0000.00"), "edited dialogue cannot overwrite adjacent line slots");
-            Edit("dialogue.json", "dialogue.0000.00", "Исправленная реплика");
+            Check(longDialogue.Issues.Any(i => i.IsError && i.Key == "dialogue.0000.text"), "oversized editable paragraph rejected");
+            Edit("dialogue.json", "dialogue.0000.text", "Исправленная реплика");
 
             Write("ui.json", LocalizationCatalog.Defaults["ui.json"].Where(p => p.Key != "ui.characters.roland").ToDictionary());
             var missing = new LocalizationCatalog(temporary);

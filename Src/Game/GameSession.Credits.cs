@@ -26,7 +26,7 @@ public sealed partial class GameSession
         }
 
         musicId = 26;
-        credits.Enter();
+        credits.Enter(creditsText.Flow.Lines.Count);
         music.Update(musicId);
     }
 

@@ -28,7 +28,7 @@ public static class CreditsRenderer
         }
 
         var clip = new RasterClip(0, 80, 640, 381); //425120(80,380), inclusive lower/upper font raster limits.
-        for (int row = 0; row < CreditsText.RowCount; row++)
+        for (int row = 0; row < text.Flow.Lines.Count; row++)
         {
             int y = frame.TextY + row * 24;
             if (y < 60)
@@ -41,8 +41,8 @@ public static class CreditsRenderer
                 break;
             }
 
-            smallFont.DrawText(text[row], target, 640, 480, 640, 341, y + 1, 0, clip);
-            smallFont.DrawText(text[row], target, 640, 480, 640, 340, y, 0xd69a, clip);
+            smallFont.DrawText(text.Flow.Lines[row], target, 640, 480, 640, 341, y + 1, 0, clip);
+            smallFont.DrawText(text.Flow.Lines[row], target, 640, 480, 640, 340, y, 0xd69a, clip);
         }
     }
 }

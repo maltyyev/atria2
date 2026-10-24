@@ -1,9 +1,12 @@
+using Atria.Render.UI;
+
 namespace Atria.Game.Credits;
 
 public sealed class CreditsText
 {
     public const int RowCount = 400, RowBytes = 80, HeaderBytes = 100;
     private readonly byte[] rows;
+    public ScrollingText Flow { get; } = new("credits", 248);
     private CreditsText(byte[] rows) => this.rows = rows;
     public ReadOnlySpan<byte> this[int index] => GameText.Legacy($"credits.{index:D3}", rows.AsMemory(checked(index * RowBytes), RowBytes)).Span;
     public static CreditsText Parse(ReadOnlySpan<byte> bytes)
@@ -59,8 +62,11 @@ public sealed partial class CreditsController
 
     private bool transition;
     private int animationCounter, animationFrame;
-    public void Enter()
+    private int scrollLimit = 9120;
+
+    public void Enter(int? textRows = null)
     {
+        scrollLimit = textRows is { } count ? checked((count + 14) * 24) : 9120;
         Speed = 1;
         Scroll = 0;
         TextY = 400;
@@ -109,7 +115,7 @@ public sealed partial class CreditsController
             {
                 pictures.Add(new(Picture, 120, 120));
                 PictureCounter += Speed;
-                if (PictureCounter >= (Picture == 9 ? 793 : 721))
+                if (PictureCounter >= Math.Max(1, (int)((long)(Picture == 9 ? 793 : 721) * scrollLimit / 9120)))
                 {
                     Picture++;
                     PictureCounter = 0;
@@ -129,7 +135,7 @@ public sealed partial class CreditsController
         }
 
         int y = TextY;
-        if (Scroll < 9120)
+        if (Scroll < scrollLimit)
         {
             TextY -= Speed;
             Scroll += Speed;

@@ -37,7 +37,7 @@ public sealed partial class DialogueRuntime(DialogueCatalog catalog, IDialogueMo
         {
             questionInput = session.QuestionInputEnabled;
             panelX = session.PanelX;
-            selection = session.SelectedLine;
+            selection = session.Request.ChoiceByRow is { Length: > 0 } choices ? choices[session.SelectedLine] : session.SelectedLine;
             active = false;
         }
     }

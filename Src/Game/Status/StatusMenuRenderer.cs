@@ -27,7 +27,7 @@ public sealed record StatusDrawCommand(
     ushort Color = 0,
     bool Small = true,
     int Palette = 0,
-    ReadOnlyMemory<byte> Text = default
+    string Text = ""
 );
 public readonly record struct StatusRenderFrame(int ArrowPhase = 0, int TextPhase = 0, bool PageFlash = false, bool SelectionFlash = false);
 public sealed class StatusRenderClock
@@ -79,7 +79,7 @@ public sealed class StatusMenuRenderer
     private readonly BitmapFont small, large;
     private readonly ItemCatalog items;
     private readonly ReadOnlyMemory<byte> introductions;
-    private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages;
+    private readonly IReadOnlyList<string> messages;
     public StatusMenuRenderer(
         SpriteFile item,
         SpriteFile etc,
@@ -107,7 +107,7 @@ public sealed class StatusMenuRenderer
         this.small = small;
         this.large = large;
         this.items = items;
-        this.messages = messages;
+        this.messages = messages.Select(text => GameText.Decode(text.Span)).ToArray();
         this.introductions = introductions;
     }
 
@@ -121,8 +121,8 @@ public sealed class StatusMenuRenderer
             throw new InvalidDataException("Status actor class exceeds six native records.");
         }
 
-        void Text(ReadOnlyMemory<byte> text, int x, int y, bool sm = true, int palette = 0, ushort color = 0) => ops.Add(new(StatusPrimitive.Text, x, y, Color: color, Small: sm, Palette: palette, Text: text));
-        void Pair(ReadOnlyMemory<byte> text, int x, int y, int palette = 0, ushort color = 0xffe0)
+        void Text(string text, int x, int y, bool sm = true, int palette = 0, ushort color = 0) => ops.Add(new(StatusPrimitive.Text, x, y, Color: color, Small: sm, Palette: palette, Text: text));
+        void Pair(string text, int x, int y, int palette = 0, ushort color = 0xffe0)
         {
             Text(text, x + 1, y + 1);
             Text(text, x, y, palette: palette, color: color);
@@ -168,7 +168,7 @@ public sealed class StatusMenuRenderer
             name = name[..end];
         }
 
-        Text(GameText.Legacy($"messages.{actor:D3}", name), 68, 120, palette: 0x4cc228);
+        Text(GameText.Decode(GameText.Legacy($"messages.{actor:D3}", name).Span), 68, 120, palette: 0x4cc228);
         Text(messages[6 + kind], 68, 156, palette: 0x4cc228);
         int level = state.Party[actor].Level;
         if (level == 13)
@@ -189,7 +189,7 @@ public sealed class StatusMenuRenderer
             Text(Number(level), 68, 138, palette: 0x4cc228);
         }
 
-        Pair(Join(Number(state.Party[actor].Experience), " / "u8.ToArray(), Number(state.Party[actor].NextExperience)), 318, 38, 0x4cc228);
+        Pair(Join(Number(state.Party[actor].Experience), " / ", Number(state.Party[actor].NextExperience)), 318, 38, 0x4cc228);
         var member = state.Party[actor];
         int[] values = [member.MaximumHealth, member.MaximumMana, member.Attack, member.Defense, member.MagicPower, member.Immunity, member.MagicDefense, member.CombatForm];
         for (int i = 0; i < values.Length; i++)
@@ -219,7 +219,7 @@ public sealed class StatusMenuRenderer
                 }
 
                 ops.Add(new(StatusPrimitive.ItemSprite, 516, y, id + 10));
-                Pair(GameText.ItemName(items, id), 496, y + 34, color: 0xffe0);
+                Pair(GameText.Decode(GameText.ItemName(items, id).Span), 496, y + 34, color: 0xffe0);
             }
         }
 
@@ -241,7 +241,7 @@ public sealed class StatusMenuRenderer
         }
 
         int actor = runtime.Menu.SelectedActor;
-        void Pair(ReadOnlyMemory<byte> text, int x, int y, int palette = 0, ushort color = 0xffff, bool sm = true)
+        void Pair(string text, int x, int y, int palette = 0, ushort color = 0xffff, bool sm = true)
         {
             ops.Add(new(StatusPrimitive.Text, x + 1, y + 1, Small: sm, Text: text));
             ops.Add(new(StatusPrimitive.Text, x, y, Color: color, Small: sm, Palette: palette, Text: text));
@@ -263,30 +263,31 @@ public sealed class StatusMenuRenderer
                 Pair(Number(values[i]), 414, 225 + i * 17, 0x4cc26c);
             }
 
-            for (int line = 0; line < 10; line++)
+            for (int line = 0; line < Math.Min(10, runtime.Description.Length - runtime.DescriptionOffset); line++)
             {
-                Pair(GameText.Legacy($"characters.{actor}.introduction.{line}", DatTables.GetCharacterIntroductionLine(introductions, actor, line)), 196, 298 + line * 16);
+                Pair(runtime.Description[runtime.DescriptionOffset + line], 196, 298 + line * 16);
             }
+            AppendDescriptionArrows(ops, runtime.DescriptionOffset, runtime.Description.Length, 10, 298, 450);
         }
         else if (runtime.Menu.Page == 1)
         {
             var list = runtime.TextList ?? throw new InvalidOperationException("Item page has no native list.");
-            AppendItemList(ops, state, list.Ids, list.Scroll, list.Row, frame, list.DescriptionOpen ? runtime.Description : null);
+            AppendItemList(ops, state, list.Ids, list.Scroll, list.Row, frame, list.DescriptionOpen ? runtime.Description : null, runtime.DescriptionOffset);
         }
         else if (runtime.Menu.Page is 3 or 4)
         {
             int page = runtime.Menu.Page;
             var list = runtime.TextList ?? throw new InvalidOperationException("Status text detail has no native list.");
-            ReadOnlyMemory<byte> Name(int id)
+            string Name(int id)
             {
                 if (page == 4)
                 {
-                    return GameText.Legacy($"quests.{id:D3}.heading.{(alternateJournalHeading ? 1 : 0)}", (journal ?? throw new ArgumentNullException(nameof(journal))).GetHeading(id, alternateJournalHeading ? 1 : 0));
+                    return GameText.Decode(GameText.Legacy($"quests.{id:D3}.heading.{(alternateJournalHeading ? 1 : 0)}", (journal ?? throw new ArgumentNullException(nameof(journal))).GetHeading(id, alternateJournalHeading ? 1 : 0)).Span);
                 }
 
                 var bytes = state.QuestItemRecords.AsMemory(id * 74 + 4, 30);
                 int end = bytes.Span.IndexOf((byte)0);
-                return GameText.Legacy($"messages.{209 + id:D3}", end < 0 ? bytes : bytes[..end]);
+                return GameText.Decode(GameText.Legacy($"messages.{209 + id:D3}", end < 0 ? bytes : bytes[..end]).Span);
             }
 
             ops.Add(new(StatusPrimitive.Tint, 110, 302, 420, 168, 15));
@@ -317,7 +318,7 @@ public sealed class StatusMenuRenderer
                 var text = Name(id);
                 if (stage != 0)
                 {
-                    text = Join(text, " "u8.ToArray(), messages[stage == 1 ? 118 : 119]);
+                    text = Join(text, " ", messages[stage == 1 ? 118 : 119]);
                 }
 
                 Pair(text, 136, 324 + row * 48, stage switch
@@ -347,6 +348,7 @@ public sealed class StatusMenuRenderer
             {
                 ops.Add(new(StatusPrimitive.Fill, 62, 174, 517, 133));
                 ops.Add(new(StatusPrimitive.Panel, 48, 160, 15, 3));
+                AppendDescriptionArrows(ops, runtime.DescriptionOffset, runtime.Description.Length, 5, 180, 288);
                 int id = list.SelectedId;
                 ops.Add(new(StatusPrimitive.Text, 80, page == 4 ? 182 : 180, Color: 0xffff, Text: Name(id)));
                 if (page == 3)
@@ -361,16 +363,16 @@ public sealed class StatusMenuRenderer
                         ops.Add(new(StatusPrimitive.Text, 80, 196, Palette: 0x4cc370, Text: messages[68 + StatusQuestRules.Region(id)]));
                     }
 
-                    for (int line = 0; line < runtime.Description.Length; line++)
+                    for (int line = 0; line < Math.Min(5, runtime.Description.Length - runtime.DescriptionOffset); line++)
                     {
-                        ops.Add(new(StatusPrimitive.Text, 80, 212 + line * 19, Palette: 0x4cc400, Text: runtime.Description[line]));
+                        ops.Add(new(StatusPrimitive.Text, 80, 212 + line * 19, Palette: 0x4cc400, Text: runtime.Description[runtime.DescriptionOffset + line]));
                     }
                 }
                 else
                 {
-                    for (int line = 0; line < runtime.Description.Length; line++)
+                    for (int line = 0; line < Math.Min(5, runtime.Description.Length - runtime.DescriptionOffset); line++)
                     {
-                        ops.Add(new(StatusPrimitive.Text, 80, 206 + line * 19, Palette: 0x4cc228, Text: runtime.Description[line]));
+                        ops.Add(new(StatusPrimitive.Text, 80, 206 + line * 19, Palette: 0x4cc228, Text: runtime.Description[runtime.DescriptionOffset + line]));
                     }
                 }
             }
@@ -429,9 +431,9 @@ public sealed class StatusMenuRenderer
         return ops.AsReadOnly();
     }
 
-    private static byte[] journalClosed => GameText.Bytes("ui.quests.closed");
-    private static byte[] journalActive => GameText.Bytes("ui.quests.active");
-    private static byte[] JournalStatus(int status) => status == 4 ? journalClosed : journalActive;
+    private static string journalClosed => GameText.Get("ui.quests.closed");
+    private static string journalActive => GameText.Get("ui.quests.active");
+    private static string JournalStatus(int status) => status == 4 ? journalClosed : journalActive;
     private void AppendItemList(
         List<StatusDrawCommand> ops,
         GameState state,
@@ -439,11 +441,12 @@ public sealed class StatusMenuRenderer
         int scroll,
         int row,
         StatusRenderFrame frame,
-        ReadOnlyMemory<byte>[]? description = null
+        string[]? description = null,
+        int descriptionOffset = 0
     )
     {
-        void Text(ReadOnlyMemory<byte> text, int x, int y, int palette = 0, ushort color = 0, bool sm = true) => ops.Add(new(StatusPrimitive.Text, x, y, Color: color, Small: sm, Palette: palette, Text: text));
-        void Pair(ReadOnlyMemory<byte> text, int x, int y, int palette = 0, ushort color = 0xffff)
+        void Text(string text, int x, int y, int palette = 0, ushort color = 0, bool sm = true) => ops.Add(new(StatusPrimitive.Text, x, y, Color: color, Small: sm, Palette: palette, Text: text));
+        void Pair(string text, int x, int y, int palette = 0, ushort color = 0xffff)
         {
             Text(text, x + 1, y + 1);
             Text(text, x, y, palette, color);
@@ -481,10 +484,10 @@ public sealed class StatusMenuRenderer
             int Read(int at) => record.GetInteger((at - 30) / 4);
             ushort availabilityColor = state.AvailableItems[id] > 0 ? (ushort)0xffe0 : (ushort)0x8410;
             ops.Add(new(StatusPrimitive.ItemSprite, 72, y - 16, id + 10));
-            Pair(GameText.ItemName(items, id), 108, y - 16, color: availabilityColor);
+            Pair(GameText.Decode(GameText.ItemName(items, id).Span), 108, y - 16, color: availabilityColor);
             Pair(messages[354], 238, y - 16, color: availabilityColor);
             Pair(
-                Join(Number(state.AvailableItems[id]), "/"u8.ToArray(), Number(state.OwnedItems[id]), " ]"u8.ToArray()),
+                Join(Number(state.AvailableItems[id]), "/", Number(state.OwnedItems[id]), " ]"),
                 322,
                 y - 16,
                 color: availabilityColor
@@ -494,7 +497,7 @@ public sealed class StatusMenuRenderer
                 Text(Join(messages[id < 25 ? 79 : 81], Number(Read(50))), 382, y - 16, color: 0xffff);
                 if (Read(54) != 0)
                 {
-                    Text(Join(messages[id < 25 ? 80 : 82], Number(Read(54)), "%"u8.ToArray()), 482, y - 16, color: 0xffff);
+                    Text(Join(messages[id < 25 ? 80 : 82], Number(Read(54)), "%"), 482, y - 16, color: 0xffff);
                 }
             }
 
@@ -515,11 +518,11 @@ public sealed class StatusMenuRenderer
                 }
 
                 var text = Join(
-                    index == 0 ? "( "u8.ToArray() : " "u8.ToArray(),
+                    index == 0 ? "( " : " ",
                     messages[45 + code],
-                    amount > 0 ? "+"u8.ToArray() : Array.Empty<byte>(),
+                    amount > 0 ? "+" : "",
                     Number(amount),
-                    index == modifiers.Length - 1 ? " )"u8.ToArray() : Array.Empty<byte>()
+                    index == modifiers.Length - 1 ? " )" : ""
                 );
                 Pair(text, 136 + index * 144, y, 0x4cc400);
             }
@@ -552,21 +555,21 @@ public sealed class StatusMenuRenderer
             };
             if (special.Length > 0)
             {
-                var parts = new List<ReadOnlyMemory<byte>>
+                var parts = new List<string>
                 {
-                    "( "u8.ToArray()
+                    "( "
                 };
                 for (int j = 0; j < special.Length; j++)
                 {
                     if (j != 0)
                     {
-                        parts.Add("   "u8.ToArray());
+                        parts.Add("   ");
                     }
 
                     parts.Add(messages[special[j]]);
                 }
 
-                parts.Add(" )"u8.ToArray());
+                parts.Add(" )");
                 Text(Join(parts.ToArray()), 136, y, 0x4cc370);
             }
         }
@@ -586,11 +589,24 @@ public sealed class StatusMenuRenderer
         {
             ops.Add(new(StatusPrimitive.Fill, 62, 174, 517, 133));
             ops.Add(new(StatusPrimitive.Panel, 48, 160, 15, 3));
-            Text(GameText.ItemName(items, ids[scroll + row]), 80, 182, color: 0xffff);
-            for (int line = 0; line < description.Length; line++)
+            AppendDescriptionArrows(ops, descriptionOffset, description.Length, 5, 180, 288);
+            Text(GameText.Decode(GameText.ItemName(items, ids[scroll + row]).Span), 80, 182, color: 0xffff);
+            for (int line = 0; line < Math.Min(5, description.Length - descriptionOffset); line++)
             {
-                Text(description[line], 80, 206 + line * 19, 0x4cc400);
+                Text(description[descriptionOffset + line], 80, 206 + line * 19, 0x4cc400);
             }
+        }
+    }
+
+    private static void AppendDescriptionArrows(List<StatusDrawCommand> ops, int offset, int count, int visible, int top, int bottom)
+    {
+        if (offset > 0)
+        {
+            ops.Add(new(StatusPrimitive.EtcSprite, 552, top, 18));
+        }
+        if (offset + visible < count)
+        {
+            ops.Add(new(StatusPrimitive.EtcSprite, 552, bottom, 19));
         }
     }
 
@@ -633,11 +649,11 @@ public sealed class StatusMenuRenderer
                     var font = op.Small ? small : large;
                     if (op.Palette == 0)
                     {
-                        font.DrawText(op.Text.Span, target, 640, 480, 640, op.X, op.Y, op.Color);
+                        font.DrawText(op.Text, target, 640, 480, 640, op.X, op.Y, op.Color);
                     }
                     else
                     {
-                        UiRaster.DrawStyledText(font, op.Text.Span, Palette(op.Palette), frame.TextPhase, target, 640, 480, 640, op.X, op.Y);
+                        UiRaster.DrawStyledText(font, op.Text, Palette(op.Palette), frame.TextPhase, target, 640, 480, 640, op.X, op.Y);
                     }
 
                     break;
@@ -645,19 +661,8 @@ public sealed class StatusMenuRenderer
         }
     }
 
-    private static byte[] Number(int value) => Encoding.ASCII.GetBytes(value.ToString(CultureInfo.InvariantCulture));
-    private static byte[] Join(params ReadOnlyMemory<byte>[] parts)
-    {
-        var bytes = new byte[parts.Sum(p => p.Length)];
-        int at = 0;
-        foreach (var part in parts)
-        {
-            part.Span.CopyTo(bytes.AsSpan(at));
-            at += part.Length;
-        }
-
-        return bytes;
-    }
+    private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string Join(params string[] parts) => string.Concat(parts);
 
     private static ReadOnlySpan<ushort> Palette(int address) => address switch
     {

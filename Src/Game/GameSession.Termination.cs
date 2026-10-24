@@ -97,7 +97,7 @@ public sealed partial class GameSession
     {
         endingText = EndingText.Parse(File.ReadAllBytes(Path.Combine(root, "END.DAT")), state.EndingSelection);
         musicId = 27;
-        ending.Enter(state.EndingSelection, HandleEndingEffect);
+        ending.Enter(state.EndingSelection, HandleEndingEffect, endingText.Flow);
         //4211d0 writes all16000 raw bytes at464020; darkness indices118..120 alias its first three DWORDs.
         endingText[0][..12].CopyTo(dungeonEndingTextPrefix);
         gate.SetThresholdMilliseconds(25);

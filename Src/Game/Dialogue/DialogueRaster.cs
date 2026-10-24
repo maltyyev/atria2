@@ -66,35 +66,35 @@ public static class DialogueRaster
         for (int row = 0; row < 4; row++)
         {
             int line = frame.FirstLine + row;
-            if (line >= request.Lines.Count)
+            if (line >= (request.DisplayLines?.Length ?? request.Lines.Count))
             {
                 continue;
             }
 
-            smallFont.DrawText(request.Lines[line].Span, target, width, height, stride, x + 25, y + 18 + row * 16, 0);
+            smallFont.DrawText(request.DisplayLines is { } display ? display[line] : GameText.Decode(request.Lines[line].Span), target, width, height, stride, x + 25, y + 18 + row * 16, 0);
         }
 
         for (int row = 0; row < 4; row++)
         {
             int line = frame.FirstLine + row;
-            if (line >= request.Lines.Count)
+            if (line >= (request.DisplayLines?.Length ?? request.Lines.Count))
             {
                 continue;
             }
 
-            if (request.IsQuestion && row == frame.SelectedLine)
+            if (request.IsQuestion && (request.ChoiceByRow is { } choices ? choices[line] == choices[frame.SelectedLine] : row == frame.SelectedLine))
             {
-                UiRaster.DrawStyledText(smallFont, request.Lines[line].Span, NativeUiPalette.Dialogue, textPhase, target, width, height, stride, x + 24, y + 17 + row * 16);
+                UiRaster.DrawStyledText(smallFont, request.DisplayLines is { } display ? display[line] : GameText.Decode(request.Lines[line].Span), NativeUiPalette.Dialogue, textPhase, target, width, height, stride, x + 24, y + 17 + row * 16);
             }
             else
             {
-                smallFont.DrawText(request.Lines[line].Span, target, width, height, stride, x + 24, y + 17 + row * 16, 0xffff);
+                smallFont.DrawText(request.DisplayLines is { } display ? display[line] : GameText.Decode(request.Lines[line].Span), target, width, height, stride, x + 24, y + 17 + row * 16, 0xffff);
             }
         }
 
         if (request.IsQuestion)
         {
-            SpriteRaster.Draw565(tiles.Frames[13], target, width, height, stride, x + 30 + frame.ArrowXOffset, 385 + frame.SelectedLine * 16 + frame.ArrowYOffset);
+            SpriteRaster.Draw565(tiles.Frames[13], target, width, height, stride, x + 30 + frame.ArrowXOffset, 385 + (frame.SelectedLine - frame.FirstLine) * 16 + frame.ArrowYOffset);
         }
         else
         {

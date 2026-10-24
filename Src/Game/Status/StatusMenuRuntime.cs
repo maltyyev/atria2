@@ -1,3 +1,4 @@
+using Atria.Render.UI;
 using Atria.Game.State;
 using Atria.Resources;
 
@@ -12,12 +13,21 @@ public sealed class StatusMenuRuntime
     {
         get; private set;
     }
-    public ReadOnlyMemory<byte>[] Description { get; private set; } = [];
+    public string[] Description { get; private set; } = [];
+
+    public int DescriptionOffset { get; private set; }
+
+    private void LoadDescription(string text, int width = 464)
+    {
+        Description = TextFlow.Wrap(text, width);
+        DescriptionOffset = 0;
+    }
 
     public void Enter(Action<StatusMenuCommand> emit)
     {
         TextList = null;
         Description = [];
+        DescriptionOffset = 0;
         Equipment.Enter();
         Menu.Enter(emit);
     }
@@ -37,6 +47,11 @@ public sealed class StatusMenuRuntime
             {
                 Menu.SetDetailActive(true);
                 Description = [];
+                DescriptionOffset = 0;
+                if (Menu.Page == 2)
+                {
+                    LoadDescription(GameText.Get($"characters.{Menu.SelectedActor}.introduction"), 352);
+                }
                 if (Menu.Page == 0)
                 {
                     Equipment.Enter();
@@ -62,6 +77,17 @@ public sealed class StatusMenuRuntime
         {
             int action = value.Cancel ? 5 : value.Accept ? 4 : value.PreviousPage ? 1 : value.NextPage ? 0 : value.PreviousActor ? 3 : value.NextActor ? 2 : -1;
             bool closed = false;
+            if (action is 0 or 1 && (TextList?.DescriptionOpen == true || Menu.Page == 2))
+            {
+                int visible = Menu.Page == 2 ? 10 : 5;
+                int nextOffset = Math.Clamp(DescriptionOffset + (action == 0 ? 1 : -1), 0, Math.Max(0, Description.Length - visible));
+                if (nextOffset != DescriptionOffset)
+                {
+                    DescriptionOffset = nextOffset;
+                    Sound(1);
+                }
+                return;
+            }
             if (action is 0 or 1 or 4 or 5)
             {
                 if (Menu.Page == 0)
@@ -70,7 +96,7 @@ public sealed class StatusMenuRuntime
                 }
                 else if (Menu.Page is 1 or 3 or 4)
                 {
-                    closed = TextList!.Input(action, Sound, id => Description = StatusTextList.LoadDescription(Menu.Page, id, items, eventItemText, journal));
+                    closed = TextList!.Input(action, Sound, id => LoadDescription(StatusTextList.LoadDescription(Menu.Page, id, items, eventItemText, journal)));
                 }
                 else if (action == 5)
                 {
@@ -156,6 +182,10 @@ public sealed class StatusMenuRuntime
                 Menu.SetSelectedActor(next);
                 emit(new(StatusMenuEffect.SelectActor, next));
                 Sound(1);
+                if (Menu.Page == 2)
+                {
+                    LoadDescription(GameText.Get($"characters.{next}.introduction"), 352);
+                }
                 if (Menu.Page == 0)
                 {
                     Equipment.ActorChanged(state, next);

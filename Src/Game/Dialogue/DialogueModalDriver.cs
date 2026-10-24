@@ -239,6 +239,7 @@ public sealed class DialogueModalDriver : IDialogueModalDriver
             return;
         }
 
+        session.PrepareLayout(font);
         bool hasFrame = false;
         int mouseX = -1, mouseY = -1;
         const int maximumTicksPerBatch = 8;

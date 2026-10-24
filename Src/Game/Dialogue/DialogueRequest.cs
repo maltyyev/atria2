@@ -7,6 +7,11 @@ namespace Atria.Game.Dialogue;
 /// <summary>Owned raw display bytes. CP949 lookup keys never pass through display decoding.</summary>
 public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, IReadOnlyList<ReadOnlyMemory<byte>> Lines)
 {
+    public string? Paragraph { get; init; }
+    public IReadOnlyList<string>? Choices { get; init; }
+    public string[]? DisplayLines { get; init; }
+    public int[]? ChoiceByRow { get; init; }
+
     public const int LineCapacity = 100;
     public const int LineByteCapacity = 128;
     public static DialogueRequest Create(ScriptEffect effect, DialogueCatalog catalog)
@@ -29,6 +34,8 @@ public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, I
         var lines = new List<ReadOnlyMemory<byte>>();
         byte[] bank = new byte[LineCapacity * LineByteCapacity];
         int lineCount = 0;
+        string textKey = $"scripts.{call.Member}.{call.ByteOffset}";
+        var sourceLines = new List<ReadOnlyMemory<byte>>();
         if (indexed)
         {
             ReadOnlyMemory<byte> key = Bytes(2);
@@ -42,24 +49,25 @@ public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, I
                 throw Error("MISSING_DIALOGUE", "Dialogue key was not found.");
             }
 
+            textKey = $"dialogue.{entryIndex:D4}";
             int start = 0;
             for (int i = 0; i < text.Length; i++)
             {
                 if (text.Span[i] == 13 && i + 1 < text.Length && text.Span[i + 1] == 10)
                 {
-                    Add(GameText.Legacy($"dialogue.{entryIndex:D4}.{lineCount:D2}", text.Slice(start, i - start)));
+                    Add(text.Slice(start, i - start));
                     i++;
                     start = i + 1;
                 }
             }
 
-            Add(GameText.Legacy($"dialogue.{entryIndex:D4}.{lineCount:D2}", text[start..])); // Preserve the final empty choice/line.
+            Add(text[start..]); // Preserve the final empty choice/line.
         }
         else
         {
             for (int i = 2; i < call.Arguments.Count; i++)
             {
-                Add(GameText.Legacy($"scripts.{call.Member}.{call.ByteOffset}.{i}", Bytes(i)));
+                Add(Bytes(i));
             }
         }
 
@@ -75,9 +83,14 @@ public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, I
             lines.Add(tail[..end]);
         }
 
-        return new(Scalar(0), Scalar(1), question, lines.AsReadOnly());
+        return new(Scalar(0), Scalar(1), question, lines.AsReadOnly())
+        {
+            Paragraph = question ? null : GameText.Paragraph(textKey + ".text", TextResourceSchema.Normalize(string.Join(" ", sourceLines.Select(line => GameText.Decode(line.Span))))),
+            Choices = question ? sourceLines.Select((line, i) => GameText.Paragraph(indexed ? $"{textKey}.choice.{i:D2}" : $"{textKey}.{i + 2}", GameText.Decode(line.Span).Trim())).ToArray() : null
+        };
         void Add(ReadOnlyMemory<byte> line)
         {
+            sourceLines.Add(line);
             int offset = lineCount * LineByteCapacity;
             int length = indexed ? line.Length : Math.Min(line.Length, LineByteCapacity);
             if (lineCount == LineCapacity || length > bank.Length - offset)

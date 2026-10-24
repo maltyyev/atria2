@@ -1,3 +1,5 @@
+using Atria.Render.UI;
+
 namespace Atria.Game.Termination;
 
 public sealed record EndingDefinition(int[] Pictures, int[] ThresholdRows, int TotalRows);
@@ -23,7 +25,12 @@ public sealed class EndingText
     public const int Rows = 200, RowSize = 80;
     private readonly byte[] bytes;
     private readonly int selection;
-    private EndingText(byte[] bytes, int selection) => (this.bytes, this.selection) = (bytes, selection);
+    public ScrollingText Flow { get; }
+    private EndingText(byte[] bytes, int selection)
+    {
+        (this.bytes, this.selection) = (bytes, selection);
+        Flow = new($"endings.{selection}", 440);
+    }
     public ReadOnlySpan<byte> this[int row] => GameText.Legacy($"endings.{selection}.{row:D3}", bytes.AsMemory(checked(row * RowSize), RowSize)).Span;
     public static EndingText Parse(ReadOnlySpan<byte> source, int selection)
     {
@@ -71,9 +78,13 @@ public sealed class EndingController
         get; private set;
     }
 
-    public void Enter(int selection, Action<EndingEffect> emit)
+    public void Enter(int selection, Action<EndingEffect> emit, ScrollingText? text = null)
     {
         definition = EndingCatalog.Get(selection);
+        if (text is not null)
+        {
+            definition = definition with { ThresholdRows = definition.ThresholdRows.Select(text.MapSourceRow).ToArray(), TotalRows = text.Lines.Count + 9 };
+        }
         PictureIndex = Scroll = 0;
         TextY = 360;
         pendingPicture = false;

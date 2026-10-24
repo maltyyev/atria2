@@ -102,11 +102,11 @@ public sealed class StatusTextList
         return false;
     }
 
-    public static ReadOnlyMemory<byte>[] LoadDescription(int page, int id, ItemCatalog items, ReadOnlyMemory<byte> eventItemText, QuestJournalCatalog journal) => Enumerable.Range(0, 5).Select(line => page switch
+    public static string LoadDescription(int page, int id, ItemCatalog items, ReadOnlyMemory<byte> eventItemText, QuestJournalCatalog journal) => page switch
     {
-        1 => GameText.Legacy($"items.{id:D2}.description.{line}", items.GetDescriptionLine(id, line)),
-        3 => GameText.Legacy($"questItems.{id:D2}.description.{line}", DatTables.GetEventItemDescriptionLine(eventItemText, id, line)),
-        4 => GameText.Legacy($"quests.{id:D3}.description.{line}", journal.GetDescriptionLine(id, line)),
+        1 => GameText.Get($"items.{id:D2}.description"),
+        3 => GameText.Get($"questItems.{id:D2}.description"),
+        4 => GameText.Get($"quests.{id:D3}.description"),
         _ => throw new ArgumentOutOfRangeException(nameof(page))
-    }).ToArray();
+    };
 }

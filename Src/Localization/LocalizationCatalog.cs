@@ -9,8 +9,7 @@ public sealed class LocalizationCatalog
     public const string BaseLanguage = "ru-RU";
     private const int MaximumInterfaceTextCharacters = 1024;
     private const int MaximumLegacyRowTextBytes = 79;
-    // Original dialogue slots reserve one of 128 bytes for their terminator.
-    private const int MaximumDialogueTextBytes = 127;
+    private const int MaximumParagraphCharacters = 16_384;
     private static readonly Lazy<Dictionary<string, Dictionary<string, string>>> defaults = new(ReadDefaults);
     private readonly Dictionary<string, string> texts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, byte[]> legacyOverrides = new(StringComparer.Ordinal);
@@ -46,7 +45,7 @@ public sealed class LocalizationCatalog
         {
             foreach (var entry in file)
             {
-                if (texts[entry.Key] != entry.Value && !entry.Key.StartsWith("ui.", StringComparison.Ordinal))
+                if (texts[entry.Key] != entry.Value && !entry.Key.StartsWith("ui.", StringComparison.Ordinal) && !TextResourceSchema.IsFlowingText(entry.Key))
                 {
                     legacyOverrides.Add(entry.Key, GameText.Encoding.GetBytes(texts[entry.Key]));
                     if (!string.IsNullOrEmpty(entry.Value) && (entry.Key.StartsWith("names.", StringComparison.Ordinal) || IsStoredName(entry.Key)))
@@ -59,6 +58,7 @@ public sealed class LocalizationCatalog
     }
 
     public string Get(string key) => texts.TryGetValue(key, out var value) ? value : throw new KeyNotFoundException($"Unknown localization key: {key}");
+    public bool TryGet(string key, out string text) => texts.TryGetValue(key, out text!);
     public ReadOnlyMemory<byte> Legacy(string key, ReadOnlyMemory<byte> original) => legacyOverrides.TryGetValue(key, out var bytes) ? bytes : original;
     public ReadOnlyMemory<byte> Name(ReadOnlyMemory<byte> original)
         => FindName(original.Span) is { } replacement ? replacement : original;
@@ -74,7 +74,7 @@ public sealed class LocalizationCatalog
         }
 
         int end = original.IndexOf((byte)0);
-        string name = GameText.Encoding.GetString(end < 0 ? original : original[..end]);
+        string name = TextResourceSchema.Normalize(GameText.Encoding.GetString(end < 0 ? original : original[..end]));
         return nameOverrides.GetValueOrDefault(name);
     }
 
@@ -126,7 +126,7 @@ public sealed class LocalizationCatalog
                     input = input[Encoding.UTF8.Preamble.Length..];
                 }
                 using var document = JsonDocument.Parse(input);
-                translated = ReadObject(document.RootElement);
+                translated = TextResourceSchema.Upgrade(ReadObject(document.RootElement));
             }
             catch (JsonException e)
             {
@@ -202,7 +202,7 @@ public sealed class LocalizationCatalog
             return Diagnostic("template", ("detail", e.Message));
         }
 
-        if (value.Contains('\0') || (!baseline.Contains('\n') && (value.Contains('\n') || value.Contains('\r'))))
+        if (value.Contains('\0') || (!TextResourceSchema.IsFlowingText(key) && !baseline.Contains('\n') && (value.Contains('\n') || value.Contains('\r'))))
         {
             return Diagnostic("lines");
         }
@@ -210,13 +210,13 @@ public sealed class LocalizationCatalog
         try
         {
             // shortcut: legacy tables and four UI labels still use bytes; remove this gate after their string migration.
-            bool unicode = key.StartsWith("ui.", StringComparison.Ordinal) && key is not ("ui.quests.closed" or "ui.quests.active" or "ui.units.gold" or "ui.units.torch");
+            bool unicode = TextResourceSchema.IsFlowingText(key) || key.StartsWith("ui.", StringComparison.Ordinal) && key is not ("ui.quests.closed" or "ui.quests.active" or "ui.units.gold" or "ui.units.torch");
             _ = new UTF8Encoding(false, true).GetByteCount(value);
             int length = unicode ? value.Length : GameText.Encoding.GetByteCount(value);
             int limit = key.StartsWith("ui.", StringComparison.Ordinal) ? MaximumInterfaceTextCharacters : Math.Max(baseline.Length, MaximumLegacyRowTextBytes);
-            if (key.StartsWith("dialogue.", StringComparison.Ordinal) || key.StartsWith("scripts.", StringComparison.Ordinal))
+            if (TextResourceSchema.IsFlowingText(key))
             {
-                limit = MaximumDialogueTextBytes;
+                limit = MaximumParagraphCharacters;
             }
 
             if (length > limit)
@@ -252,7 +252,7 @@ public sealed class LocalizationCatalog
         return result;
     }
 
-    private static Dictionary<string, string> ReadObject(JsonElement root)
+    internal static Dictionary<string, string> ReadObject(JsonElement root)
     {
         if (root.ValueKind != JsonValueKind.Object)
         {

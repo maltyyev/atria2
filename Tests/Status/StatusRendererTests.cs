@@ -1,3 +1,4 @@
+using Atria.Localization;
 using Atria.Game.State;
 using Atria.Game.Status;
 using Atria.Render.Codecs;
@@ -60,9 +61,9 @@ public static class StatusRendererTests
 
             var rootPlan = renderer.BuildRootPlan(runtime, state, new());
             Check(rootPlan.Count(p => p.Primitive == StatusPrimitive.Panel) == 4, "four native root bordered panels");
-            Check(!rootPlan.Any(p => p.Primitive == StatusPrimitive.Text && p.Text.Span.SequenceEqual(messages[33].Span)), "removed skill is absent from character statistics");
+            Check(!rootPlan.Any(p => p.Primitive == StatusPrimitive.Text && p.Text == GameText.Decode(messages[33].Span)), "removed skill is absent from character statistics");
             Check(rootPlan.Any(p => p.Primitive == StatusPrimitive.Portrait && p.X == 21 && p.Y == 30 && p.A == 0), "native actor portrait origin");
-            Check(rootPlan.Any(p => p.Primitive == StatusPrimitive.Text && p.X == 24 && p.Y == 245 + page * 38 && p.Text.Span.SequenceEqual(messages[12 + page].Span)), "native five page labels");
+            Check(rootPlan.Any(p => p.Primitive == StatusPrimitive.Text && p.X == 24 && p.Y == 245 + page * 38 && p.Text == GameText.Decode(messages[12 + page].Span)), "native five page labels");
             Input(new(Accept: true));
             Check(runtime.Menu.DetailActive, "real detail initialization");
             var plan = renderer.BuildPlan(runtime, state, new(2), journal);
@@ -71,7 +72,7 @@ public static class StatusRendererTests
             if (page == 4)
             {
                 byte[] active = System.Text.CodePagesEncodingProvider.Instance.GetEncoding(1251)!.GetBytes("В работе");
-                Check(plan.Any(p => p.Primitive == StatusPrimitive.Text && p.Color == 0x07ff && p.Text.Span.SequenceEqual(active)), "active journal status is visibly drawn below the title");
+                Check(plan.Any(p => p.Primitive == StatusPrimitive.Text && p.Color == 0x07ff && p.Text == GameText.Decode(active)), "active journal status is visibly drawn below the title");
                 string output = Path.Combine(Path.GetFullPath(Path.Combine(root, "..")), "audit", "csharp-probe", "build-0.3.5-journal.rgb565");
                 Directory.CreateDirectory(Path.GetDirectoryName(output)!);
                 byte[] raster = new byte[pixels.Length * 2];
@@ -100,7 +101,7 @@ public static class StatusRendererTests
 
             if (page == 2)
             {
-                Check(plan.Any(p => p.Primitive == StatusPrimitive.Text && p.X == 194 && p.Y == 225 && p.Text.Span.SequenceEqual(messages[17].Span)), "base stat labels native column");
+                Check(plan.Any(p => p.Primitive == StatusPrimitive.Text && p.X == 194 && p.Y == 225 && p.Text == GameText.Decode(messages[17].Span)), "base stat labels native column");
             }
 
             if (page == 3)

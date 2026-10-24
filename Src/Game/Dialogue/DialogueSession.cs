@@ -1,3 +1,5 @@
+using Atria.Render.Codecs;
+using Atria.Render.UI;
 using Atria.Game.State;
 
 namespace Atria.Game.Dialogue;
@@ -27,7 +29,7 @@ public sealed class DialogueSession
     private static ReadOnlySpan<int> OpeningOffsets => [10, 3, 6, 12, 25, 50, 100, 200];
     public DialogueRequest Request
     {
-        get;
+        get; private set;
     }
     public int FirstLine
     {
@@ -54,13 +56,44 @@ public sealed class DialogueSession
         get;
     }
 
+    public void PrepareLayout(BitmapFont font)
+    {
+        if (Request.DisplayLines is not null)
+        {
+            return;
+        }
+        const int availableWidth = 440;
+        if (Request.IsQuestion)
+        {
+            var lines = new List<string>();
+            var choices = new List<int>();
+            var source = Request.Choices ?? Request.Lines.Select(line => GameText.Decode(line.Span)).ToArray();
+            if (source.Count == 0)
+            {
+                throw new InvalidDataException("A dialogue question requires at least one answer.");
+            }
+            for (int choice = 0; choice < source.Count; choice++)
+            {
+                var wrapped = TextFlow.Wrap(source[choice], availableWidth, font.MeasureText);
+                lines.AddRange(wrapped);
+                choices.AddRange(Enumerable.Repeat(choice, wrapped.Length));
+            }
+            Request = Request with { DisplayLines = lines.ToArray(), ChoiceByRow = choices.ToArray() };
+        }
+        else
+        {
+            string text = Request.Paragraph ?? string.Join("\n", Request.Lines.Select(line => GameText.Decode(line.Span)));
+            Request = Request with { DisplayLines = TextFlow.Wrap(text, availableWidth, font.MeasureText) };
+        }
+    }
+
     private int opening = 7, arrowStep, arrowTick;
     public void PointerSelect(int x, int y)
     {
         if (Request.IsQuestion && opening <= 2 && x >= PanelX + 16 && x < PanelX + 468 && y >= 401 && y < 465)
         {
             int line = FirstLine + (y - 401) / 16;
-            if (line < Request.Lines.Count)
+            if (line < (Request.DisplayLines?.Length ?? Request.Lines.Count))
             {
                 SelectedLine = line;
             }
@@ -131,6 +164,33 @@ public sealed class DialogueSession
             throw new InvalidOperationException("Dialogue has finished.");
         }
 
+        if (Request.ChoiceByRow is { } choiceByRow)
+        {
+            if (readPressed(DialogueInputAction.Confirm))
+            {
+                if (opening > 2)
+                {
+                    return;
+                }
+                sound(5);
+                state.Globals[10] = checked((short)(choiceByRow[SelectedLine] + 1));
+                Completed = true;
+                return;
+            }
+            int direction = readPressed(DialogueInputAction.Up) ? -1 : readPressed(DialogueInputAction.Down) ? 1 : 0;
+            if (direction != 0 && opening <= 2)
+            {
+                int selected = Math.Clamp(SelectedLine + direction, 0, choiceByRow.Length - 1);
+                if (selected != SelectedLine)
+                {
+                    SelectedLine = selected;
+                    FirstLine = Math.Clamp(FirstLine, Math.Max(0, selected - 3), selected);
+                    sound(1);
+                }
+            }
+            return;
+        }
+
         if (readPressed(DialogueInputAction.Confirm))
         {
             if (opening > 2)
@@ -139,7 +199,7 @@ public sealed class DialogueSession
             }
 
             sound(5);
-            if (Request.Lines.Count <= FirstLine + 4)
+            if ((Request.DisplayLines?.Length ?? Request.Lines.Count) <= FirstLine + 4)
             {
                 Completed = true;
                 FirstLine = 0;
@@ -150,6 +210,12 @@ public sealed class DialogueSession
             }
 
             FirstLine += 4; // Native increments even after clearing the modal flag.
+        }
+
+        // A narrative following a question retains its answer, regardless of display wrapping.
+        if (Request.DisplayLines is not null)
+        {
+            return;
         }
 
         if (readPressed(DialogueInputAction.Up))

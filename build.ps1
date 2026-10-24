@@ -47,6 +47,8 @@ try {
     }
     if ($LASTEXITCODE -ne 0) { throw "Action $Action failed with exit code $LASTEXITCODE" }
     if($Action -eq 'publish') {
+        & (Join-Path $projectRoot 'artifacts/win-x64/Atria.exe') --upgrade-localization | Write-Output
+        if($LASTEXITCODE -ne 0) { throw 'Localization upgrade failed; previous files and backups were preserved.' }
         & "$projectRoot/tools/verify_package.ps1"
         $publishedExe=Join-Path $projectRoot 'artifacts/win-x64/Atria.exe'
         $publishedVersion=(Get-Item -LiteralPath $publishedExe).VersionInfo.ProductVersion
