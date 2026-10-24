@@ -12,6 +12,7 @@ public sealed class GameState
     public short[] Globals { get; } = new short[GlobalCount];
     public int[] Events { get; } = new int[EventCount];
     public int[] EventStatuses { get; } = new int[EventStatusCount];
+    public QuestJournal Journal { get; } = new();
     // Preserve uninterpreted fields until actor/save recovery establishes their meaning.
     public PartyMember[] Party { get; } = Enumerable.Range(0, PartyCount).Select(_ => new PartyMember()).ToArray();
     public int[] OwnedItems { get; } = new int[InventoryBankCount];

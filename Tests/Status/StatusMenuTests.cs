@@ -100,7 +100,7 @@ public static class StatusMenuTests
         state.EventStatuses[2] = 1;
         state.EventStatuses[3] = 2;
         state.EventStatuses[4] = 5;
-        Check(new StatusTextList(state, 4).Ids.SequenceEqual(new[] { 0, 1, 2, 3, 149 }), "journal includes accepted and intermediate stages; excludes unaccepted, sentinel5 and IDs outside catalog");
+        Check(new StatusTextList(state, 4).Ids.SequenceEqual(new[] { 0, 2, 3 }), "journal excludes declined offers, empty records, sentinels and IDs outside catalog");
         byte[] itemBytes = new byte[88 * (98 + 310)];
         void ItemInt(int id, int offset, int value) => BinaryPrimitives.WriteInt32LittleEndian(itemBytes.AsSpan(id * 98 + offset, 4), value);
         ItemInt(1, 30, 5);

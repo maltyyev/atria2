@@ -71,10 +71,15 @@ public static class TextFlowTests
             catch (JsonException) { }
             Check(File.ReadAllText(path) == original, "all files parsed before any replacement");
             File.Delete(bad);
-            Check(TextResourceSchema.UpgradeFiles(root) == 1, "upgrade replaces old schema");
+            string uiPath = Path.Combine(folder, "ui.json");
+            File.WriteAllText(uiPath, "{\"ui.moves.afterPrefix\":\" My edit {moves}\",\"ui.moves.continuationSuffix\":\" (продолжение)\"}");
+            Check(TextResourceSchema.UpgradeFiles(root) == 2, "upgrade replaces old schema and adds new baseline keys");
             using var document = JsonDocument.Parse(File.ReadAllText(path));
             Check(document.RootElement.GetProperty("dialogue.0000.text").GetString() == "Моя правка вторая строка", "numeric row order and user edits preserved");
-            Check(File.ReadAllText(Directory.GetFiles(folder, "*.bak").Single()) == original, "exact old bytes backed up");
+            Check(File.ReadAllText(Directory.GetFiles(folder, "dialogue.json.*.bak").Single()) == original, "exact old bytes backed up");
+            using var ui = JsonDocument.Parse(File.ReadAllText(uiPath));
+            Check(ui.RootElement.GetProperty("ui.moves.afterPrefix").GetString() == " My edit {moves}"
+                && ui.RootElement.GetProperty("ui.moves.continuationSuffix").GetString() == "(продолжение)", "known old defaults upgrade while user edits remain intact");
             Check(TextResourceSchema.UpgradeFiles(root) == 0, "migration is idempotent");
         }
         finally { Directory.Delete(root, true); }

@@ -6,6 +6,8 @@ namespace Atria.Game.Persistence;
 /// <summary>Version1 native-only GameState schema. Explicit fields avoid reflection/AOT and do not invent legacy storage.</summary>
 public static class NativeGameStateCodec
 {
+    private const uint JournalExtension = 0x4c4e524a; // JRNL, optional tail for pre-0.7.1 saves.
+    private const int JournalVersion = 1;
     public const int MaxBytes = 300000;
     public static byte[] Encode(GameState s)
     {
@@ -60,6 +62,17 @@ public static class NativeGameStateCodec
             WriteBytes(writer, person.Handler.Span, 4096);
         }
 
+        if (s.Journal.Entries.Count != 0)
+        {
+            writer.Write(JournalExtension);
+            writer.Write(JournalVersion);
+            writer.Write(s.Journal.Entries.Count);
+            foreach (var entry in s.Journal.Entries.OrderBy(entry => entry.Key))
+            {
+                writer.Write(entry.Key);
+                writer.Write((byte)entry.Value);
+            }
+        }
         writer.Flush();
         if (stream.Length > MaxBytes)
         {
@@ -119,6 +132,16 @@ public static class NativeGameStateCodec
             }
 
             s.People = people;
+            if (stream.Position < stream.Length)
+            {
+                if (reader.ReadUInt32() != JournalExtension || reader.ReadInt32() != JournalVersion)
+                {
+                    throw new InvalidDataException("Unknown native journal extension.");
+                }
+                int entries = reader.ReadInt32();
+                if ((uint)entries > GameState.EventStatusCount) throw new InvalidDataException("Saved journal entry count exceeds capacity.");
+                for (int i = 0; i < entries; i++) s.Journal.Restore(reader.ReadInt32(), (QuestMilestones)reader.ReadByte());
+            }
             if (stream.Position != stream.Length)
             {
                 throw new InvalidDataException("Native GameState has trailing bytes outside its schema.");

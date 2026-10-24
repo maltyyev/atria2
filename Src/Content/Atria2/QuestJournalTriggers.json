@@ -1,0 +1,128 @@
+[
+  {
+    "member": "SUBEVENT",
+    "offset": 1600,
+    "function": "battle_start3",
+    "quest": 1,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 23241,
+    "function": "battle_start3",
+    "quest": 5,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 36202,
+    "function": "battle_start3",
+    "quest": 7,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 167538,
+    "function": "battle_start3",
+    "quest": 35,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 231326,
+    "function": "battle_start3",
+    "quest": 53,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 249045,
+    "function": "battle_start3",
+    "quest": 59,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 250425,
+    "function": "battle_start3",
+    "quest": 60,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 263970,
+    "function": "battle_start3",
+    "quest": 65,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 277900,
+    "function": "battle_start3",
+    "quest": 72,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 280749,
+    "function": "battle_start3",
+    "quest": 73,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 283608,
+    "function": "battle_start3",
+    "quest": 74,
+    "milestone": "started"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 487036,
+    "function": "script_end",
+    "quest": 63,
+    "milestone": "leadFound"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 524879,
+    "function": "script_end",
+    "quest": 63,
+    "milestone": "pursuitContinued"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 253051,
+    "function": "set_eventstatus",
+    "quest": 61,
+    "milestone": "declined"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 255922,
+    "function": "set_eventstatus",
+    "quest": 62,
+    "milestone": "declined"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 259920,
+    "function": "set_eventstatus",
+    "quest": 63,
+    "milestone": "declined"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 254267,
+    "function": "set_eventstatus",
+    "quest": 61,
+    "milestone": "stopped"
+  },
+  {
+    "member": "SUBEVENT",
+    "offset": 256485,
+    "function": "set_eventstatus",
+    "quest": 62,
+    "milestone": "stopped"
+  }
+]

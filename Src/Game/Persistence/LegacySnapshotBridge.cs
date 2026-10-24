@@ -167,6 +167,7 @@ public static class LegacySnapshotBridge
         source.QuestItemRecords.CopyTo(target.QuestItemRecords, 0);
         source.Events.CopyTo(target.Events, 0);
         source.EventStatuses.CopyTo(target.EventStatuses, 0);
+        target.Journal.CopyFrom(source.Journal);
         source.Globals.CopyTo(target.Globals, 0);
     }
 }

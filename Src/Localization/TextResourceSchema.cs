@@ -8,6 +8,7 @@ public static class TextResourceSchema
     private static readonly HashSet<int> questionRecords;
     private static readonly HashSet<string> scriptQuestions;
     private static readonly Dictionary<string, string> scrollKeys;
+    private static readonly Dictionary<string, string> previousDefaults;
     private static readonly Regex whitespace = new(@"\s+", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
 
     static TextResourceSchema()
@@ -17,6 +18,8 @@ public static class TextResourceSchema
         using var document = JsonDocument.Parse(stream);
         questionRecords = document.RootElement.GetProperty("questionDialogueRecords").EnumerateArray().Select(v => v.GetInt32()).ToHashSet();
         scriptQuestions = document.RootElement.GetProperty("questionScriptCalls").EnumerateArray().Select(v => v.GetString()!).ToHashSet(StringComparer.Ordinal);
+        previousDefaults = document.RootElement.GetProperty("previousDefaults").EnumerateObject()
+            .ToDictionary(entry => entry.Name, entry => entry.Value.GetString()!, StringComparer.Ordinal);
         scrollKeys = new(StringComparer.Ordinal);
         foreach (var block in document.RootElement.GetProperty("scrollBlocks").EnumerateObject())
         {
@@ -107,6 +110,17 @@ public static class TextResourceSchema
                 using var document = JsonDocument.Parse(input);
                 var original = LocalizationCatalog.ReadObject(document.RootElement);
                 var upgraded = Upgrade(original);
+                if (Path.GetFileName(folder) == LocalizationCatalog.BaseLanguage)
+                {
+                    foreach (var entry in LocalizationCatalog.Defaults[file])
+                    {
+                        if (upgraded.TryGetValue(entry.Key, out string? value) && previousDefaults.GetValueOrDefault(entry.Key) == value)
+                        {
+                            upgraded[entry.Key] = entry.Value;
+                        }
+                        else upgraded.TryAdd(entry.Key, entry.Value);
+                    }
+                }
                 if (original.Count != upgraded.Count || original.Any(entry => !upgraded.TryGetValue(entry.Key, out var value) || value != entry.Value))
                 {
                     updates.Add((path, upgraded));

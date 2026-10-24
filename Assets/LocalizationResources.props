@@ -4,9 +4,9 @@
     <Content Include="@(LocalizationResource)" Link="assets/localization/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
   </ItemGroup>
   <Target Name="PublishEditableLocalization" AfterTargets="Publish">
-    <!-- Existing translations are player edits. New keys fall back to the embedded baseline. -->
+    <!-- Preserve player edits; tests always use the current fixture. build.ps1 upgrades release JSON after publish. -->
     <Copy SourceFiles="%(LocalizationResource.Identity)"
           DestinationFiles="$(PublishDir)assets/localization/%(LocalizationResource.RecursiveDir)%(LocalizationResource.Filename)%(LocalizationResource.Extension)"
-          Condition="!Exists('$(PublishDir)assets/localization/%(LocalizationResource.RecursiveDir)%(LocalizationResource.Filename)%(LocalizationResource.Extension)')" />
+          Condition="'$(MSBuildProjectName)' == 'Atria.Tests' Or !Exists('$(PublishDir)assets/localization/%(LocalizationResource.RecursiveDir)%(LocalizationResource.Filename)%(LocalizationResource.Extension)')" />
   </Target>
 </Project>

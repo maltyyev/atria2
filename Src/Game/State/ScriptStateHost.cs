@@ -44,6 +44,7 @@ public sealed class ScriptStateHost(GameState state, IScriptEffects? effects = n
             return 1;
         }
 
+        QuestJournalTriggers.Observe(call, state);
         switch (call.Function)
         {
             case "set_global":
@@ -63,6 +64,7 @@ public sealed class ScriptStateHost(GameState state, IScriptEffects? effects = n
                 return state.Events[EventIndex()];
             case "set_eventstatus":
                 Count(2);
+                state.Journal.ObserveStatus(state, Index(0, GameState.EventStatusCount), Int(1));
                 state.EventStatuses[Index(0, GameState.EventStatusCount)] = Int(1);
                 return 0;
             case "get_eventstatus":

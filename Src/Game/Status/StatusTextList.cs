@@ -28,7 +28,7 @@ public sealed class StatusTextList
         {
             1 => Enumerable.Range(0, ItemCatalog.Count).Where(i => state.OwnedItems[i] > 0).ToArray(),
             3 => Enumerable.Range(0, 51).Where(i => state.GetQuestItemFlag(i) != 0).ToArray(),
-            4 => Enumerable.Range(0, 150).Where(i => state.EventStatuses[i] is >= 1 and <= 4).ToArray(),
+            4 => Enumerable.Range(0, QuestJournalText.OriginalEntryCount).Where(i => QuestJournalText.IsVisible(state, i)).ToArray(),
             _ => throw new ArgumentOutOfRangeException(nameof(page))
         };
     }

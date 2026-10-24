@@ -1,5 +1,14 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--journal")
+{
+    Console.WriteLine(Atria.Tests.Status.QuestJournalTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Status.StatusMenuTests.Run());
+    Atria.Tests.Status.StatusRendererTests.Run(args[0]);
+    Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--unicode")
 {
     Console.WriteLine(Atria.Tests.Render.UnicodeTextTests.Run(args[0]));
@@ -212,6 +221,7 @@ Console.WriteLine(Atria.Tests.Interiors.InteriorTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Interiors.GeographerTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Interiors.GathaGuildTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Status.StatusMenuTests.Run());
+Console.WriteLine(Atria.Tests.Status.QuestJournalTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Status.Feedback035Tests.Run(args[0]));
 Atria.Tests.Status.StatusRendererTests.Run(args[0]);
 Console.WriteLine(Atria.Tests.Combat.CombatTests.Run(args[0]));

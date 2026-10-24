@@ -96,7 +96,9 @@ public sealed class StatusMenuRuntime
                 }
                 else if (Menu.Page is 1 or 3 or 4)
                 {
-                    closed = TextList!.Input(action, Sound, id => LoadDescription(StatusTextList.LoadDescription(Menu.Page, id, items, eventItemText, journal)));
+                    closed = TextList!.Input(action, Sound, id => LoadDescription(Menu.Page == 4
+                        ? QuestJournalText.Description(state, id)
+                        : StatusTextList.LoadDescription(Menu.Page, id, items, eventItemText, journal)));
                 }
                 else if (action == 5)
                 {

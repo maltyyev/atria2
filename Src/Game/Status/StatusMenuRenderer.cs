@@ -329,7 +329,7 @@ public sealed class StatusMenuRenderer
                 }, sm: false);
                 if (page == 4 && id != 0)
                 {
-                    Pair(JournalStatus(state.EventStatuses[id]), 136, 348 + row * 48, color: state.EventStatuses[id] == 4 ? (ushort)0x8410 : (ushort)0x07ff);
+                    Pair(QuestJournalText.Status(state, id), 136, 348 + row * 48, color: state.EventStatuses[id] == 4 ? (ushort)0x8410 : (ushort)0x07ff);
                 }
             }
 
@@ -431,9 +431,6 @@ public sealed class StatusMenuRenderer
         return ops.AsReadOnly();
     }
 
-    private static string journalClosed => GameText.Get("ui.quests.closed");
-    private static string journalActive => GameText.Get("ui.quests.active");
-    private static string JournalStatus(int status) => status == 4 ? journalClosed : journalActive;
     private void AppendItemList(
         List<StatusDrawCommand> ops,
         GameState state,

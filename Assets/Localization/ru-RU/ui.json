@@ -191,5 +191,7 @@
   "ui.settings.controllerDisconnected": "Xbox {slot} не подключён",
   "ui.settings.bindingTitle": "Игрок {player}: {column}",
   "ui.settings.moveBindingTitle": "{character}: {column}",
-  "ui.settings.xbox": "Xbox"
+  "ui.settings.xbox": "Xbox",
+  "ui.quests.stopped": "Прервано",
+  "ui.quests.stoppedDescription": "Поручение прервано. Дальнейшее выполнение по прежним условиям недоступно."
 }
