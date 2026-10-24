@@ -1,0 +1,8 @@
+{
+  "ui.mainMenu.new": "НОВАЯ",
+  "ui.mainMenu.load": "ЗАПИСИ",
+  "ui.mainMenu.save": "ЗАПИСЬ",
+  "ui.mainMenu.quit": "ВЫХОД",
+  "ui.mainMenu.credits": "ИНФО",
+  "ui.mainMenu.settings": "ОПЦИИ"
+}

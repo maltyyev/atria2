@@ -75,7 +75,7 @@ public sealed partial class GameSession
         }
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        smallFont.DrawText(Encoding.GetEncoding(1251).GetBytes(autosaveFailure), target, 640, 480, 640, 184, 456, 0xffff);
+        smallFont.DrawText(autosaveFailure, target, 640, 480, 640, 184, 456, 0xffff);
     }
 
     private void BeforeScenarioCall(ScriptCall call)

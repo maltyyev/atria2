@@ -1,5 +1,12 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--unicode")
+{
+    Console.WriteLine(Atria.Tests.Render.UnicodeTextTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--localization")
 {
     Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));

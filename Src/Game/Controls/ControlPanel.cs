@@ -1,20 +1,12 @@
-using System.Text;
 using Atria.Render.Codecs;
 using Atria.Render.UI;
 
 namespace Atria.Game.Controls;
 
 public sealed record ControlRow(string Label, string Value, Action? Activate = null, Action<int>? Adjust = null, int Icon = -1);
-/// <summary>Original panel tiles and CP1251 bitmap font, dynamically laid out rows.</summary>
+/// <summary>Original panel tiles with measured, Unicode-capable text rows.</summary>
 public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
 {
-    private static readonly Encoding cp1251 = CreateEncoding();
-    private static Encoding CreateEncoding()
-    {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        return Encoding.GetEncoding(1251);
-    }
-
     public int Selection
     {
         get; set;
@@ -205,15 +197,9 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
 
     public static void Text(BitmapFont font, Span<ushort> pixels, string text, int x, int y, ushort color, int max = 72)
     {
-        if (text.Length > max)
-        {
-            text = text[..Math.Max(0, max - 2)] + "..";
-        }
-
-        Span<byte> b = stackalloc byte[text.Length];
-        cp1251.GetBytes(text, b);
-        font.DrawText(b, pixels, 640, 480, 640, x + 1, y + 1, 0);
-        font.DrawText(b, pixels, 640, 480, 640, x, y, color);
+        text = UnicodeText.Fit(text, Math.Min(max * font.Advance, 640 - x), font.MeasureText);
+        font.DrawText(text, pixels, 640, 480, 640, x + 1, y + 1, 0);
+        font.DrawText(text, pixels, 640, 480, 640, x, y, color);
     }
 
     public void Text(Span<ushort> pixels, string text, int x, int y, ushort color, int max = 72) => Text(font, pixels, text, x, y, color, max);

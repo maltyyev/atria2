@@ -43,10 +43,10 @@ public static class SceneRenderTests
         var menu = SpriteFile.Decode(Read(menuSprites, "MENU"u8));
         for (int item = 0; item < 6; item++)
         {
-            MainMenuPresentation.DrawSelection(menu, item, target, 640, 480, 640);
+            MainMenuPresentation.DrawSelection(item, target, 640, 480, 640);
             for (int reveal = 0; reveal < 8; reveal++)
             {
-                MainMenuPresentation.DrawPanel(menu, item, reveal, target, 640, 480, 640);
+                MainMenuPresentation.DrawPanel(item, reveal, target, 640, 480, 640);
             }
         }
 

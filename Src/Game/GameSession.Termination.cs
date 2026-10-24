@@ -51,7 +51,7 @@ public sealed partial class GameSession
     });
     private void ComposeQuit(Span<ushort> target)
     {
-        MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, menuSprites, fireAnimation, fireSprites, target, menuModal.Draw);
+        MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, fireAnimation, fireSprites, target, menuModal.Draw);
         terminationLargeFont ??= BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false);
         TerminationRenderer.DrawQuit(quit, etc, terminationLargeFont, displayMessages, target);
     }

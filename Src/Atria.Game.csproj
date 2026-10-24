@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <AssemblyName>Atria</AssemblyName>
     <RootNamespace>Atria</RootNamespace>
@@ -11,6 +11,7 @@
   </PropertyGroup>
   <Import Project="../Assets/PackageResources.props" />
   <Import Project="../Assets/LocalizationResources.props" />
+  <Import Project="../Assets/InterfaceResources.props" />
   <ItemGroup>
     <EmbeddedResource Include="../Assets/Localization/ru-RU/*.json" LogicalName="Atria.Localization.Defaults.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Content/Atria2/*.json" />

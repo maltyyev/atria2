@@ -52,6 +52,16 @@ foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Localizati
     }
 }
 
+foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Interface') -Recurse -File -Filter '*.bmp') {
+    $relative = [IO.Path]::GetRelativePath((Join-Path $assetRoot 'Interface'), $source.FullName)
+    $deployed = Join-Path $PackageRoot ('assets/interface/' + $relative)
+    if (!(Test-Path -LiteralPath $deployed -PathType Leaf) -or
+        (Get-FileHash -LiteralPath $source.FullName -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $deployed -Algorithm SHA256).Hash) {
+        throw "Missing or outdated interface artwork: $deployed"
+    }
+}
+
 # Player-edited translations need validation, not equality with the source files.
 & (Join-Path $PackageRoot 'Atria.exe') --validate-localization | Write-Output
 if ($LASTEXITCODE -ne 0) {

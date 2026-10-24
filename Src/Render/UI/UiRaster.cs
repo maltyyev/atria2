@@ -78,6 +78,22 @@ public static class UiRaster
     }
 
     //0x425830 ->425790/4257e0 ->4253a0/4254b0. Phase is native48e3ac, normally0.
+    public static int DrawStyledText(BitmapFont font, string text, ReadOnlySpan<ushort> palette, int phase,
+        Span<ushort> target, int width, int height, int stride, int x, int y)
+    {
+        if (BitmapFont.TryLegacy(text, out var encoded))
+        {
+            return DrawStyledText(font, encoded, palette, phase, target, width, height, stride, x, y);
+        }
+        if (palette.Length != 32 || (uint)phase >= 32)
+        {
+            throw new ArgumentException("Style requires 32 colors and phase 0..31.");
+        }
+        var mask = UnicodeText.Layout(text, font.Height * 0.75f);
+        UnicodeText.Draw(mask, target, width, height, stride, x, y, palette[phase], palette: palette, phase: phase);
+        return mask.Advance;
+    }
+
     public static int DrawStyledText(
         BitmapFont font,
         ReadOnlySpan<byte> text,

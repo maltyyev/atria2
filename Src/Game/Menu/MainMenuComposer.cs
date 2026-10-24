@@ -6,12 +6,11 @@ namespace Atria.Game.Menu;
 public delegate void MenuConfirmationRenderer(MenuFrame frame, Span<ushort> target);
 public static class MainMenuComposer
 {
-    // Background is the decoded MENUBG converted using the renderer's recovered 565 conversion.
+    // Localized captions are drawn over the text-free artwork.
     // Modal renderer is mandatory on modal frames until 0x423660 text/box helpers are integrated.
     public static void Draw(
         MenuFrame frame,
         ReadOnlySpan<ushort> background,
-        SpriteFile menu,
         AnimationFile fireAnimation,
         SpriteFile fireSprites,
         Span<ushort> target,
@@ -34,15 +33,15 @@ public static class MainMenuComposer
             return;
         }
 
-        MainMenuPresentation.DrawSelection(menu, frame.Selection, target, 640, 480, 640);
+        MainMenuPresentation.DrawSelection(frame.Selection, target, 640, 480, 640);
         if (frame.PanelItem >= 0)
         {
-            MainMenuPresentation.DrawPanel(menu, frame.PanelItem, frame.PanelReveal, target, 640, 480, 640);
+            MainMenuPresentation.DrawPanel(frame.PanelItem, frame.PanelReveal, target, 640, 480, 640);
         }
 
         if (frame.Confirmation)
         {
-            MainMenuPresentation.DrawPanel(menu, frame.PanelItem < 0 ? frame.Selection : frame.PanelItem, frame.ConfirmationPanelReveal, target, 640, 480, 640);
+            MainMenuPresentation.DrawPanel(frame.PanelItem < 0 ? frame.Selection : frame.PanelItem, frame.ConfirmationPanelReveal, target, 640, 480, 640);
             confirmationRenderer!(frame, target);
         }
 

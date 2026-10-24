@@ -96,9 +96,8 @@ public static class CombatGlobalUiTests
         Array.Clear(image);
         raster.Draw(ui, true, false, image);
         Check(!image.SequenceEqual(cached), "Pause label follows the externally owned native pause flag.");
-        Span<byte> text = stackalloc byte[64];
-        int length = CombatGlobalUiRaster.FormatSettings(3, 225, text);
-        Check(Encoding.ASCII.GetString(text[..length]) == "Detail Level 3  Speed=225", "Exact executable detail/speed punctuation and spacing.");
+        string text = CombatGlobalUiRaster.FormatSettings(3, 225);
+        Check(text == "Detail Level 3  Speed=225", "Exact executable detail/speed punctuation and spacing.");
         return "Combat global UI: lazy speed/detail priority, shared deadline, strict sliding/dwell phases, item53 actor MP, pause and actual BATTLE/ENG1 raster passed.";
     }
 

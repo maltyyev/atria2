@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using Atria.Render.Codecs;
 using Atria.Render.UI;
 using Atria.Resources;
@@ -32,7 +31,7 @@ public sealed record SaveMenuDrawCommand(
     ushort Color = 0,
     bool Small = false,
     SaveMenuTextStyle Style = SaveMenuTextStyle.Solid,
-    ReadOnlyMemory<byte> Text = default
+    string Text = ""
 );
 /// <summary>421d20/4226a0/423050 and42ad20/42b520/42bfd0. Compose over fresh saveload.bmp.</summary>
 public sealed class SaveLoadMenuRenderer
@@ -62,7 +61,7 @@ public sealed class SaveLoadMenuRenderer
         SaveLoadMenuFrame frame,
         IReadOnlyList<SaveSlotInfo> slots,
         bool alternateEmptyName = false,
-        ReadOnlyMemory<byte> safetyFailureLabel = default
+        string safetyFailureLabel = ""
     )
     {
         if (frame.Selection < 0 || (slots.Count > 0 && frame.Selection >= slots.Count) || (uint)frame.ConfirmationChoice > 1
@@ -73,14 +72,14 @@ public sealed class SaveLoadMenuRenderer
 
         var ops = new List<SaveMenuDrawCommand>();
         void Box(SaveMenuPrimitive kind, int x, int y, int a, int b, ushort color = 0) => ops.Add(new(kind, x, y, a, b, color));
-        void Text(ReadOnlyMemory<byte> text, int x, int y, SaveMenuTextStyle style = SaveMenuTextStyle.Solid, bool sm = false, ushort color = 0) => ops.Add(new(SaveMenuPrimitive.Text, x, y, Color: color, Small: sm, Style: style, Text: text));
-        void Pair(ReadOnlyMemory<byte> text, int x, int y, SaveMenuTextStyle style, bool sm = false, bool flash = false, int shadowX = 1, int shadowY = 1)
+        void Text(string text, int x, int y, SaveMenuTextStyle style = SaveMenuTextStyle.Solid, bool sm = false, ushort color = 0) => ops.Add(new(SaveMenuPrimitive.Text, x, y, Color: color, Small: sm, Style: style, Text: text));
+        void Pair(string text, int x, int y, SaveMenuTextStyle style, bool sm = false, bool flash = false, int shadowX = 1, int shadowY = 1)
         {
             Text(text, x + shadowX, y + shadowY, sm: sm);
             Text(text, x, y, flash ? SaveMenuTextStyle.Solid : style, sm, 0xffff);
         }
 
-        void Outline(ReadOnlyMemory<byte> text, int x, int y, SaveMenuTextStyle style, bool flash = false)
+        void Outline(string text, int x, int y, SaveMenuTextStyle style, bool flash = false)
         {
             foreach (var d in new[]
             {
@@ -101,13 +100,13 @@ public sealed class SaveLoadMenuRenderer
         Box(SaveMenuPrimitive.Panel, 96, 64, 12, 7);
         Box(SaveMenuPrimitive.Tint, 142, 382, 356, 36, 15);
         Box(SaveMenuPrimitive.Panel, 128, 368, 10, 0);
-        Pair(messages[frame.Kind == SaveLoadMenuKind.Save ? 362 : 260], 156, 390, SaveMenuTextStyle.Selected);
+        Pair(GameText.Decode(messages[frame.Kind == SaveLoadMenuKind.Save ? 362 : 260].Span), 156, 390, SaveMenuTextStyle.Selected);
         if (slots.Count == 0)
         {
-            Text(Russian(GameText.Get("ui.saves.empty")), 210, 195, sm: true, color: 0xffff);
+            Text(GameText.Get("ui.saves.empty"), 210, 195, sm: true, color: 0xffff);
         }
 
-        Text(Encoding.ASCII.GetBytes($"{(slots.Count == 0 ? 0 : frame.Selection + 1)} / {slots.Count}"), 440, 350, sm: true, color: 0xffff);
+        Text($"{(slots.Count == 0 ? 0 : frame.Selection + 1)} / {slots.Count}", 440, 350, sm: true, color: 0xffff);
         for (int i = frame.Top; i < Math.Min(slots.Count, frame.Top + 5); i++)
         {
             var metadata = slots[i].Metadata;
@@ -116,7 +115,7 @@ public sealed class SaveLoadMenuRenderer
             int y = 99 + (i - frame.Top) * 48;
             if (slots[i].IsNew)
             {
-                Outline(Russian(GameText.Get("ui.saves.new")), 140, y, style, flash);
+                Outline(GameText.Get("ui.saves.new"), 140, y, style, flash);
                 continue;
             }
 
@@ -124,7 +123,7 @@ public sealed class SaveLoadMenuRenderer
             {
                 if (slots[i].Status is SaveSlotStatus.Invalid or SaveSlotStatus.Unreadable)
                 {
-                    Outline(Russian(GameText.Get("ui.saves.readFailed")), 208, y + 1, style, flash);
+                    Outline(GameText.Get("ui.saves.readFailed"), 208, y + 1, style, flash);
                     continue;
                 }
 
@@ -136,22 +135,22 @@ public sealed class SaveLoadMenuRenderer
                     label = messages[361];
                 }
 
-                Outline(GameText.Name(label), 208, y + 1, style, flash);
+                Outline(GameText.Decode(GameText.Name(label).Span), 208, y + 1, style, flash);
                 continue;
             }
 
-            Outline(GameText.Name(metadata.PrimaryName), 140, y, style, flash);
-            Pair(Join(messages[310], " "u8.ToArray(), Number(metadata.ActorZeroLevel)), 440, y + 1, style, flash: flash, shadowX: -1, shadowY: -1);
+            Outline(GameText.Decode(GameText.Name(metadata.PrimaryName).Span), 140, y, style, flash);
+            Pair(Join(GameText.Decode(messages[310].Span), " ", Number(metadata.ActorZeroLevel)), 440, y + 1, style, flash: flash, shadowX: -1, shadowY: -1);
             var date = slots[i].Date;
             var dateText = Join(
-                messages[311],
-                " "u8.ToArray(),
+                GameText.Decode(messages[311].Span),
+                " ",
                 Number(date.Year),
-                "."u8.ToArray(),
+                ".",
                 Number(date.Month),
-                "."u8.ToArray(),
+                ".",
                 Number(date.Day),
-                " ]"u8.ToArray()
+                " ]"
             );
             if (flash)
             {
@@ -162,7 +161,7 @@ public sealed class SaveLoadMenuRenderer
                 Pair(dateText, 190, y + 26, style, true);
             }
 
-            Text(Russian(slots[i].Automatic ? GameText.Get("ui.saves.automatic") : GameText.Get("ui.saves.manual")), 478, y + 26, sm: true, color: slots[i].Automatic ? (ushort)0x354a : (ushort)0x443e);
+            Text(slots[i].Automatic ? GameText.Get("ui.saves.automatic") : GameText.Get("ui.saves.manual"), 478, y + 26, sm: true, color: slots[i].Automatic ? (ushort)0x354a : (ushort)0x443e);
         }
 
         if (slots.Count > 0 && !slots[frame.Selection].IsNew)
@@ -174,7 +173,7 @@ public sealed class SaveLoadMenuRenderer
                 detail = row.WrittenUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss") + "  " + detail;
             }
 
-            Text(Russian(detail.Length > 58 ? detail[..58] : detail), 88, 438, sm: true, color: 0xffff);
+            Text(UnicodeText.Fit(detail, 58 * small.Advance, small.MeasureText), 88, 438, sm: true, color: 0xffff);
         }
 
         void ModalBox(int x, int y, int w, int h, int horizontal, int vertical)
@@ -187,13 +186,13 @@ public sealed class SaveLoadMenuRenderer
         if (frame.EmptyNotice)
         {
             ModalBox(160, 128, 292, 36, 8, 0);
-            Pair(messages[267], 192, 150, SaveMenuTextStyle.Title);
+            Pair(GameText.Decode(messages[267].Span), 192, 150, SaveMenuTextStyle.Title);
         }
 
         if (frame.Countdown > 0)
         {
             ModalBox(192, 128, 228, 100, 6, 2);
-            Pair(messages[frame.Kind == SaveLoadMenuKind.Save ? 363 : 266], frame.Kind == SaveLoadMenuKind.Save ? 224 : 228, 160, SaveMenuTextStyle.Normal);
+            Pair(GameText.Decode(messages[frame.Kind == SaveLoadMenuKind.Save ? 363 : 266].Span), frame.Kind == SaveLoadMenuKind.Save ? 224 : 228, 160, SaveMenuTextStyle.Normal);
             Box(SaveMenuPrimitive.Fill, 250, 200, 161 - frame.Countdown * 8, 13, 0xf81f);
         }
 
@@ -201,13 +200,13 @@ public sealed class SaveLoadMenuRenderer
         {
             ModalBox(192, 128, 228, 100, 6, 2);
             int first = frame.Kind == SaveLoadMenuKind.Save ? 312 : 263;
-            Pair(messages[first], 220, 160, SaveMenuTextStyle.Title);
-            Pair(messages[first + 1], 260, 192, frame.ConfirmationChoice == 0 ? SaveMenuTextStyle.Selected : SaveMenuTextStyle.Normal);
-            Pair(messages[first + 2], 320, 192, frame.ConfirmationChoice == 1 ? SaveMenuTextStyle.Selected : SaveMenuTextStyle.Normal);
+            Pair(GameText.Decode(messages[first].Span), 220, 160, SaveMenuTextStyle.Title);
+            Pair(GameText.Decode(messages[first + 1].Span), 260, 192, frame.ConfirmationChoice == 0 ? SaveMenuTextStyle.Selected : SaveMenuTextStyle.Normal);
+            Pair(GameText.Decode(messages[first + 2].Span), 320, 192, frame.ConfirmationChoice == 1 ? SaveMenuTextStyle.Selected : SaveMenuTextStyle.Normal);
         }
 
         // This supplied diagnostic is an explicit native-engine extension: original CRT errors had no recovered safe modal.
-        if (!safetyFailureLabel.IsEmpty)
+        if (!string.IsNullOrEmpty(safetyFailureLabel))
         {
             ModalBox(160, 128, 292, 36, 8, 0);
             Pair(safetyFailureLabel, 192, 150, SaveMenuTextStyle.Title);
@@ -244,11 +243,11 @@ public sealed class SaveLoadMenuRenderer
                     var font = op.Small ? small : large;
                     if (op.Style == SaveMenuTextStyle.Solid)
                     {
-                        font.DrawText(op.Text.Span, target, 640, 480, 640, op.X, op.Y, op.Color);
+                        font.DrawText(op.Text, target, 640, 480, 640, op.X, op.Y, op.Color);
                     }
                     else
                     {
-                        UiRaster.DrawStyledText(font, op.Text.Span, Palette(op.Style), 0, target, 640, 480, 640, op.X, op.Y);
+                        UiRaster.DrawStyledText(font, op.Text, Palette(op.Style), 0, target, 640, 480, 640, op.X, op.Y);
                     }
 
                     break;
@@ -256,25 +255,8 @@ public sealed class SaveLoadMenuRenderer
         }
     }
 
-    private static byte[] Number(int value) => Encoding.ASCII.GetBytes(value.ToString(CultureInfo.InvariantCulture));
-    private static byte[] Russian(string text)
-    {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        return Encoding.GetEncoding(1251).GetBytes(text);
-    }
-
-    private static byte[] Join(params ReadOnlyMemory<byte>[] parts)
-    {
-        var result = new byte[parts.Sum(p => p.Length)];
-        int at = 0;
-        foreach (var part in parts)
-        {
-            part.Span.CopyTo(result.AsSpan(at));
-            at += part.Length;
-        }
-
-        return result;
-    }
+    private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string Join(params string[] parts) => string.Concat(parts);
 
     private static ReadOnlySpan<ushort> Palette(SaveMenuTextStyle style) => style switch
     {

@@ -124,7 +124,7 @@ public sealed partial class GameSession
     {
         (persistenceBackground ?? throw new InvalidOperationException("Save/load UI not entered.")).CopyTo(target);
         // The original has no reliable disk-error contract. This explicit native-engine notice is acknowledged before retry.
-        ReadOnlyMemory<byte> failure = persistenceMenu.Failure is null ? default : GameText.EncodeDisplay(GameText.Format("ui.persistence.failed", ("message", persistenceMenu.Failure)));
+        string failure = persistenceMenu.Failure is null ? "" : GameText.Format("ui.persistence.failed", ("message", persistenceMenu.Failure));
         persistenceRenderer!.Draw(persistenceRenderer.BuildPlan(persistenceMenu.AdvanceLogicalFrame(), persistenceSlots, statusAlternateJournalHeading, failure), target);
     }
 

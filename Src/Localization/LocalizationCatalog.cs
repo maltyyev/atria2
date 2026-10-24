@@ -7,7 +7,7 @@ namespace Atria.Localization;
 public sealed class LocalizationCatalog
 {
     public const string BaseLanguage = "ru-RU";
-    private const int MaximumInterfaceTextBytes = 1024;
+    private const int MaximumInterfaceTextCharacters = 1024;
     private const int MaximumLegacyRowTextBytes = 79;
     // Original dialogue slots reserve one of 128 bytes for their terminator.
     private const int MaximumDialogueTextBytes = 127;
@@ -209,8 +209,11 @@ public sealed class LocalizationCatalog
 
         try
         {
-            int length = GameText.Encoding.GetByteCount(value);
-            int limit = key.StartsWith("ui.", StringComparison.Ordinal) ? MaximumInterfaceTextBytes : Math.Max(baseline.Length, MaximumLegacyRowTextBytes);
+            // shortcut: legacy tables and four UI labels still use bytes; remove this gate after their string migration.
+            bool unicode = key.StartsWith("ui.", StringComparison.Ordinal) && key is not ("ui.quests.closed" or "ui.quests.active" or "ui.units.gold" or "ui.units.torch");
+            _ = new UTF8Encoding(false, true).GetByteCount(value);
+            int length = unicode ? value.Length : GameText.Encoding.GetByteCount(value);
+            int limit = key.StartsWith("ui.", StringComparison.Ordinal) ? MaximumInterfaceTextCharacters : Math.Max(baseline.Length, MaximumLegacyRowTextBytes);
             if (key.StartsWith("dialogue.", StringComparison.Ordinal) || key.StartsWith("scripts.", StringComparison.Ordinal))
             {
                 limit = MaximumDialogueTextBytes;

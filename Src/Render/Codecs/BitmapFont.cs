@@ -1,7 +1,13 @@
+using System.Text;
+using Atria.Render.UI;
+
 namespace Atria.Render.Codecs;
 
 public sealed class BitmapFont
 {
+    private const int MaximumCachedEncodings = 1024;
+    private const float UnicodeEmToLegacyLineHeight = 0.75f;
+    private static readonly Dictionary<string, byte[]?> encodings = new(StringComparer.Ordinal);
     private readonly byte[] glyphs;
     public int Width
     {
@@ -38,6 +44,45 @@ public sealed class BitmapFont
     }
 
     public ReadOnlySpan<byte> GetGlyph(byte character) => glyphs.AsSpan(character * BytesPerGlyph, BytesPerGlyph);
+
+    public int MeasureText(string text) => TryLegacy(text, out var encoded) ? encoded.Length * Advance : UnicodeText.Layout(text, Height * UnicodeEmToLegacyLineHeight).Advance;
+
+    public int DrawText(string text, Span<ushort> destination, int width, int height, int stride, int x, int y, ushort color, RasterClip? clip = null)
+    {
+        if (TryLegacy(text, out var encoded))
+        {
+            return DrawText(encoded, destination, width, height, stride, x, y, color, clip);
+        }
+        var mask = UnicodeText.Layout(text, Height * UnicodeEmToLegacyLineHeight);
+        UnicodeText.Draw(mask, destination, width, height, stride, x, y, color, clip);
+        return mask.Advance;
+    }
+
+    internal static bool TryLegacy(string text, out byte[] encoded)
+    {
+        lock (encodings)
+        {
+            if (!encodings.TryGetValue(text, out var value))
+            {
+                try
+                {
+                    int end = text.IndexOf('\0');
+                    value = GameText.Encoding.GetBytes(end < 0 ? text : text[..end]);
+                }
+                catch (EncoderFallbackException)
+                {
+                    value = null;
+                }
+                if (encodings.Count >= MaximumCachedEncodings)
+                {
+                    encodings.Clear();
+                }
+                encodings.Add(text, value);
+            }
+            encoded = value ?? [];
+            return value is not null;
+        }
+    }
     // 0x43d130 and0x43d1c0: row-major, left byte first, bit7 leftmost, zero bits transparent.
     public void DrawGlyph(byte character, Span<ushort> destination, int width, int height, int stride, int x, int y, ushort color, RasterClip? clip = null) => DrawBits(GetGlyph(character), Width, Height, destination, width, height, stride, x, y, color, clip);
     // Raw CP1251 bytes are glyph IDs in this localized executable. No implicit Unicode remapping.

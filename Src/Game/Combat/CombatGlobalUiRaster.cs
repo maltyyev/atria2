@@ -11,7 +11,6 @@ public sealed class CombatGlobalUiRaster(CombatGlobalUiAssets assets)
     private const ushort HighlightColor = 0xffe0;
     private const ushort SettingsShadowColor = 0x4208;
     private const int ShadowOffset = 1;
-    private const int SettingsTextCapacity = 64;
     private static readonly (int X, int Y) AutomationPosition = (10, 50);
     private static readonly (int X, int Y) PausePosition = (120, 200);
     private static readonly (int X, int Y) SettingsPosition = (250, 50);
@@ -42,24 +41,17 @@ public sealed class CombatGlobalUiRaster(CombatGlobalUiAssets assets)
 
         if (ui.SettingsNoticeVisible)
         {
-            Span<byte> text = stackalloc byte[SettingsTextCapacity];
-            int length = FormatSettings(ui.VisualDetail, ui.Schedule.Period, text);
+            string text = FormatSettings(ui.VisualDetail, ui.Schedule.Period);
             //The native order/offset is intentionally unusual: dark at250,50 then yellow at251,51.
-            Text(text[..length], SettingsPosition.X, SettingsPosition.Y, SettingsShadowColor, target);
-            Text(text[..length], SettingsPosition.X + ShadowOffset, SettingsPosition.Y + ShadowOffset, HighlightColor, target);
+            Text(text, SettingsPosition.X, SettingsPosition.Y, SettingsShadowColor, target);
+            Text(text, SettingsPosition.X + ShadowOffset, SettingsPosition.Y + ShadowOffset, HighlightColor, target);
         }
     }
 
-    public static int FormatSettings(int detail, int period, Span<byte> text)
-    {
-        if (text.Length < SettingsTextCapacity)
-        {
-            throw new ArgumentException("Settings text scratch must contain64 bytes.");
-        }
+    public static string FormatSettings(int detail, int period) =>
+        GameText.Format("ui.combat.settings", ("detail", detail), ("period", period));
 
-        string label = GameText.Format("ui.combat.settings", ("detail", detail), ("period", period));
-        return GameText.Encoding.GetBytes(label.AsSpan(0, Math.Min(label.Length, text.Length)), text);
-    }
+    private void Text(string text, int x, int y, ushort color, Span<ushort> target) => assets.Font.DrawText(text, target, LogicalScreen.Width, LogicalScreen.Height, LogicalScreen.Width, x, y, color);
 
     private void Text(ReadOnlySpan<byte> text, int x, int y, ushort color, Span<ushort> target) => assets.Font.DrawText(text, target, LogicalScreen.Width, LogicalScreen.Height, LogicalScreen.Width, x, y, color);
 }

@@ -111,13 +111,7 @@ public sealed partial class GameSession : IScriptEffects
         menuModal = new(etc, largeFont, text);
         leaveModal = new(etc, smallFont, text);
         actionRenderer = new(etc, smallFont);
-        var bitmap = BmpImage.Decode(Read("AT2BMP.000", "MENUBG"u8));
-        if (bitmap.Width != 640 || bitmap.Height != 480)
-        {
-            throw new InvalidDataException("Invalid main-menu background.");
-        }
-
-        menuBackground = bitmap.ToRgb565();
+        menuBackground = MainMenuArtwork.Load(Path.Combine(AppContext.BaseDirectory, "assets"));
         effects = SoundEffectBank.UiMemberNames.Select(name => audio.LoadEffect(Read("AT2WAV.000", Encoding.ASCII.GetBytes(name)))).ToArray();
         host = new(
             window,
@@ -470,7 +464,7 @@ public sealed partial class GameSession : IScriptEffects
                 throw new InvalidOperationException("Menu sprite was released before mode entry.");
             }
 
-            MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, menuSprites, fireAnimation, fireSprites, target, menuModal.Draw);
+            MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, fireAnimation, fireSprites, target, menuModal.Draw);
         }
         else if (value.Mode == GameMode.Town)
         {

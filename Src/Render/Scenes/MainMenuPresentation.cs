@@ -12,23 +12,13 @@ public static class MainMenuPresentation
     public static ReadOnlySpan<int> InitialFlameFrames => [0, 4, 2, 8, 3, 5];
 
     // Expose separate primitives because confirmation UI is drawn BEFORE the flames in0x423900.
-    public static void DrawSelection(SpriteFile menu, int selectedItem, Span<ushort> target, int width, int height, int stride, RasterClip? clip = null)
+    public static void DrawSelection(int selectedItem, Span<ushort> target, int width, int height, int stride, RasterClip? clip = null)
     {
         ValidateItem(selectedItem);
-        SpriteRaster.Draw565(
-            GetMenuFrame(menu, selectedItem),
-            target,
-            width,
-            height,
-            stride,
-            SelectionX[selectedItem],
-            SelectionY[selectedItem],
-            SpriteBlend.Copy,
-            clip: clip
-        );
+        MainMenuArtwork.DrawLabels(selectedItem, target, width, height, stride, clip);
     }
 
-    public static void DrawPanel(SpriteFile menu, int item, int revealFrame, Span<ushort> target, int width, int height, int stride, RasterClip? clip = null)
+    public static void DrawPanel(int item, int revealFrame, Span<ushort> target, int width, int height, int stride, RasterClip? clip = null)
     {
         ValidateItem(item);
         if ((uint)revealFrame > 7)
@@ -36,7 +26,7 @@ public static class MainMenuPresentation
             throw new ArgumentOutOfRangeException(nameof(revealFrame));
         }
 
-        SpriteRaster.Draw565(GetMenuFrame(menu, 6 + item * 8 + revealFrame), target, width, height, stride, 232, 192, SpriteBlend.Copy, clip: clip);
+        MainMenuArtwork.DrawTitle(item, revealFrame, target, width, height, stride, clip);
     }
 
     public static void DrawFlames(
@@ -69,13 +59,4 @@ public static class MainMenuPresentation
         }
     }
 
-    private static SpriteFrame GetMenuFrame(SpriteFile sprites, int frame)
-    {
-        if ((uint)frame >= (uint)sprites.Frames.Length)
-        {
-            throw new InvalidDataException("MENU sprite frame is absent.");
-        }
-
-        return sprites.Frames[frame];
-    }
 }

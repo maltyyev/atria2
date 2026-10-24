@@ -1,3 +1,4 @@
+using Atria.Localization;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using Atria.Game.Interiors;
@@ -286,15 +287,15 @@ public static class PersistenceRuntimeTests
         var plan = renderer.BuildPlan(frame, slots);
         check(plan.Count(p => p.Primitive == SaveMenuPrimitive.Panel) == 2
 && plan.Any(p => p.Primitive == SaveMenuPrimitive.Panel && p.X == 96 && p.Y == 64 && p.A == 12 && p.B == 7), "native static save panels");
-        check(plan.Any(p => p.Text.Span.SequenceEqual(messages[362].Span) && p.X == 156 && p.Y == 390 && p.Style == SaveMenuTextStyle.Selected), "save footer362 native coordinates");
-        check(plan.Any(p => p.Text.Span.SequenceEqual(filled.PrimaryName.Span) && p.X == 140 && p.Y == 99 && p.Style == SaveMenuTextStyle.Purple), "selected occupied slot native name position/palette");
-        check(plan.Any(p => p.Text.Span.SequenceEqual(empty.PrimaryName.Span) && p.X == 208 && p.Y == 148), "empty second slot centered position");
+        check(plan.Any(p => p.Text == GameText.Decode(messages[362].Span) && p.X == 156 && p.Y == 390 && p.Style == SaveMenuTextStyle.Selected), "save footer362 native coordinates");
+        check(plan.Any(p => p.Text == GameText.Decode(filled.PrimaryName.Span) && p.X == 140 && p.Y == 99 && p.Style == SaveMenuTextStyle.Purple), "selected occupied slot native name position/palette");
+        check(plan.Any(p => p.Text == GameText.Decode(empty.PrimaryName.Span) && p.X == 208 && p.Y == 148), "empty second slot centered position");
         plan = renderer.BuildPlan(frame with
         {
             Confirmation = true
         }, slots);
-        check(plan.Any(p => p.Text.Span.SequenceEqual(messages[312].Span) && p.X == 220 && p.Y == 160)
-&& plan.Any(p => p.Text.Span.SequenceEqual(messages[313].Span) && p.X == 260 && p.Y == 192 && p.Style == SaveMenuTextStyle.Selected), "native save confirmation title/yes");
+        check(plan.Any(p => p.Text == GameText.Decode(messages[312].Span) && p.X == 220 && p.Y == 160)
+&& plan.Any(p => p.Text == GameText.Decode(messages[313].Span) && p.X == 260 && p.Y == 192 && p.Style == SaveMenuTextStyle.Selected), "native save confirmation title/yes");
         ushort[] pixels = new ushort[640 * 480];
         Array.Fill(pixels, (ushort)0x39e7);
         plan = renderer.BuildPlan(frame with
@@ -315,7 +316,7 @@ public static class PersistenceRuntimeTests
             EmptyNotice = true
         };
         plan = renderer.BuildPlan(load, slots);
-        check(plan.Any(p => p.Text.Span.SequenceEqual(messages[267].Span) && p.X == 192 && p.Y == 150), "native empty load notice267");
+        check(plan.Any(p => p.Text == GameText.Decode(messages[267].Span) && p.X == 192 && p.Y == 150), "native empty load notice267");
         renderer.Draw(plan, pixels);
         // Reproduce a fresh playtest-data directory: production enumeration supplies blank metadata.
         var blankSlots = Enumerable.Range(0, 5).Select(i => new SaveSlotInfo(i, SaveSlotStatus.Empty, LegacySlotMetadata.Empty([]), default)).ToArray();
@@ -340,7 +341,7 @@ public static class PersistenceRuntimeTests
                 }, blankSlots, alternate);
                 for (int row = 0; row < 5; row++)
                 {
-                    check(plan.Any(p => p.Primitive == SaveMenuPrimitive.Text && p.X == 208 && p.Y == 100 + 48 * row && p.Text.Span.SequenceEqual(messages[361].Span)
+                    check(plan.Any(p => p.Primitive == SaveMenuPrimitive.Text && p.X == 208 && p.Y == 100 + 48 * row && p.Text == GameText.Decode(messages[361].Span)
 && p.Style == (row == 2 ? SaveMenuTextStyle.Purple : SaveMenuTextStyle.Normal)), "blank slot has localized visible label and selection palette");
                 }
 
