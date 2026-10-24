@@ -550,6 +550,15 @@ public sealed partial class GameSession : IScriptEffects
         }
 
         hud.Draw(value, townName, target, modal, anchor, dungeonHudEnabled: DungeonHudVisible);
+        if (!modal && value.Mode == GameMode.World && questMarker is { } marker)
+        {
+            int? hudY = WorldHudRenderer.OriginY(value.WorldY, false);
+            var sprite = etc.Frames[marker.SpriteFrame];
+            if (hudY is { } y && marker.Y < y + 60 && marker.Y + sprite.Height > y)
+            {
+                SpriteRaster.Draw565(sprite, target, 640, 480, 640, marker.X, marker.Y);
+            }
+        }
         RecordDungeonHudContext(value, modal, anchor);
     }
 

@@ -13,6 +13,7 @@ public static class QuestJournalTests
     {
         StoryQuestTests.Run(root);
         TrackedQuestTests.Run(root);
+        Atria.Tests.Exploration.QuestMapTests.Run(root);
         static void Check(bool condition, string message)
         {
             if (!condition) throw new InvalidOperationException("Quest journal: " + message);

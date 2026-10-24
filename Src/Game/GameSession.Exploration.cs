@@ -18,6 +18,8 @@ public sealed partial class GameSession
     private byte[] explorationOriginalAmf = [];
     private bool explorationMapReload;
     private int explorationTravelSteps, explorationRevealX, explorationRevealY;
+    private QuestMapIndex? questMap;
+    private WorldRevealPose? questMarker;
     private void ResetExplorationSession()
     {
         explorationEntry = null;
@@ -26,6 +28,7 @@ public sealed partial class GameSession
         exploration = null;
         explorationOriginalAmf = [];
         explorationMapReload = false;
+        questMarker = null;
         explorationTravelSteps = 0;
         explorationRevealX = explorationRevealY = 0;
     }
@@ -280,7 +283,20 @@ public sealed partial class GameSession
         WorldRevealPose? cursor = state.Mode == GameMode.WorldEntry ? renderer.AdvanceReveal(map!, state.WorldX, state.WorldY, explorationRevealX, explorationRevealY) : null;
         //Both native tick observations use the scheduled logical clock, never the GPU refresh/wall-time catch-up instant.
         var step = controller.AdvanceAnimation(() => gate.LastFrameMilliseconds);
-        renderer.Draw(step.Pose, cursor, target);
+        questMarker = null;
+        if (state.Mode == GameMode.World && state.Journal.ActiveQuest(state).HasValue)
+        {
+            questMap ??= new(root);
+            if (questMap.Marker(state, map!.AreaIndex) is { } point)
+            {
+                const int revealMarkerFrame = 38, markerFrames = 10, markerFrameMilliseconds = 100;
+                int tileWidth = BinaryPrimitives.ReadInt32LittleEndian(map.HeaderBytes[21..]);
+                int tileHeight = BinaryPrimitives.ReadInt32LittleEndian(map.HeaderBytes[25..]);
+                int frame = revealMarkerFrame + (int)(gate.LastFrameMilliseconds / markerFrameMilliseconds % markerFrames);
+                questMarker = new(point.X * tileWidth, point.Y * tileHeight, frame);
+            }
+        }
+        renderer.Draw(step.Pose, cursor, target, questMarker);
         if (step.PlayWalkSound)
         {
             Sound(12);

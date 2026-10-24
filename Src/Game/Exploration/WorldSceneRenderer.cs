@@ -158,7 +158,7 @@ public sealed partial class WorldSceneRenderer
         );
     }
 
-    public void Draw(ExplorationPose character, WorldRevealPose? reveal, Span<ushort> target)
+    public void Draw(ExplorationPose character, WorldRevealPose? reveal, Span<ushort> target, WorldRevealPose? objective = null)
     {
         if (!ready)
         {
@@ -171,6 +171,10 @@ public sealed partial class WorldSceneRenderer
         }
 
         cached.CopyTo(target);
+        if (objective is { } marker)
+        {
+            SpriteRaster.Draw565(assets.Etc.Frames[marker.SpriteFrame], target, 640, 480, 640, marker.X, marker.Y);
+        }
         //Mode310 draws reveal cursor BEFORE the mode300 character callback.
         if (reveal is { } cursor)
         {
