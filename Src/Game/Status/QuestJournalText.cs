@@ -5,7 +5,7 @@ namespace Atria.Game.Status;
 public static class QuestJournalText
 {
     public const int InformationEntry = 0;
-    public const int OriginalEntryCount = 150;
+    public const int OriginalEntryCount = QuestJournal.OriginalEntryCount;
 
     public static bool IsVisible(GameState state, int id) => state.Journal.Progress(state, id) != QuestMilestones.None
         && GameText.Get($"quests.{id:D3}.heading.0").Length != 0;

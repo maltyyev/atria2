@@ -193,5 +193,9 @@
   "ui.settings.moveBindingTitle": "{character}: {column}",
   "ui.settings.xbox": "Xbox",
   "ui.quests.stopped": "Прервано",
-  "ui.quests.stoppedDescription": "Поручение прервано. Дальнейшее выполнение по прежним условиям недоступно."
+  "ui.quests.stoppedDescription": "Поручение прервано. Дальнейшее выполнение по прежним условиям недоступно.",
+  "ui.quests.tracked": "Отслеживается",
+  "ui.quests.trackHint": "Подтвердить ещё раз: отслеживать задание",
+  "ui.quests.untrackHint": "Подтвердить ещё раз: снять отслеживание",
+  "ui.quests.activeHud": "Активное задание: {title}"
 }

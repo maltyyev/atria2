@@ -12,6 +12,7 @@ public static class QuestJournalTests
     public static string Run(string root)
     {
         StoryQuestTests.Run(root);
+        TrackedQuestTests.Run(root);
         static void Check(bool condition, string message)
         {
             if (!condition) throw new InvalidOperationException("Quest journal: " + message);
@@ -85,7 +86,7 @@ public static class QuestJournalTests
         Check(NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(old)).Journal.Entries.Count == 0, "old state without extension remains readable");
         Check(QuestJournalText.Description(old, 2) == GameText.Get("quests.002.start.text") + "\n\n" + GameText.Get("quests.002.description"), "old completed save does not invent an unrecorded intermediate stage");
         byte[] corrupt = NativeGameStateCodec.Encode(state);
-        corrupt[^1] = byte.MaxValue;
+        corrupt[^5] = byte.MaxValue;
         try
         {
             NativeGameStateCodec.Decode(corrupt);

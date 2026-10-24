@@ -120,6 +120,23 @@ public sealed class WorldHudRenderer
         Utf8Formatter.TryFormat(state.Day, date[count..], out length);
         count += length;
         Styled(date[..count], 290, y + 38, 292, y + 39, NativeUiPalette.Normal, target);
+        if (!modal && state.Mode is 300 or 310) DrawActiveQuest(state, target);
+    }
+
+    public static void DrawActiveQuest(GameState state, Span<ushort> target)
+    {
+        if (state.Journal.ActiveQuest(state) is not { } id) return;
+        const int left = 20, top = 64, availableWidth = 600;
+        const ushort parchment = 0xce35;
+        string title = GameText.Get($"quests.{id:D3}.heading.0");
+        string text = GameText.Format("ui.quests.activeHud", ("title", title));
+        text = UnicodeText.Fit(text, availableWidth, value => UnicodeText.Layout(value, 12, bold: true).Width);
+        var mask = UnicodeText.Layout(text, 12, bold: true);
+        UnicodeText.Draw(mask, target, 640, 480, 640, left - 1, top, 0);
+        UnicodeText.Draw(mask, target, 640, 480, 640, left + 1, top, 0);
+        UnicodeText.Draw(mask, target, 640, 480, 640, left, top - 1, 0);
+        UnicodeText.Draw(mask, target, 640, 480, 640, left, top + 1, 0);
+        UnicodeText.Draw(mask, target, 640, 480, 640, left, top, parchment);
     }
 
     private void Number(int value, int x, int y, int shadowX, int shadowY, Span<ushort> target)

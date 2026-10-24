@@ -16,10 +16,33 @@ public enum QuestMilestones : byte
 /// <summary>Observed journal history, separate from the scenario's mutable offer-status bank.</summary>
 public sealed class QuestJournal
 {
+    public const int OriginalEntryCount = 150;
     private readonly Dictionary<int, QuestMilestones> entries = [];
     public IReadOnlyDictionary<int, QuestMilestones> Entries => entries;
     public static int MaximumEntries => GameState.EventStatusCount + StoryQuests.Ids.Count();
     public int CompletionRevision { get; private set; }
+    private int? trackedId;
+
+    public bool CanTrack(GameState state, int id)
+    {
+        if (id <= 0 || id >= OriginalEntryCount && !StoryQuests.Contains(id)) return false;
+        var progress = Progress(state, id);
+        return progress.HasFlag(QuestMilestones.Started)
+            && (progress & (QuestMilestones.Completed | QuestMilestones.Stopped | QuestMilestones.Declined)) == 0;
+    }
+
+    public int? ActiveQuest(GameState state) => trackedId is { } id && CanTrack(state, id) ? id : null;
+
+    public void ToggleTracking(GameState state, int id)
+    {
+        if (CanTrack(state, id)) trackedId = trackedId == id ? null : id;
+    }
+
+    public void RestoreTracking(int id)
+    {
+        if (id != -1 && (id <= 0 || id >= OriginalEntryCount && !StoryQuests.Contains(id))) throw new InvalidDataException("Invalid tracked quest identifier.");
+        trackedId = id == -1 ? null : id;
+    }
 
     public QuestMilestones Progress(GameState state, int id)
     {
@@ -78,17 +101,20 @@ public sealed class QuestJournal
     {
         if (progress.HasFlag(QuestMilestones.Completed) && !entries.GetValueOrDefault(id).HasFlag(QuestMilestones.Completed)) CompletionRevision++;
         entries[id] = progress;
+        if (trackedId == id && (progress & (QuestMilestones.Completed | QuestMilestones.Stopped | QuestMilestones.Declined)) != 0) trackedId = null;
     }
 
     public void CopyFrom(QuestJournal source)
     {
         Clear();
         foreach (var entry in source.entries) entries.Add(entry.Key, entry.Value);
+        trackedId = source.trackedId;
     }
 
     public void Clear()
     {
         entries.Clear();
         CompletionRevision = 0;
+        trackedId = null;
     }
 }

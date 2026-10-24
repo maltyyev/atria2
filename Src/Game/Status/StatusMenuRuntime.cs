@@ -77,6 +77,12 @@ public sealed class StatusMenuRuntime
         {
             int action = value.Cancel ? 5 : value.Accept ? 4 : value.PreviousPage ? 1 : value.NextPage ? 0 : value.PreviousActor ? 3 : value.NextActor ? 2 : -1;
             bool closed = false;
+            if (action == 4 && Menu.Page == 4 && TextList?.DescriptionOpen == true)
+            {
+                state.Journal.ToggleTracking(state, TextList.SelectedId);
+                Sound(3);
+                return;
+            }
             if (action is 0 or 1 && (TextList?.DescriptionOpen == true || Menu.Page == 2))
             {
                 int visible = Menu.Page == 2 ? 10 : 5;

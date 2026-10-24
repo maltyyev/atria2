@@ -329,7 +329,8 @@ public sealed class StatusMenuRenderer
                 }, sm: false);
                 if (page == 4 && id != 0)
                 {
-                    Pair(QuestJournalText.Status(state, id), 136, 348 + row * 48, color: state.Journal.Progress(state, id).HasFlag(QuestMilestones.Completed) ? (ushort)0x8410 : (ushort)0x07ff);
+                    string status = state.Journal.ActiveQuest(state) == id ? GameText.Get("ui.quests.tracked") : QuestJournalText.Status(state, id);
+                    Pair(status, 136, 348 + row * 48, color: state.Journal.Progress(state, id).HasFlag(QuestMilestones.Completed) ? (ushort)0x8410 : (ushort)0x07ff);
                 }
             }
 
@@ -370,6 +371,11 @@ public sealed class StatusMenuRenderer
                 }
                 else
                 {
+                    if (state.Journal.CanTrack(state, id))
+                    {
+                        string hint = GameText.Get(state.Journal.ActiveQuest(state) == id ? "ui.quests.untrackHint" : "ui.quests.trackHint");
+                        ops.Add(new(StatusPrimitive.Text, 80, 194, Color: 0xbdf7, Text: hint));
+                    }
                     for (int line = 0; line < Math.Min(5, runtime.Description.Length - runtime.DescriptionOffset); line++)
                     {
                         ops.Add(new(StatusPrimitive.Text, 80, 206 + line * 19, Palette: 0x4cc228, Text: runtime.Description[runtime.DescriptionOffset + line]));

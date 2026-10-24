@@ -7,7 +7,7 @@ namespace Atria.Game.Persistence;
 public static class NativeGameStateCodec
 {
     private const uint JournalExtension = 0x4c4e524a; // JRNL, optional tail for pre-0.7.1 saves.
-    private const int JournalVersion = 1;
+    private const int JournalVersion = 2;
     public const int MaxBytes = 300000;
     public static byte[] Encode(GameState s)
     {
@@ -62,7 +62,7 @@ public static class NativeGameStateCodec
             WriteBytes(writer, person.Handler.Span, 4096);
         }
 
-        if (s.Journal.Entries.Count != 0)
+        if (s.Journal.Entries.Count != 0 || s.Journal.ActiveQuest(s).HasValue)
         {
             writer.Write(JournalExtension);
             writer.Write(JournalVersion);
@@ -72,6 +72,7 @@ public static class NativeGameStateCodec
                 writer.Write(entry.Key);
                 writer.Write((byte)entry.Value);
             }
+            writer.Write(s.Journal.ActiveQuest(s) ?? -1);
         }
         writer.Flush();
         if (stream.Length > MaxBytes)
@@ -134,13 +135,16 @@ public static class NativeGameStateCodec
             s.People = people;
             if (stream.Position < stream.Length)
             {
-                if (reader.ReadUInt32() != JournalExtension || reader.ReadInt32() != JournalVersion)
+                uint signature = reader.ReadUInt32();
+                int version = reader.ReadInt32();
+                if (signature != JournalExtension || version is < 1 or > JournalVersion)
                 {
                     throw new InvalidDataException("Unknown native journal extension.");
                 }
                 int entries = reader.ReadInt32();
                 if ((uint)entries > QuestJournal.MaximumEntries) throw new InvalidDataException("Saved journal entry count exceeds capacity.");
                 for (int i = 0; i < entries; i++) s.Journal.Restore(reader.ReadInt32(), (QuestMilestones)reader.ReadByte());
+                if (version >= 2) s.Journal.RestoreTracking(reader.ReadInt32());
             }
             if (stream.Position != stream.Length)
             {
