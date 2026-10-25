@@ -40,8 +40,8 @@ public sealed partial class GameSession : IScriptEffects
     private readonly ItemCatalog items;
     private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages;
     private readonly IReadOnlyList<ReadOnlyMemory<byte>> displayMessages;
-    private readonly SpriteFile etc, menuSprites, fireSprites, effectSprites;
-    private readonly AnimationFile fireAnimation, effectAnimation;
+    private readonly SpriteFile etc, effectSprites;
+    private readonly AnimationFile effectAnimation;
     private readonly BitmapFont smallFont;
     private readonly WorldHudRenderer hud;
     private readonly ushort[] menuBackground;
@@ -100,9 +100,6 @@ public sealed partial class GameSession : IScriptEffects
         var configuredBindings = InitializeSettings(Path.Combine(sessionOutputDirectory, "config"), originalBindings);
         bindings = controlsFile is null ? configuredBindings : ControlBindings.Parse(File.ReadAllBytes(controlsFile));
         etc = SpriteFile.Decode(Read("AT2SPR.000", "ETC"u8));
-        menuSprites = SpriteFile.Decode(Read("AT2SPR.000", "MENU"u8));
-        fireSprites = SpriteFile.Decode(Read("AT2SPR.000", "MENUFIRE"u8));
-        fireAnimation = AnimationFile.Decode(Read("ANI.000", "MENUFIRE"u8));
         effectSprites = SpriteFile.Decode(Read("AT2SPR.000", "CON_EFF"u8));
         effectAnimation = AnimationFile.Decode(Read("ANI.000", "CON_EFF"u8));
         smallFont = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG1.FNT")), true);
@@ -128,6 +125,7 @@ public sealed partial class GameSession : IScriptEffects
         );
         InitializeModernControls(originalBindings);
         host.Controls = controls;
+        host.PresentCustomFrame = PresentMainMenu;
         menuNavigation = new(bindings, host.QueryScan);
         dialogue = new(DialogueCatalog.Load(Path.Combine(root, "roland.idx"), Path.Combine(root, "roland.dat")), new DialogueModalDriver(host, etc, smallFont, faces, DrawModalHud));
         menu.Enter();
@@ -464,7 +462,7 @@ public sealed partial class GameSession : IScriptEffects
                 throw new InvalidOperationException("Menu sprite was released before mode entry.");
             }
 
-            MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, fireAnimation, fireSprites, target, menuModal.Draw);
+            MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, target, menuModal.Draw);
         }
         else if (value.Mode == GameMode.Town)
         {

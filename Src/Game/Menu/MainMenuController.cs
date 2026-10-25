@@ -74,9 +74,10 @@ public sealed partial class MainMenuController
 
     public void PointerConfirm(int x, int y)
     {
-        if (Confirmation && y is >= 230 and < 266 && x is >= 240 and < 410)
+        int answer = MainMenuLayout.HitTestConfirmation(x * MainMenuLayout.Width / 640, y * MainMenuLayout.Height / 480);
+        if (Confirmation && answer > 0)
         {
-            YesSelected = x < 320;
+            YesSelected = answer == 1;
         }
     }
 
@@ -87,8 +88,9 @@ public sealed partial class MainMenuController
             return;
         }
 
-        Selection = item;
-        VisualState = MenuVisualState.Closing;
+        Selection = PanelItem = item;
+        VisualState = MenuVisualState.Stable;
+        Reveal = 7;
     }
 
     // Host supplies the result of native 0x429290 before processing another input.
@@ -128,17 +130,12 @@ public sealed partial class MainMenuController
         void Sound(int id) => emit(new(MenuEffect.Sound, id));
         if (!Confirmation)
         {
-            // The native function bases navigation on the panel index even during closing.
             if (input.Next || input.Previous)
             {
-                Selection = (PanelItem + (input.Next ? 1 : 5)) % 6;
+                Selection = PanelItem = MainMenuLayout.Navigate(Selection, input.Next ? 1 : -1, saveDisabled);
                 Sound(0);
-                if (saveDisabled && Selection == 2)
-                {
-                    Selection = input.Next ? 3 : 1;
-                }
-
-                VisualState = MenuVisualState.Closing;
+                VisualState = MenuVisualState.Stable;
+                Reveal = 7;
                 return;
             }
 
@@ -152,11 +149,9 @@ public sealed partial class MainMenuController
                 return;
             }
 
-            if (VisualState != MenuVisualState.Stable)
-            {
+            if (saveDisabled && Selection == MainMenuLayout.SaveItem)
                 return;
-            }
-
+            PanelItem = Selection;
             VisualState = MenuVisualState.Modal;
             Sound(3);
             if (PanelItem == 0)

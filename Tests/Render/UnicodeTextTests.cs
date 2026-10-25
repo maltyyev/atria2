@@ -55,7 +55,7 @@ public static class UnicodeTextTests
             {
                 var pixels = background.ToArray();
                 MainMenuPresentation.DrawSelection(item, pixels, 640, 480, 640);
-                MainMenuPresentation.DrawPanel(item, reveal, pixels, 640, 480, 640);
+
                 if (reveal == 7)
                 {
                     ulong checksum = pixels.Aggregate(0UL, (sum, pixel) => unchecked(sum * 31 + pixel));
@@ -70,30 +70,28 @@ public static class UnicodeTextTests
 
     private static void CheckMenuBounds()
     {
-        // Independent visible plaque rectangles measured on the text-free menu artwork.
+        // Independently measured button boundaries on the approved 2560x1440 background.
         (int Left, int Top, int Right, int Bottom)[] bounds =
         [
-            (148, 220, 216, 244), (220, 286, 276, 345), (366, 286, 424, 345),
-            (432, 220, 500, 244), (366, 147, 408, 189), (229, 147, 273, 191)
+            (466,397,1110,509), (466,535,1110,647), (466,673,1110,785),
+            (466,1087,1110,1199), (466,949,1110,1061), (466,811,1110,923)
         ];
         void Verify()
         {
-            ushort[] inactive = new ushort[640 * 480];
-            MainMenuArtwork.DrawLabels(-1, inactive, 640, 480, 640, null);
+            ushort[] inactive = new ushort[2560 * 1440];
+            MainMenuArtwork.DrawLabels(-1, inactive, 2560, 1440, 2560, null);
             for (int item = 0; item < bounds.Length; item++)
             {
-                ushort[] selected = new ushort[640 * 480];
-                MainMenuArtwork.DrawLabels(item, selected, 640, 480, 640, null);
+                ushort[] selected = new ushort[2560 * 1440];
+                MainMenuArtwork.DrawLabels(item, selected, 2560, 1440, 2560, null);
                 var box = bounds[item];
                 Check(selected.Where((pixel, i) => pixel != inactive[i]).Any(), "Selected plaque is visibly highlighted");
                 for (int i = 0; i < selected.Length; i++)
                 {
-                    if (selected[i] == inactive[i]) continue;
-                    Check(i % 640 >= box.Left && i % 640 < box.Right && i / 640 >= box.Top && i / 640 < box.Bottom, "Caption stays on its plaque");
+                    if (selected[i] == inactive[i])
+                        continue;
+                    Check(i % 2560 >= box.Left && i % 2560 < box.Right && i / 2560 >= box.Top && i / 2560 < box.Bottom, "Caption stays on its plaque");
                 }
-                Array.Clear(selected);
-                MainMenuArtwork.DrawTitle(item, 7, selected, 640, 480, 640, null);
-                Check(selected.Where((pixel, i) => i % 640 < 232 || i % 640 >= 408 || i / 640 < 190 || i / 640 >= 250).All(pixel => pixel == 0), "Central caption fits its panel");
             }
         }
         Verify();

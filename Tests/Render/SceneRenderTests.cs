@@ -40,19 +40,8 @@ public static class SceneRenderTests
 
         var syntheticSprite = new SpriteFile(false, [new SpriteFrame(0, 0, 0, [], [], 1, 1, [])]);
         Require(SodScenePresentation.BuildDepthOrder(SodV2.Parse(syntheticSod), syntheticSprite).SequenceEqual([2, 0, 1]), "Native one-pixel depth tolerance changed.");
-        var menu = SpriteFile.Decode(Read(menuSprites, "MENU"u8));
         for (int item = 0; item < 6; item++)
-        {
             MainMenuPresentation.DrawSelection(item, target, 640, 480, 640);
-            for (int reveal = 0; reveal < 8; reveal++)
-            {
-                MainMenuPresentation.DrawPanel(item, reveal, target, 640, 480, 640);
-            }
-        }
-
-        var flames = AnimationFile.Decode(Read(animations, "MENUFIRE"u8));
-        var flameSprites = SpriteFile.Decode(Read(menuSprites, flames.SpriteReference));
-        MainMenuPresentation.DrawFlames(flames, flameSprites, MainMenuPresentation.InitialFlameFrames, target, 640, 480, 640);
         var effects = AnimationFile.Decode(Read(animations, "CON_EFF"u8));
         var effectSprites = SpriteFile.Decode(Read(menuSprites, effects.SpriteReference));
         Require(TownEffectCatalog.Records.Length == 23, "Town effect literal table changed.");
@@ -68,7 +57,7 @@ public static class SceneRenderTests
             }
         }
 
-        Console.WriteLine("Scene rendering: town selection/label, six menu selections, 48 panels, flame cursors, 23 town effect definitions passed.");
+        Console.WriteLine("Scene rendering: town selection/label, six vertical menu selections, 23 town effect definitions passed.");
     }
 
     private static void Require(bool condition, string message)

@@ -266,6 +266,18 @@ public sealed class InputRouter : IDisposable
         return false;
     }
 
+    public void DiscardPointerConfirmation()
+    {
+        for (int player = 0; player < Profile.Players.Length; player++)
+        {
+            foreach (var binding in Profile.Players[player].Bindings[(int)GameAction.Confirm])
+            {
+                if (binding.Kind == InputKind.Mouse)
+                    Take(Token(player, binding));
+            }
+        }
+    }
+
     public bool Press(int player, GameAction action, bool allowRepeat = false) => Press(player, Profile.Players[player].Bindings[(int)action], allowRepeat);
     public bool PressQuick(int player, int slot, bool assigning = false)
     {

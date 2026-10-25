@@ -69,6 +69,11 @@ public sealed class NativeDialogueFrameHost : IDialogueFrameHost
         get; set;
     }
 
+    public Func<bool>? PresentCustomFrame
+    {
+        get; set;
+    }
+
     private uint inputResumeGeneration;
     public ModalFrameGate Gate
     {
@@ -186,6 +191,8 @@ public sealed class NativeDialogueFrameHost : IDialogueFrameHost
 
     public void Present()
     {
+        if (PresentCustomFrame?.Invoke() == true)
+            return;
         frameBuffer.CopyTo(overlayFrame, 0);
         Overlay?.Invoke(overlayFrame);
         for (int i = 0; i < frameBuffer.Length; i++)
@@ -200,6 +207,7 @@ public sealed class NativeDialogueFrameHost : IDialogueFrameHost
         }
 
         presenter.Resize(width, height);
+        presenter.SetFrameSize(640, 480);
         presenter.Present(presentation);
     }
 }

@@ -21,6 +21,11 @@ public sealed class QuitController
     public int Selection { get; private set; } = 1;
 
     public void Initialize() => Selection = 1;
+    public void PointerSelect(int selection)
+    {
+        if (selection is 1 or 2)
+            Selection = selection;
+    }
     public void Input(Func<QuitKey, bool> query, Action<QuitEffect> emit)
     {
         if (query(QuitKey.Right))

@@ -207,20 +207,29 @@ public sealed partial class GameSession
 
     private void RunControlModal(Func<bool> closed, Action updateAndDraw)
     {
-        while (!closed())
+        var customPresentation = host.PresentCustomFrame;
+        host.PresentCustomFrame = null;
+        try
         {
-            window.Pump();
-            CheckLifetime();
-            controls.Poll(window);
-            if (!host.Focused)
+            while (!closed())
             {
-                Thread.Sleep(15);
-                continue;
-            }
+                window.Pump();
+                CheckLifetime();
+                controls.Poll(window);
+                if (!host.Focused)
+                {
+                    Thread.Sleep(15);
+                    continue;
+                }
 
-            updateAndDraw();
-            host.Present();
-            Thread.Sleep(8);
+                updateAndDraw();
+                host.Present();
+                Thread.Sleep(8);
+            }
+        }
+        finally
+        {
+            host.PresentCustomFrame = customPresentation;
         }
     }
 }

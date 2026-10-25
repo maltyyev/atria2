@@ -1,5 +1,14 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--vertical-menu")
+{
+    Console.WriteLine(Atria.Tests.Menu.MainMenuTests.Run());
+    Console.WriteLine(Atria.Tests.Menu.VerticalMenuTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Render.UnicodeTextTests.Run(args[0]));
+    return;
+}
+
+
 if (args.Length == 2 && args[1] == "--journal")
 {
     Console.WriteLine(Atria.Tests.Status.QuestJournalTests.Run(args[0]));
@@ -138,6 +147,7 @@ if (args.Length == 2 && args[1] == "--feedback-011")
 {
     Console.WriteLine(Atria.Tests.Menu.Feedback011Tests.Run(args[0]));
     Console.WriteLine(Atria.Tests.Menu.MainMenuTests.Run());
+    Console.WriteLine(Atria.Tests.Menu.VerticalMenuTests.Run(args[0]));
     Console.WriteLine(Atria.Tests.ActionMenu.ActionMenuTests.Run(args[0]));
     Console.WriteLine(Atria.Tests.Town.TownTests.Run(args[0]));
     Console.WriteLine(Atria.Tests.Combat.CombatOutcomeTests.Run(args[0]));
@@ -194,6 +204,7 @@ foreach (string line in Atria.Tests.Script.ScriptTests.Run(args[0]))
 
 Console.WriteLine(Atria.Tests.State.StateTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Menu.MainMenuTests.Run());
+Console.WriteLine(Atria.Tests.Menu.VerticalMenuTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Menu.Feedback011Tests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Persistence.PersistenceTests.Run());
 Console.WriteLine(Atria.Tests.Persistence.PersistenceRuntimeTests.Run(args[0]));

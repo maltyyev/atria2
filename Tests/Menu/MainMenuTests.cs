@@ -20,28 +20,13 @@ public static class MainMenuTests
         }
 
         Check(menu.AdvanceLogicalFrame().LoadResources, "entry loads before rendering");
-        Check(menu.AdvanceLogicalFrame().PanelReveal == 0, "first reveal holds zero");
-        var second = menu.AdvanceLogicalFrame();
-        Check(second.PanelReveal == 1 && second.Flames.SequenceEqual([0, 4, 2, 8, 3, 5]), "second draw advances panel before flames");
-        Check(menu.AdvanceLogicalFrame().Flames.SequenceEqual([1, 5, 3, 9, 4, 6]), "flames advance after second draw");
         Stable();
         Input(new(Next: true));
-        var closing = menu.AdvanceLogicalFrame();
-        Check(closing.Selection == 1 && closing.PanelItem == 0 && closing.PanelReveal == 6, "closing retains previous panel");
-        for (int i = 0; i < 6; i++)
-        {
-            menu.AdvanceLogicalFrame();
-        }
-
-        var gap = menu.AdvanceLogicalFrame();
-        Check(gap.PanelItem == -1 && menu.PanelItem == 1, "closing zero is panel-free handoff");
-        Stable();
+        Check(menu.Selection == 1 && menu.PanelItem == 1, "vertical navigation selects immediately");
         Input(new(Next: true), true);
-        Check(menu.Selection == 3, "disabled save forward skip");
-        Stable();
+        Check(menu.Selection == 5, "disabled save skips to settings");
         Input(new(Previous: true), true);
         Check(menu.Selection == 1, "disabled save backward skip");
-        Stable();
         Input(new(Previous: true));
         Stable();
         Input(new(Accept: true));
@@ -72,16 +57,7 @@ public static class MainMenuTests
                 other.AdvanceLogicalFrame();
             }
 
-            for (int index = 0; index < item; index++)
-            {
-                other.Input(new(Next: true), false, _ =>
-                {
-                });
-                for (int i = 0; i < 20; i++)
-                {
-                    other.AdvanceLogicalFrame();
-                }
-            }
+            other.PointerSelect(item, false);
 
             commands.Clear();
             other.Input(new(Accept: true), false, commands.Add);
@@ -97,7 +73,7 @@ public static class MainMenuTests
         var noFlash = MainMenuModalPlan.Build(false, 2);
         Check(!yesFlash.Any(p => p.Kind == ModalPrimitive.ForegroundText && p.DataAddress == 0x456b98), "yes flash suppresses foreground");
         Check(noFlash.Any(p => p.Kind == ModalPrimitive.ForegroundText && p.DataAddress == 0x456be8), "no flash retains foreground");
-        return "Main-menu native trace checks passed (reveal, closing, save skip, confirmation, flames, ordered movie/reset).";
+        return "Main menu: immediate vertical selection, disabled save, confirmation, retained cursors, all destinations and ordered movie/reset passed.";
     }
 
     private static void Check(bool condition, string message)

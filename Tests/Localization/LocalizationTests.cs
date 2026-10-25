@@ -97,7 +97,7 @@ public static class LocalizationTests
             GameText.Use(new LocalizationCatalog(temporary));
             ushort[] unicodeMenu = new ushort[640 * 480];
             Atria.Render.Scenes.MainMenuPresentation.DrawSelection(0, unicodeMenu, 640, 480, 640);
-            Atria.Render.Scenes.MainMenuPresentation.DrawPanel(0, 7, unicodeMenu, 640, 480, 640);
+
             Check(unicodeMenu.Any(p => p != 0), "Editable Unicode menu reaches native layout and raster");
             GameText.Use(edited);
             Edit("messages.json", "messages.119", "中文");

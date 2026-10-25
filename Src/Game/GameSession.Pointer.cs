@@ -8,6 +8,20 @@ public sealed partial class GameSession
     private void UpdatePointerFocus()
     {
         int x = controls.MouseX, y = controls.MouseY;
+        if (state.Mode is GameMode.MainMenu or GameMode.QuitConfirmation)
+        {
+            var size = window.ClientSize;
+            var viewport = Atria.Render.Viewport.Fit(size.Width, size.Height, MainMenuLayout.Width, MainMenuLayout.Height);
+            if (!viewport.TryMapInput(window.MouseX, window.MouseY, out x, out y))
+                x = y = -1;
+            int pixelX = x * MainMenuLayout.Width / 640, pixelY = y * MainMenuLayout.Height / 480;
+            bool confirming = menu.Confirmation || state.Mode == GameMode.QuitConfirmation;
+            int item = confirming ? MainMenuLayout.HitTestConfirmation(pixelX, pixelY) : MainMenuLayout.HitTest(pixelX, pixelY);
+            if (item < 0 || !confirming && saveDisabled && item == MainMenuLayout.SaveItem)
+            {
+                controls.DiscardPointerConfirmation();
+            }
+        }
         if (x == pointerX && y == pointerY)
         {
             return;
@@ -32,16 +46,13 @@ public sealed partial class GameSession
         }
         else if (state.Mode == GameMode.MainMenu && !menu.Confirmation)
         {
-            for (int i = 0; i < 6; i++)
-            {
-                var sprite = menuSprites.Frames[i];
-                int sx = MainMenuPresentation.SelectionX[i], sy = MainMenuPresentation.SelectionY[i];
-                if (x >= sx && x < sx + sprite.Width && y >= sy && y < sy + sprite.Height)
-                {
-                    menu.PointerSelect(i, saveDisabled);
-                    return;
-                }
-            }
+            int item = MainMenuLayout.HitTest(x * MainMenuLayout.Width / 640, y * MainMenuLayout.Height / 480);
+            if (item >= 0)
+                menu.PointerSelect(item, saveDisabled);
+        }
+        else if (state.Mode == GameMode.QuitConfirmation)
+        {
+            quit.PointerSelect(MainMenuLayout.HitTestConfirmation(x * MainMenuLayout.Width / 640, y * MainMenuLayout.Height / 480));
         }
         else if (state.Mode is GameMode.Save or GameMode.Load)
         {
