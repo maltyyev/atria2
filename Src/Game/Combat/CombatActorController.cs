@@ -304,7 +304,8 @@ public sealed class CombatActorController : ICombatActorActions
             if (commandIndex >= 0)
             {
                 byte previousFacing = actor.Facing;
-                actor.Facing = facing;
+                int previousAnchor = actor.AnchorX;
+                BanditAiDecision.Turn(actor, unchecked((sbyte)facing), image.Animation!.CurrentSprite.Width);
                 var command = image.Binding!.Info.Commands[commandIndex];
                 if (ExecuteMove(index, $"p:{command.Icon}", milliseconds))
                 {
@@ -312,6 +313,7 @@ public sealed class CombatActorController : ICombatActorActions
                     return;
                 }
                 actor.Facing = previousFacing;
+                actor.AnchorX = previousAnchor;
             }
         }
         if (actor.Team >= 100 && (image.Binding!.Info.Type <= 5 || image.Binding.Info.Type is >= 46 and <= 51))

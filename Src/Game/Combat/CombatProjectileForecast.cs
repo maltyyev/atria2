@@ -43,12 +43,13 @@ internal sealed class CombatProjectileForecast
         caster.State.AnchorX = owner.State.AnchorX;
         caster.State.Depth = owner.State.Depth;
         caster.State.Team = owner.State.Team;
-        caster.State.Facing = facing;
+        caster.State.Facing = owner.State.Facing;
+        BanditAiDecision.Turn(caster.State, unchecked((sbyte)facing), owner.Animation!.CurrentSprite.Width);
         caster.State.Rank = owner.State.Rank;
         caster.State.MagicRank = owner.State.MagicRank;
         caster.Animation.BeginSequenceCommand(command.Animation, 28, 0);
         var frames = owner.Binding.Assets.Animation.Sequences[command.Animation].Frames;
-        for (int frameIndex = 1; frameIndex < frames.Length - 1; frameIndex++)
+        for (int frameIndex = 0; frameIndex < frames.Length; frameIndex++)
         {
             var frame = frames[frameIndex];
             if (!IsProjectile(frame.Effect))
