@@ -341,61 +341,23 @@ public static class ControlRedesignTests
                         var invalid = Actor(0);
                         byte[] before = invalid.State.ToArray();
                         Check(!CombatSemanticControl.Variation(invalid, d, flags, 500) && before.AsSpan().SequenceEqual(invalid.State), "reject closed continuation window without mutation");
-                        // Run real ANI progression from rest for every declared directional move.
                         string id = $"v:{d}:{flags}";
-                        var sequence = new CombatMoveSequence();
-                        var assisted = Actor(0, 0, facing: facing);
-                        var path = CombatMoveSequence.Plan(info, info.Attacks[0].ResultFlags, id);
-                        Check(path is { Length: > 0 }, $"ground chain exists {party}/{form}/{id}, root={info.Attacks[0].ResultFlags}");
-                        Check(sequence.Start(assisted, id, 500), "one-button start from rest");
-                        Check(assisted.Animation!.SequenceIndex == info.Attacks[0].Animation, "start uses original ordinary attack");
-                        var mirror = Actor(0, 0, facing: facing);
-                        CombatManualControl.Attack(mirror.State, info, mirror.Animation!, 500);
-                        int step = 0;
-                        var game = new GameState();
-                        var shake = new CombatCameraShake();
-                        var mirrorShake = new CombatCameraShake();
-                        for (uint tick = 500; tick < 20500 && sequence.Active; tick += 10)
+                        var quick = Actor(0, 0, facing: facing);
+                        var direct = Actor(0, 0, facing: facing);
+                        Check(CombatSemanticControl.QuickVariation(quick, id, 500), "quick move starts from rest");
+                        int selected = Enumerable.Range(info.FirstVariation, info.VariationEnd - info.FirstVariation)
+                            .First(i => info.Attacks[i].Direction == d && info.Attacks[i].RequiredFlags == flags);
+                        direct.Animation!.BeginVariation(selected, 500);
+                        Check(quick.State.AsSpan().SequenceEqual(direct.State)
+                            && quick.Animation!.SequenceIndex == direct.Animation.SequenceIndex,
+                            "quick move binds exactly the chosen original variation, without a prelude");
+                        foreach (var blocked in new[] { Actor(64, 7), Actor(290, 0, 16), Actor(0, 0) })
                         {
-                            int oldSequence = assisted.Animation.SequenceIndex, oldFlags = I(assisted.State, 0xad);
-                            sequence.Advance(assisted, tick);
-                            if (assisted.Animation.SequenceIndex != oldSequence || I(assisted.State, 0xad) != oldFlags)
-                            {
-                                var row = info.Attacks[path![step++]];
-                                Check(CombatSemanticControl.Variation(mirror, row.Direction, row.RequiredFlags, tick), "assisted transition is legal in original manual handler");
-                            }
-
-                            Check(mirror.State.AsSpan().SequenceEqual(assisted.State), "assistance changes no original attack fields");
-                            foreach (var pair in new[]
-                            {
-                                (Image: assisted, Shake: shake),
-                                (Image: mirror, Shake: mirrorShake)
-                            }
-                            )
-                            {
-                                pair.Image.Animation!.RebindFromFrameCounter();
-                                CombatAnimationRuntime.Advance(pair.Image, game, tick, 3, () => 1, _ =>
-                                {
-                                }, _ =>
-                                {
-                                }, (_, _) =>
-                                {
-                                }, _ =>
-                                {
-                                }, () =>
-                                {
-                                }, pair.Shake);
-                            }
+                            if (blocked.State.ActionFlags == 0) blocked.State.Health = 0;
+                            byte[] snapshot = blocked.State.ToArray();
+                            Check(!CombatSemanticControl.QuickVariation(blocked, id, 501)
+                                && snapshot.AsSpan().SequenceEqual(blocked.State), "busy/airborne/dead quick request rejected without mutation");
                         }
-
-                        Check(!sequence.Active && step == path!.Length && assisted.Animation.SequenceIndex == info.Attacks[path[^1]].Animation, $"chain reaches requested move {party}/{form}/{id}");
-                        var interrupted = Actor(0, 0);
-                        Check(sequence.Start(interrupted, id, 500), "interruption setup");
-                        W(interrupted.State, 0xb1, 7);
-                        W(interrupted.State, 0xad, 64);
-                        Check(!sequence.Advance(interrupted, 510) && !sequence.Active, "hit interrupts pending chain");
-                        W(interrupted.State, 0xad, 0);
-                        Check(!sequence.Advance(interrupted, 1000), "interrupted request cannot restart later");
                     }
                 }
 
@@ -531,11 +493,11 @@ public static class ControlRedesignTests
         live.Poll(keys, pressed, mouse, true, 3);
         byte[] rejectedFields = hero.State.ToArray();
         controller.Process(index, 501);
-        Check(!rejectedFields.AsSpan().SequenceEqual(hero.State) && hero.Animation!.SequenceIndex == hero.Binding!.Info.Attacks[0].Animation, $"quick slot starts ordinary attack from rest: hp={I(hero.State, 0x170)}, active={I(hero.State, 0x224)}, seq={hero.Animation!.SequenceIndex}, root={hero.Binding!.Info.Attacks[0].Animation}, flags={I(hero.State, 0xad)}, notice={live.Notice}");
+        Check(!rejectedFields.AsSpan().SequenceEqual(hero.State) && hero.Animation!.SequenceIndex != hero.Binding!.Info.Attacks[0].Animation, "digit quick slot immediately starts variation through controller");
         live.Clear();
         W(hero.State, 0xad, 0);
         controller.Process(index, 502);
-        Check(I(hero.State, 0xad) < 2, "context change discards pending chain");
+        Check(I(hero.State, 0xad) < 2, "context change does not leave a delayed action");
         keys[2] = false;
         live.Poll(keys, pressed, mouse, true, 4);
         W(hero.State, 0xad, 32);
@@ -558,7 +520,7 @@ public static class ControlRedesignTests
         };
         live.Poll(keys, pressed, mouse, true, 2001);
         controller.Process(index, 601);
-        Check(hero.Animation.SequenceIndex == hero.Binding!.Info.Attacks[0].Animation && I(hero.State, 0xad) == 32, "RT+D-pad reaches assisted attack through actual controller");
-        return $"Controls: physical/chord edges, controller lifecycle, profiles, pause clock, 30 real INF forms; {variants} directed transitions AND assisted chains from rest (both facings), interruption, aerial/A sequences and {commands} MP commands verified against legacy handlers.";
+        Check(hero.Animation.SequenceIndex != hero.Binding!.Info.Attacks[0].Animation && I(hero.State, 0xad) != 32, "RT+D-pad immediately starts variation through actual controller");
+        return $"Controls: physical/chord edges, controller lifecycle, profiles, pause clock, 30 real INF forms; {variants} directed transitions AND immediate quick moves from rest (both facings), rejected states, aerial/A sequences and {commands} MP commands verified against legacy handlers.";
     }
 }

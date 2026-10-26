@@ -7,6 +7,37 @@ namespace Atria.Game.Combat;
 /// <summary>Semantic requests preserve the original manual eligibility and execute exactly one transition.</summary>
 public static class CombatSemanticControl
 {
+    public static bool QuickVariation(CombatActorImage image, string id, uint now)
+    {
+        if (!image.State.ActionState.CanStartGroundAttack)
+        {
+            return false;
+        }
+        string[] parts = id.Split(':');
+        if (parts.Length is not (2 or 3) || parts[0] != "v" || !int.TryParse(parts[1], out int direction)
+            || !CombatInfoCharacter.IsDirectional(direction))
+        {
+            return false;
+        }
+        int requiredFlags = 0;
+        if (parts.Length == 3 && !int.TryParse(parts[2], out requiredFlags))
+        {
+            return false;
+        }
+
+        var info = image.Binding!.Info;
+        for (int index = info.FirstVariation; index < info.VariationEnd; index++)
+        {
+            var attack = info.Attacks[index];
+            if (attack.Direction == direction && (requiredFlags == 0 || attack.RequiredFlags == requiredFlags))
+            {
+                image.Animation!.BeginVariation(index, now);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static bool Variation(CombatActorImage image, int direction, int requiredFlags, uint now)
     {
         CombatActorState a = image.State;

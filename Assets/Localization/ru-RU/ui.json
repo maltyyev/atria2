@@ -38,7 +38,7 @@
   "ui.combat.start": "Начать бой: {button}",
   "ui.combat.slotAssigned": "Назначено в слот {slot}",
   "ui.combat.rankRequired": "Нужен ранг {rank}",
-  "ui.combat.automaticChain": "Подготовительные удары выполняются автоматически",
+  "ui.combat.automaticChain": "Приём выполняется сразу, без подготовительного удара",
   "ui.combat.playerCharacter": "Игрок {player}: {character}",
   "ui.combat.bindHint": "Назначить: 1-4/крест. Выполнить: 1-4/RT+крест.",
   "ui.combat.inputHints": "P{player} {attack} удар   {jump} прыжок   {moves} приёмы   {pause} пауза",

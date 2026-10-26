@@ -34,7 +34,7 @@
   "ui.combat.start": "Пачаць бой: {button}",
   "ui.combat.slotAssigned": "Прызначана ў слот {slot}",
   "ui.combat.rankRequired": "Патрэбны ранг {rank}",
-  "ui.combat.automaticChain": "Падрыхтоўчыя ўдары выконваюцца аўтаматычна",
+  "ui.combat.automaticChain": "Прыём выконваецца адразу, без падрыхтоўчага ўдару",
   "ui.combat.playerCharacter": "Гулец {player}: {character}",
   "ui.combat.bindHint": "Прызначыць: 1-4/крыж. Выканаць: 1-4/RT+крыж.",
   "ui.combat.inputHints": "P{player} {attack} удар   {jump} скачок   {moves} прыёмы   {pause} паўза",

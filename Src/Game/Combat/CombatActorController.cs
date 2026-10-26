@@ -42,9 +42,6 @@ public sealed class CombatActorController : ICombatActorActions
     public string[][] SelectedMoves { get; } = [new string[6], new string[6]];
     public bool[] SelectorOpen { get; } = new bool[2];
 
-    private readonly CombatMoveSequence[] moveSequences = [new(), new()];
-    private readonly int[] moveContexts = new int[2];
-    private readonly int[] moveActors = [-1, -1];
     public void SetAutomation(bool enabled)
     {
         if (enabled != AutomationEnabled)
@@ -177,20 +174,13 @@ public sealed class CombatActorController : ICombatActorActions
         var info = image.Binding!.Info;
         var p = modern.Profile.Players[player];
         int party = actorIndex - runtime.Scene.PartyStartIndex;
-        if (moveContexts[player] != modern.ContextVersion(player) || moveActors[player] != actorIndex)
-        {
-            moveSequences[player].Cancel();
-        }
-
         if (SelectorOpen[player])
         {
-            moveSequences[player].Cancel();
             return;
         }
 
         if (modern.Press(player, GameAction.Switch))
         {
-            moveSequences[player].Cancel();
             CombatPartyControl.Cycle(runtime.Actors, runtime.Scene.PartyStartIndex, actorIndex);
             modern.ClearPlayer(player);
             return;
@@ -248,18 +238,6 @@ public sealed class CombatActorController : ICombatActorActions
             return;
         }
 
-        bool manual = modern.Held(player, GameAction.Attack) || modern.Held(player, GameAction.Jump) || modern.Held(player, GameAction.Branch)
-|| modern.Held(player, GameAction.Left) || modern.Held(player, GameAction.Right) || modern.Held(player, GameAction.Up) || modern.Held(player, GameAction.Down);
-        if (manual)
-        {
-            moveSequences[player].Cancel();
-        }
-
-        if (moveSequences[player].Advance(image, milliseconds))
-        {
-            return;
-        }
-
         if (a.ActionFlags < 2)
         {
             if (modern.Press(player, GameAction.Attack))
@@ -301,15 +279,12 @@ public sealed class CombatActorController : ICombatActorActions
 
     private void RequestSemanticMove(int actorIndex, int player, string id, InputRouter input, uint now)
     {
-        moveSequences[player].Cancel();
         bool result = ExecuteMove(actorIndex, id, now);
         if (!result && id.StartsWith("v:", StringComparison.Ordinal))
         {
-            result = moveSequences[player].Start(runtime.Actors[actorIndex], id, now);
+            result = CombatSemanticControl.QuickVariation(runtime.Actors[actorIndex], id, now);
         }
 
-        moveContexts[player] = input.ContextVersion(player);
-        moveActors[player] = actorIndex;
         input.Notice = result ? "" : GameText.Get("ui.combat.moveUnavailable");
         if (result)
         {
@@ -508,11 +483,6 @@ public sealed class CombatActorController : ICombatActorActions
 
     private void ToggleAutomation()
     {
-        foreach (var move in moveSequences)
-        {
-            move.Cancel();
-        }
-
         if (!AutomationEnabled)
         {
             for (int i = runtime.Scene.PartyStartIndex; i < bank.Length; i++)
