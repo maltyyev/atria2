@@ -115,15 +115,18 @@ public sealed class CombatAnimationCursor(CombatActorState actor, CombatInfoChar
         boundFrame = 0;
         displayedSprite = null;
         frameOverride = null;
+        if (FrameIndex < 0)
+        {
+            throw new InvalidDataException("Reaction frame cannot be negative.");
+        }
+        // Some attackers request entry frame 2, but a victim's reaction can contain only one frame.
+        if (FrameIndex >= assets.Animation.Sequences[selected].Frames.Length)
+        {
+            actor.FrameIndex = 0;
+        }
         if (bindLiveCounter)
         {
-            int frame = FrameIndex;
-            if ((uint)frame >= (uint)assets.Animation.Sequences[selected].Frames.Length)
-            {
-                throw new InvalidDataException("Reaction frame exceeds actual sequence.");
-            }
-
-            boundFrame = frame;
+            boundFrame = FrameIndex;
         }
 
         if (!rebuildAnchor)
@@ -138,16 +141,6 @@ public sealed class CombatAnimationCursor(CombatActorState actor, CombatInfoChar
         }
 
         actor.AnchorX = x;
-    }
-
-    public void BindDisplayedSpriteIndex(int index)
-    {
-        if ((uint)index >= (uint)assets.Sprites.Frames.Length)
-        {
-            throw new InvalidDataException("Combat displayed sprite index exceeds actual target sprite bank.");
-        }
-
-        displayedSprite = assets.Sprites.Frames[index];
     }
 
     //4063e0 changes2c5 while leaving the bound2d5/2d1 pointers intact until projection.

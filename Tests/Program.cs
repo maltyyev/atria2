@@ -1,5 +1,12 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--projectile-reaction")
+{
+    Console.WriteLine(Atria.Tests.Combat.ProjectileReactionTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Combat.CombatParticleTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--party-air")
 {
     Console.WriteLine(Atria.Tests.Combat.PartyAirCombatTests.Run(args[0]));
@@ -332,5 +339,6 @@ Console.WriteLine(Atria.Tests.Combat.CombatEncounterDiagnostic.Run(args[0], fals
 Console.WriteLine(Atria.Tests.Combat.CombatTransportTests.Run());
 Console.WriteLine(Atria.Tests.Combat.CombatTransitionTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatOutcomeTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.Combat.ProjectileReactionTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatParticleTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Dungeon.DungeonTests.Run(args[0]));

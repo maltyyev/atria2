@@ -21,16 +21,15 @@ public static class CombatHitReaction
 
         d.Reaction = reaction;
         d.ActionFlags = (int)CombatActionFlags.Busy;
+        // Sprite ordinals belong to the victim's reaction animation, never the caster's sprite bank.
         target.Animation!.BindReactionSequence(false, true);
-        //406540 indexes the target SPR with the attacker's bound-frame sprite ordinal.
-        target.Animation.BindDisplayedSpriteIndex(attacker.Animation!.CurrentFrame.SpriteFrameIndex);
         int now = unchecked((int)milliseconds);
         if (a.Motion != (int)CombatMotionKind.Run)
         {
             a.AnimationDeadline = unchecked(now + a.FrameInterval * 4);
         }
 
-        int delay = attacker.Animation.CurrentFrame.HitDelay;
+        int delay = attacker.Animation!.CurrentFrame.HitDelay;
         d.AnimationDeadline = delay == 0 ? unchecked(a.FrameInterval << 3) : unchecked(now + delay * 4);
         int y = unchecked(d.Depth - target.Animation.CurrentSprite.Height);
         d.SpriteY = y;
