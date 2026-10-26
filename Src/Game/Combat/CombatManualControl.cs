@@ -1,11 +1,15 @@
 using System.Buffers.Binary;
 using Atria.Game.State;
+using Atria.Resources;
 
 namespace Atria.Game.Combat;
 
 /// <summary>Recovered manual walking409070 and normal attack40b230; other action handlers remain separate.</summary>
 public static class CombatManualControl
 {
+    private const int MagicCrystalMana = 100;
+    private const int ManaPotionMana = 200;
+
     public static void ExecuteCommand(
         CombatSceneRuntime runtime,
         CombatActorImage image,
@@ -60,32 +64,18 @@ public static class CombatManualControl
         int cost = command.ManaCost, mp = actor.Mana;
         if (mp < cost)
         {
-            int item = 64, slot = -1;
-            if (unchecked(mp + 100) >= cost)
-            {
-                slot = EquipmentSlot(actor, 64);
-            }
-
+            int slot = FindManaSupplySlot(actor, cost);
             if (slot < 0)
             {
-                item = 65;
-                if (unchecked(mp + 200) < cost)
-                {
-                    return;
-                }
-
-                slot = EquipmentSlot(actor, 65);
-                if (slot < 0)
-                {
-                    return;
-                }
+                return;
             }
 
-            mp = unchecked(mp + (item == 64 ? 100 : 200));
+            int item = actor.Equipment[slot];
+            mp = unchecked(mp + (item == ItemIds.MagicCrystal ? MagicCrystalMana : ManaPotionMana));
             actor.Mana = mp;
             actor.Equipment[slot] = -1;
             state.OwnedItems[item] = unchecked(state.OwnedItems[item] - 1);
-            showConsumedItemNotice(item == 64 ? 4 : 5);
+            showConsumedItemNotice(item == ItemIds.MagicCrystal ? 4 : 5);
         }
 
         mp = unchecked(mp - cost);
@@ -354,6 +344,20 @@ public static class CombatManualControl
 
             return;
         }
+    }
+
+    internal static int FindManaSupplySlot(CombatActorState actor, int manaCost)
+    {
+        if (unchecked(actor.Mana + MagicCrystalMana) >= manaCost)
+        {
+            int crystalSlot = EquipmentSlot(actor, ItemIds.MagicCrystal);
+            if (crystalSlot >= 0)
+            {
+                return crystalSlot;
+            }
+        }
+
+        return unchecked(actor.Mana + ManaPotionMana) >= manaCost ? EquipmentSlot(actor, ItemIds.Mana) : -1;
     }
 
     private static int EquipmentSlot(CombatActorState actor, int item)

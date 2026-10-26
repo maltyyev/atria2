@@ -40,11 +40,14 @@ internal sealed class PartySpellDecision
 
         int best = -1, bestScore = 0;
         var commands = image.Binding!.Info.Commands;
+        bool needsManaSupply = !commands.Any(command => command.Category > 0 && command.Category <= actor.MagicRank
+            && command.ManaCost > 0 && command.ManaCost <= actor.Mana);
         for (int i = 0; i < commands.Count; i++)
         {
             var command = commands[i];
             if (command.Category <= 0 || command.Category > actor.MagicRank || command.ManaCost <= 0
-                || command.ManaCost > actor.Mana || (runtime.IsWeakEncounter
+                || (command.ManaCost > actor.Mana && (!needsManaSupply
+                    || CombatManualControl.FindManaSupplySlot(actor, command.ManaCost) < 0)) || (runtime.IsWeakEncounter
                 && (long)command.ManaCost * 100 > (long)actor.MaximumMana * ExpensiveManaPercent))
             {
                 continue;

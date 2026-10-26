@@ -174,6 +174,7 @@ public static class PartySpellTests
             }
         }
         CheckAlliedCastCadence(root);
+        PartyManaSupplyTests.Run(root);
         return $"Party spells PASS: strength snapshots, healing/cure/resurrection, weak-fight costs, active buffs, enemy mage cadence, real trajectories, {count} commands across 30 forms.";
     }
 
