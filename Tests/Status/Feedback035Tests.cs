@@ -57,7 +57,7 @@ public static class Feedback035Tests
                 ExplorationRules.AdvanceTravelDay(state);
             }
 
-            Check(state.Money == gold && state.Year == 1451, "100 travel days preserve any gold balance while calendar advances");
+            Check(state.Money == Math.Max(0, gold - 500) && state.Year == 1451, "Restored travel cost consumes five gold per day without debt while calendar advances");
         }
 
         if (fixture is not null)

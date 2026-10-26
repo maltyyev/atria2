@@ -37,11 +37,17 @@ public static class ExplorationTests
             DayCounterStorage = unchecked((int)0xaabbccff)
         };
         ExplorationRules.AdvanceTravelDay(state);
-        Check(state.Year == 1451 && state.Month == 1 && state.Day == 1 && state.Money == 6 && state.DayCounterStorage == unchecked((int)0xaabbcc00), "Calendar year boundary, travel is free, byte-only day storage.");
+        Check(state.Year == 1451 && state.Month == 1 && state.Day == 1 && state.Money == 1 && state.DayCounterStorage == unchecked((int)0xaabbcc00), "Calendar year boundary, five gold per completed step, byte-only day storage.");
         state.Day = 31;
         state.Money = 5;
         ExplorationRules.AdvanceTravelDay(state);
-        Check(state.Day == 2 && state.Month == 2 && state.Money == 5, "Native day32 rollover and money5 remains unchanged.");
+        Check(state.Day == 2 && state.Month == 2 && state.Money == 0, "Native day32 rollover and exact five-gold balance is spent.");
+        foreach (int gold in new[] { 0, 1, 4, 5, 6, int.MaxValue })
+        {
+            state.Money = gold;
+            ExplorationRules.AdvanceTravelDay(state);
+            Check(state.Money == Math.Max(0, gold - 5), "Travel consumes up to five gold without debt or overflow.");
+        }
         byte[] tile = new byte[328];
         int[] statuses = new int[200];
         Put(tile, 120, 63);
@@ -92,6 +98,7 @@ public static class ExplorationTests
         };
         var controller = new ExplorationController(state, map, AnimationFixture(), new(1), _ => false);
         Check(controller.BeginTravel(WorldDirection.Left) == TravelStartResult.Started, "Explored passable destination starts travel.");
+        Check(state.Money == 200, "Starting a movement does not charge before arrival.");
         var retainedMotion = controller.CaptureRuntime();
         controller.ClearMovementAfterBattle();
         Check(controller.CaptureRuntime() == (retainedMotion with
@@ -119,7 +126,14 @@ public static class ExplorationTests
             arrived = step.Arrived;
         }
 
-        Check(arrived && state.WorldX == 3 && state.WorldY == 4 && state.Day == 15 && state.Money == 200 && sound == 1, "Animation displacement completes one travel step/day and cycle sound.");
+        Check(arrived && state.WorldX == 3 && state.WorldY == 4 && state.Day == 15 && state.Money == 195 && sound == 1, "Animation displacement completes exactly one paid travel step/day and cycle sound.");
+        for (int i = 0; i < 20; i++)
+        {
+            time += 31;
+            controller.AdvanceAnimation(() => time);
+        }
+        state.WorldX = 0;
+        Check(controller.BeginTravel(WorldDirection.Left) == TravelStartResult.Blocked && state.Money == 195, "Idle frames and blocked travel do not charge again.");
         // Event99 precedes event-bank routing and random encounter consumption.
         int at = 313 + (4 * 10 + 4) * 328;
         Put(raw, at + 88, 99);

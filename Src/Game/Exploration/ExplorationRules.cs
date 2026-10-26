@@ -6,9 +6,16 @@ namespace Atria.Game.Exploration;
 
 public static class ExplorationRules
 {
+    private const int TravelGoldCost = 5;
+
     /// <summary>41c1a0:30-day calendar; only byte0 of saved day counter changes.</summary>
     public static void AdvanceTravelDay(GameState state)
     {
+        if (state.Money > 0)
+        {
+            state.Money = Math.Max(0, state.Money - TravelGoldCost);
+        }
+
         state.Day = unchecked(state.Day + 1);
         if (state.Day == 31)
         {

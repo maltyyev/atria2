@@ -1,5 +1,13 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--travel-cost")
+{
+    Console.WriteLine(Atria.Tests.Exploration.ExplorationTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Status.Feedback035Tests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.State.QuestDayCounterTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--experience-layout")
 {
     Console.WriteLine(Atria.Tests.Progression.ProgressionTests.Run(args[0]));
