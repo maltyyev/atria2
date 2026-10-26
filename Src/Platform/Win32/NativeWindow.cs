@@ -23,6 +23,7 @@ public sealed unsafe class NativeWindow : IDisposable
         ActivateApp = 0x001c,
         KeyDown = 0x0100,
         KeyUp = 0x0101,
+        Character = 0x0102,
         SystemKeyDown = 0x0104,
         SystemKeyUp = 0x0105,
         MouseMove = 0x0200,
@@ -47,6 +48,13 @@ public sealed unsafe class NativeWindow : IDisposable
     public bool Focused { get; private set; } = true;
     public bool[] Keys { get; } = new bool[VirtualKeyCount];
     public bool[] Pressed { get; } = new bool[VirtualKeyCount];
+    private readonly System.Text.StringBuilder textInput = new();
+    public string TakeTextInput()
+    {
+        string value = textInput.ToString();
+        textInput.Clear();
+        return value;
+    }
     public bool[] ScanKeys => scanInput.Keys;
     public bool[] ScanPressed => scanInput.Pressed;
     public long KeyDownCount
@@ -154,6 +162,7 @@ public sealed unsafe class NativeWindow : IDisposable
     public void Pump()
     {
         Array.Clear(Pressed);
+        textInput.Clear();
         Array.Clear(ScanPressed);
         Array.Clear(MousePressed);
         MouseWheelDelta = 0;
@@ -220,6 +229,10 @@ public sealed unsafe class NativeWindow : IDisposable
                     w.LastScanCode = downScan;
                     w.scanInput.Down(inputTime, (byte)downScan, ((long)lp & PreviousKeyStateMask) != 0);
                     break;
+                case WindowMessage.Character:
+                    if (w.Focused && wp >= 32 && wp <= char.MaxValue)
+                        w.textInput.Append((char)wp);
+                    return 0;
                 case WindowMessage.KeyUp:
                 case WindowMessage.SystemKeyUp:
                     if (wp < VirtualKeyCount)

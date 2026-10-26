@@ -16,7 +16,9 @@ public sealed partial class GameSession
             return true;
         mainMenuView ??= new(Path.Combine(AppContext.BaseDirectory, "assets"));
         bool quitting = state.Mode == GameMode.QuitConfirmation;
-        var frame = mainMenuView.Render(menu.Selection, saveDisabled, menu.Confirmation, quitting ? quit.Selection == 1 : menu.YesSelected, quitting);
+        string profile = GameText.Format(CanChangeProfile ? "ui.profiles.menuHint" : "ui.profiles.menuCurrent",
+            ("name", playerProfiles.Active.Name));
+        var frame = mainMenuView.Render(menu.Selection, saveDisabled, menu.Confirmation, quitting ? quit.Selection == 1 : menu.YesSelected, quitting, profile);
         presenter.Resize(size.Width, size.Height);
         presenter.SetFrameSize(MainMenuLayout.Width, MainMenuLayout.Height);
         presenter.Present(frame);

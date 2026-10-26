@@ -1,5 +1,17 @@
 using Atria.Render;
 
+if (args.Length == 4 && args[3] == "--profile-session")
+{
+    Console.WriteLine(Atria.Game.GameSession.VerifyProfileIntegration(args[0], args[1], args[2]));
+    return;
+}
+
+if (args.Length == 2 && args[1] == "--profiles")
+{
+    Console.WriteLine(Atria.Tests.Profiles.PlayerProfileTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--projectile-reaction")
 {
     Console.WriteLine(Atria.Tests.Combat.ProjectileReactionTests.Run(args[0]));
@@ -256,6 +268,7 @@ if (args.Length != 2)
 }
 
 Console.WriteLine($"Verification runtime: dynamicCode={System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}.");
+Console.WriteLine(Atria.Tests.Profiles.PlayerProfileTests.Run(args[0]));
 Viewport v = Viewport.Fit(2560, 1440);
 if (v != new Viewport(320, 0, 1920, 1440))
 {

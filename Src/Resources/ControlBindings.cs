@@ -7,6 +7,8 @@ public sealed class ControlBindings
 {
     private readonly byte[] scanCodes;
     private ControlBindings(byte[] scanCodes) => this.scanCodes = scanCodes;
+    internal ControlBindings Clone() => new((byte[])scanCodes.Clone());
+    internal void CopyFrom(ControlBindings source) => source.scanCodes.CopyTo(scanCodes, 0);
     public byte this[int player, int action] => (uint)player < 2 && (uint)action < 8 ? scanCodes[player * 8 + action] : throw new ArgumentOutOfRangeException();
     public byte Previous => this[0, 0];
     public byte Next => this[0, 1];

@@ -29,13 +29,6 @@ public sealed partial class GameSession
     private int CurrentEffectsVolume => muted ? -10000 : SettingsAudio.EffectsHundredthDecibels(settings.Effects);
 
     private void ApplySettingsAudio() => musicTransport.SetVolume(muted ? 0 : SettingsAudio.MusicGain(settings.Music));
-    private void RestoreSettingsSnapshot(ReadOnlySpan<byte> bytes)
-    {
-        var value = NativeSettingsState.Parse(bytes);
-        settings.Set(value.Music, value.Effects, value.ThirdOption);
-        ApplySettingsAudio();
-    }
-
     private void ApplyModernSettings(ControlProfile profile, NativeSettingsState audioSettings)
     {
         preferencesStore!.Write(new(profile, audioSettings, configuredSettingsBindings!, GameText.Current.Language));

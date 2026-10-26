@@ -10,15 +10,18 @@ public sealed class MainMenuView(string assetRoot)
     private readonly ushort[] background = MainMenuArtwork.LoadNative(assetRoot);
     private readonly ushort[] pixels = new ushort[MainMenuLayout.Width * MainMenuLayout.Height];
     private readonly uint[] presentation = new uint[MainMenuLayout.Width * MainMenuLayout.Height];
-    private (int Selection, bool SaveDisabled, bool Confirmation, bool Yes, bool Quit, LocalizationCatalog Catalog)? cached;
+    private (int Selection, bool SaveDisabled, bool Confirmation, bool Yes, bool Quit, string Profile, LocalizationCatalog Catalog)? cached;
 
-    public ReadOnlySpan<uint> Render(int selection, bool saveDisabled, bool confirmation, bool yes, bool quit)
+    public ReadOnlySpan<uint> Render(int selection, bool saveDisabled, bool confirmation, bool yes, bool quit, string profile = "")
     {
-        var key = (selection, saveDisabled, confirmation, yes, quit, GameText.Current);
+        var key = (selection, saveDisabled, confirmation, yes, quit, profile, GameText.Current);
         if (cached == key)
             return presentation;
         background.CopyTo(pixels, 0);
         MainMenuArtwork.DrawLabels(selection, pixels, MainMenuLayout.Width, MainMenuLayout.Height, MainMenuLayout.Width, null, saveDisabled);
+        if (profile.Length > 0)
+            MainMenuArtwork.DrawCentered(profile, pixels, MainMenuLayout.Width, MainMenuLayout.Height, MainMenuLayout.Width,
+                new(320, 1280, 2240, 1360), 32, 0xd69a);
         if (confirmation || quit)
             DrawConfirmation(yes, quit);
         for (int i = 0; i < pixels.Length; i++)

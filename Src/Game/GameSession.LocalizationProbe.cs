@@ -22,7 +22,7 @@ public sealed partial class GameSession
         var session = new GameSession(resourceRoot, window, presenter, audio, transport, faces, 60, true, null, output);
         try
         {
-            Directory.CreateDirectory(Path.Combine(output, "saves"));
+            Directory.CreateDirectory(Path.GetDirectoryName(session.PersistenceStore.GetSlotPath(0))!);
             File.Copy(fixture, session.PersistenceStore.GetSlotPath(0));
             session.LoadSessionSlot(0);
             byte[] state = NativeGameStateCodec.Encode(session.state);

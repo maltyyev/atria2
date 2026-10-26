@@ -32,7 +32,7 @@ public sealed partial class GameSession
 
         try
         {
-            Directory.CreateDirectory(Path.Combine(output, "saves"));
+            Directory.CreateDirectory(Path.GetDirectoryName(s.PersistenceStore.GetSlotPath(0))!);
             File.Copy(fixture, s.PersistenceStore.GetSlotPath(0));
             s.LoadSessionSlot(0);
             Check(s.state.Mode == GameMode.Town && s.town.TownId == (guild ? 2 : 3), "user fixture is expected town");
@@ -145,7 +145,7 @@ public sealed partial class GameSession
         {
             if (File.Exists(fixture))
             {
-                Directory.CreateDirectory(Path.Combine(output, "saves"));
+                Directory.CreateDirectory(Path.GetDirectoryName(s.PersistenceStore.GetSlotPath(0))!);
                 File.Copy(fixture, s.PersistenceStore.GetSlotPath(0));
                 s.LoadSessionSlot(0);
                 Check(s.state.Mode is GameMode.World or GameMode.Dungeon or GameMode.Town, "old user save activation");

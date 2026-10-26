@@ -21,7 +21,7 @@ public sealed partial class GameSession
     private ushort[]? persistenceBackground;
     private int persistenceSelection;
     private LegacySaveImage? persistenceLegacyTemplate;
-    private NativeSaveStore PersistenceStore => persistenceStore ??= new(Path.Combine(sessionOutputDirectory, "saves"), root);
+    private NativeSaveStore PersistenceStore => persistenceStore ??= new(Path.Combine(ActiveProfileDirectory, "saves"), root);
 
     private void EnterPersistence(int mode)
     {
@@ -348,6 +348,7 @@ public sealed partial class GameSession
 
     private void ApplyPreparedSession(PreparedSession next)
     {
+        hasStartedGame = true;
         var saved = next.Snapshot;
         RestoreSessionFields(next);
         gate.SetThresholdMilliseconds(saved.FrameThreshold);
@@ -384,7 +385,8 @@ public sealed partial class GameSession
         // Asset preparation and validation are complete. Audio/UI resources are transient and restart from the recovered track identity.
         StopExclusiveScenarioSound();
         StopAudio();
-        RestoreSettingsSnapshot(saved.Settings);
+        // Preferences belong to the selected player profile, not to the age of the loaded save.
+        ApplySettingsAudio();
         music.RestoreRuntime(saved.Music);
         if (saved.PlayingMusicTrack > 0)
         {

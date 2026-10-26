@@ -97,8 +97,10 @@ public sealed partial class GameSession : IScriptEffects
         messages = LegacyTextTables.ParseMessages(text);
         displayMessages = GameText.Messages(messages);
         var originalBindings = ControlBindings.Parse(File.ReadAllBytes(Path.Combine(root, "BATTLE.CFG")));
-        var configuredBindings = InitializeSettings(Path.Combine(sessionOutputDirectory, "config"), originalBindings);
-        bindings = controlsFile is null ? configuredBindings : ControlBindings.Parse(File.ReadAllBytes(controlsFile));
+        defaultBindings = originalBindings;
+        playerProfiles = new(sessionOutputDirectory, DefaultProfileName);
+        var configuredBindings = InitializeSettings(Path.Combine(ActiveProfileDirectory, "config"), originalBindings);
+        bindings = controlsFile is null ? configuredBindings.Clone() : ControlBindings.Parse(File.ReadAllBytes(controlsFile));
         etc = SpriteFile.Decode(Read("AT2SPR.000", "ETC"u8));
         effectSprites = SpriteFile.Decode(Read("AT2SPR.000", "CON_EFF"u8));
         effectAnimation = AnimationFile.Decode(Read("ANI.000", "CON_EFF"u8));
@@ -262,6 +264,12 @@ public sealed partial class GameSession : IScriptEffects
         if (controls.FocusPauseRequested)
         {
             ShowPause(false);
+            return false;
+        }
+
+        if (CanChangeProfile && controls.ProfileMenuPressed())
+        {
+            ShowPlayerProfiles();
             return false;
         }
 
@@ -643,6 +651,7 @@ public sealed partial class GameSession : IScriptEffects
                 ResetExplorationSession();
                 break;
             case MenuEffect.SetNewGameGlobals:
+                hasStartedGame = true;
                 modes.ResetDepth();
                 state.ModeStackDepth = -1;
                 saveDisabled = false;

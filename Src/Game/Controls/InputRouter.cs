@@ -95,6 +95,13 @@ public sealed class InputRouter : IDisposable
     }
 
     public bool Connected(int slot) => slot >= 0 && samples[slot].Connected;
+    internal bool ProfileMenuPressed() => Take(0x3c) || PadButtonPressed(3); // F2 / physical Y
+    internal bool PadButtonPressed(int button, bool repeat = false)
+    {
+        for (int slot = 0; slot < PadCount; slot++)
+            if (Take(PadTokenStart + slot * PadTokenStride + button, repeat)) return true;
+        return false;
+    }
     public void Poll(NativeWindow window)
     {
         var size = window.ClientSize;
