@@ -81,6 +81,7 @@ public sealed class CombatFrameRuntime
         this.milliseconds = milliseconds;
         int friendly = 0, enemies = 0, pending = 0, allied = 0;
         bool spawned = false;
+        bool waveManaRestored = false;
         state.Globals[68] = 0; //407e33 WORD reset, adjacent global69 is independent.
         for (int i = 0; i < runtime.Actors.Count; i++)
         {
@@ -147,6 +148,11 @@ public sealed class CombatFrameRuntime
                 {
                     spawned = true;
                     enemies++;
+                    if (!waveManaRestored && actor.Team < 100 && actor.Active != 0 && actor.Health > 0)
+                    {
+                        RestorePartyMana();
+                        waveManaRestored = true;
+                    }
                 }
 
                 pending++;
@@ -192,6 +198,20 @@ public sealed class CombatFrameRuntime
         }
 
         return new(code, RewardFlag, friendly, enemies, pending, allied);
+    }
+
+    private void RestorePartyMana()
+    {
+        for (int i = runtime.Scene.PartyStartIndex; i < runtime.Actors.Count; i++)
+        {
+            var member = runtime.Actors[i];
+            if (member.Binding is null || member.State.MemberStatus == 0)
+            {
+                continue;
+            }
+
+            member.State.Mana = member.State.DisplayedMana = member.State.MaximumMana;
+        }
     }
 
     private void SpawnParticle(int id) => effects.SpawnActorParticle(currentActor, id, milliseconds);
