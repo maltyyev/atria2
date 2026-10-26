@@ -5,6 +5,8 @@ namespace Atria.Game.Combat;
 /// <summary>413110 exact initial attribute projection; requires the caller's ordered native RNG.</summary>
 public static class CombatEnemyAttributes
 {
+    internal const int MageSpecialActionIntervalMilliseconds = 30_000;
+
     // Each actor reduces the delay on its shared binding, not on a private copy.
     public static void Initialize(CombatActorState actor, CombatInfoCharacter sharedInfo, int regionIndex, int variant, Func<int> nextNativeRandom, ref int accumulatedAward)
     {
@@ -92,8 +94,8 @@ public static class CombatEnemyAttributes
             38 => (40, 20000, 11),
             39 => (7, 40000, 12),
             40 => (25, 20000, regionIndex),
-            41 => (25, 30000, unchecked(regionIndex + 1)),
-            42 => (25, 30000, unchecked(regionIndex + 1)),
+            41 => (25, MageSpecialActionIntervalMilliseconds, unchecked(regionIndex + 1)),
+            42 => (25, MageSpecialActionIntervalMilliseconds, unchecked(regionIndex + 1)),
             43 => (25, 20000, unchecked(regionIndex + 2)),
             44 => (3, 70000, 12),
             _ => (0, 0, 0)

@@ -5,7 +5,6 @@ namespace Atria.Game.Combat;
 internal sealed class PartySpellDecision
 {
     private const uint DecisionInterval = 600;
-    private const uint CastInterval = 6_000;
     private const int ExpensiveManaPercent = 30;
     private const int HealingHealthPercent = 50;
     private readonly CombatSceneRuntime runtime;
@@ -28,7 +27,7 @@ internal sealed class PartySpellDecision
         var actor = image.State;
         facing = actor.Facing;
         if (actor.Team < 100 || actor.ControlledBy != 0 || !actor.ActionState.CanStartGroundAttack
-            || magic.ActiveMagic is not null || now < nextDecision[actorIndex])
+            || magic.ActiveMagic is not null || now <= nextDecision[actorIndex])
         {
             return -1;
         }
@@ -61,7 +60,9 @@ internal sealed class PartySpellDecision
         return best;
     }
 
-    public void Cast(int actorIndex, uint now) => nextDecision[actorIndex] = now + CastInterval;
+    // Use the enemy mage's special-action cadence; mana already limits the party's number of casts.
+    public void Cast(int actorIndex, uint now) =>
+        nextDecision[actorIndex] = now + CombatEnemyAttributes.MageSpecialActionIntervalMilliseconds;
 
     internal int Score(CombatActorImage image, CombatCommand command, uint now, out byte facing)
     {

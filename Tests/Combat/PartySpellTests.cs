@@ -111,7 +111,9 @@ public static class PartySpellTests
         {
             Spells = policy
         };
-        controller.Process(runtime.Scene.PartyStartIndex + 4, 9000);
+        Check(policy.Select(runtime.Scene.PartyStartIndex + 4, 9000, out _) < 0, "old six-second interval no longer permits a cast");
+        Check(policy.Select(runtime.Scene.PartyStartIndex + 4, 32000, out _) < 0, "strict enemy-style cooldown boundary");
+        controller.Process(runtime.Scene.PartyStartIndex + 4, 32001);
         Check(healer.State.Mana == 900 && healer.State.ActionFlags == (int)CombatActionFlags.Command
             && healer.CurrentCommandIndex == healing, "automatic control starts real spell and charges mana once");
         healer.State.ActionFlags = 0;
@@ -171,7 +173,70 @@ public static class PartySpellTests
                 count++;
             }
         }
-        return $"Party spells PASS: strength snapshots, healing/cure/resurrection, weak-fight costs, active buffs, cooldown, real trajectories, {count} commands across 30 forms.";
+        CheckAlliedCastCadence(root);
+        return $"Party spells PASS: strength snapshots, healing/cure/resurrection, weak-fight costs, active buffs, enemy mage cadence, real trajectories, {count} commands across 30 forms.";
+    }
+
+    private static void CheckAlliedCastCadence(string root)
+    {
+        var (runtime, state) = Fixture(root);
+        var enemy = runtime.Actors[0];
+        enemy.State.Health = enemy.State.MaximumHealth = 100;
+        enemy.State.HurtLeft = 0;
+        enemy.State.HurtRight = 640;
+        enemy.State.HurtTop = 0;
+        enemy.State.HurtBottom = 350;
+        runtime.CaptureEncounterStrength();
+        var random = new LegacyRandom(123);
+        var hits = new CombatHitExecutor(runtime, state, random.Next, _ => { }, _ => { });
+        var magic = new CombatParticleMagicRuntime(root, runtime, CombatParticleSystem.Load(root), hits,
+            () => 1000, random.Next, _ => { }, _ => { });
+        var policy = new PartySpellDecision(root, runtime, magic, hits, random);
+        var bindings = ControlBindings.Parse(File.ReadAllBytes(Path.Combine(root, "BATTLE.CFG")));
+        var controller = new CombatActorController(runtime, state, bindings, new(_ => false), new Effects(), random.Next)
+        {
+            Spells = policy
+        };
+
+        // Read the actual enemy mage definition and its initialized special-action timing.
+        var mageInfo = CombatInfoDefinition.Load(root, "44"u8).Characters.Single();
+        var mage = new CombatActorState();
+        int award = 0;
+        CombatEnemyAttributes.Initialize(mage, mageInfo, 1, 0, () => 1, ref award);
+        Check(mageInfo.Type == 42 && mage.SpecialActionInterval == 30_000, "actual MAGE enemy uses thirty-second special actions");
+
+        for (int party = 0; party < 6; party++)
+        {
+            int index = runtime.Scene.PartyStartIndex + party;
+            var member = runtime.Actors[index];
+            member.State.Health = 40;
+            member.State.Poison = 1;
+            if (!member.Binding!.Info.Commands.Any(c => c.Category > 0 && c.ManaCost > 0))
+            {
+                Check(policy.Select(index, 1000, out _) < 0, "classes without mana spells do not acquire invented abilities");
+                continue;
+            }
+            Check(policy.Select(index, 1000, out _) >= 0, $"class {party} has a useful spell before cooldown");
+            int manaBefore = member.State.Mana;
+            controller.Process(index, 1601);
+            Check(member.State.Mana < manaBefore && member.State.ActionFlags == (int)CombatActionFlags.Command,
+                "automatic cast succeeds for every party class");
+            member.State.ActionFlags = 0;
+            int manaAfter = member.State.Mana;
+            uint deadline = 1601u + (uint)mage.SpecialActionInterval;
+            foreach (uint time in new[] { 1602u, 7602u, deadline - 1, deadline })
+            {
+                Check(policy.Select(index, time, out _) < 0 && member.State.Mana == manaAfter,
+                    "no automatic repeat or mana charge before the enemy mage deadline");
+            }
+            int command = policy.Select(index, deadline + 1, out _);
+            Check(command >= 0, "every class may cast again after the enemy mage deadline");
+
+            policy.Cast(index, deadline + 1);
+            Check(controller.ExecuteMove(index, $"p:{member.Binding!.Info.Commands[command].Icon}", deadline + 2),
+                "manual spell execution is independent of the automatic cooldown");
+            member.State.ActionFlags = 0;
+        }
     }
 }
 
