@@ -17,6 +17,7 @@ public interface ICombatControlEffects : ICombatFrameEffects
 /// <summary>404c40 actual manual routing and40e1a0 type9 dispatch. Unrecovered AI types diagnose.</summary>
 public sealed class CombatActorController : ICombatActorActions
 {
+    private const uint MaximumForecastOpportunityInterval = 100;
     private readonly CombatSceneRuntime runtime;
     private readonly GameState state;
     private readonly CombatScanInput input;
@@ -24,6 +25,7 @@ public sealed class CombatActorController : ICombatActorActions
     private readonly Func<int> nextRandom;
     private readonly byte[][] rows = [new byte[8], new byte[8]];
     private readonly CombatActorState[] bank;
+    private readonly uint[] previousAutomaticOpportunity;
     private readonly Action<int> sound, rankNotice, itemNotice;
     private int leaderHeldSince;
     private uint now;
@@ -79,6 +81,7 @@ public sealed class CombatActorController : ICombatActorActions
         }
 
         bank = runtime.Actors.Select(a => a.State).ToArray();
+        previousAutomaticOpportunity = new uint[bank.Length];
         sound = effects.PlaySound;
         rankNotice = RankNotice;
         itemNotice = ItemNotice;
@@ -316,6 +319,8 @@ public sealed class CombatActorController : ICombatActorActions
 
     private void Automatic(int index, uint milliseconds)
     {
+        uint opportunityInterval = Math.Clamp(milliseconds - previousAutomaticOpportunity[index], 1u, MaximumForecastOpportunityInterval);
+        previousAutomaticOpportunity[index] = milliseconds;
         CombatActorImage image = runtime.Actors[index];
         CombatActorState actor = image.State;
         if (!effects.GlobalEffectBusy && Spells is { } spells)
@@ -332,6 +337,34 @@ public sealed class CombatActorController : ICombatActorActions
                     return;
                 }
                 actor.Facing = previousFacing;
+            }
+        }
+        if (actor.Team >= 100 && (image.Binding!.Info.Type <= 5 || image.Binding.Info.Type is >= 46 and <= 51))
+        {
+            int target = runtime.TargetIndices[index];
+            if (target < 0 || bank[target].Health <= 0 || bank[target].Active == 0 || bank[target].SpawnCondition != 0)
+            {
+                long nearest = long.MaxValue;
+                target = -1;
+                for (int i = 0; i < bank.Length; i++)
+                {
+                    var candidate = bank[i];
+                    if (candidate.Team >= 100 || candidate.Health <= 0 || candidate.Active == 0 || candidate.SpawnCondition != 0)
+                    {
+                        continue;
+                    }
+                    long distance = Math.Abs((long)candidate.TrackingX - actor.TrackingX) + Math.Abs((long)candidate.Depth - actor.Depth);
+                    if (distance < nearest)
+                    {
+                        nearest = distance;
+                        target = i;
+                    }
+                }
+            }
+            if (target >= 0 && PartyAirCombat.TryAct(image, runtime.Actors[target], milliseconds, opportunityInterval))
+            {
+                runtime.TargetIndices[index] = target;
+                return;
             }
         }
         int flags = actor.ActionFlags;

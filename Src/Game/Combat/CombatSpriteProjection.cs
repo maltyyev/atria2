@@ -6,6 +6,12 @@ namespace Atria.Game.Combat;
 /// <summary>404ee0 coordinate stage after actual input/AI and frame selection; no guessed animation progression.</summary>
 public static class CombatSpriteProjection
 {
+    internal static int FlightHeight(int type, int motion) => motion is >= 8 and <= 13 ? 0 : type switch
+    {
+        19 => 80,
+        45 => 110,
+        _ => 0
+    };
     public static void Update(CombatActorState actor, int type, AnimationFrame frame, SpriteFrame sprite)
     {
         if (frame.Words.Length != Atria.Render.Codecs.AnimationFrame.WordCount)
@@ -72,10 +78,7 @@ public static class CombatSpriteProjection
             }
 
             actor.SpriteX = projectedX;
-            if ((type == 19 || type == 45) && (mode < 8 || mode > 13))
-            {
-                actor.SpriteY = projectedY - (type == 19 ? 80 : 110);
-            }
+            actor.SpriteY = projectedY - FlightHeight(type, mode);
         }
     }
 
