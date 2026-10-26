@@ -16,6 +16,17 @@ public interface ICombatParticleImpactEffects
 /// <summary>40d100 exact projectile eligibility and damage path, separate from ordinary406d40 attacks.</summary>
 public static class CombatParticleCollision
 {
+    internal static bool CanHit(CombatParticleState particle, CombatActorImage target)
+    {
+        var t = target.State;
+        var sprite = particle.CurrentSprite;
+        return t.SpawnCondition == 0 && t.Rank != 0 && t.Team != particle.Owner!.State.Team
+            && !ReferenceEquals(target, particle.Owner) && t.Invulnerable == 0
+            && t.HitPriority < particle.FirstFrame.HitPriority
+            && Math.Abs((long)t.Depth - particle.Depth) <= particle.DepthTolerance
+            && t.HurtLeft <= (long)particle.SpriteX + sprite.Width && t.HurtRight >= particle.SpriteX
+            && t.HurtTop <= (long)particle.SpriteY + sprite.Height && t.HurtBottom >= particle.SpriteY;
+    }
     public static int Apply(
         CombatParticleState particle,
         IReadOnlyList<CombatActorImage> actors,
@@ -32,11 +43,7 @@ public static class CombatParticleCollision
         foreach (var target in actors)
         {
             CombatActorState t = target.State;
-            int difference = unchecked(t.Depth - particle.Depth);
-            int sign = difference >> 31;
-            int distance = unchecked((difference ^ sign) - sign);
-            if (t.SpawnCondition != 0 || t.Rank == 0 || t.Team == owner.State.Team || ReferenceEquals(target, owner) || t.HurtLeft > unchecked(x + width)
-|| t.HurtTop > unchecked(y + height) || x > t.HurtRight || y > t.HurtBottom || t.HitPriority >= first.HitPriority || distance > particle.DepthTolerance || t.Invulnerable != 0)
+            if (!CanHit(particle, target))
             {
                 continue;
             }

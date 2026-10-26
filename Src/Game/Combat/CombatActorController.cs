@@ -27,6 +27,7 @@ public sealed class CombatActorController : ICombatActorActions
     private readonly Action<int> sound, rankNotice, itemNotice;
     private int leaderHeldSince;
     private uint now;
+    internal PartySpellDecision? Spells { get; set; }
     public bool CommandSelectionActive
     {
         get; private set;
@@ -317,6 +318,22 @@ public sealed class CombatActorController : ICombatActorActions
     {
         CombatActorImage image = runtime.Actors[index];
         CombatActorState actor = image.State;
+        if (!effects.GlobalEffectBusy && Spells is { } spells)
+        {
+            int commandIndex = spells.Select(index, milliseconds, out byte facing);
+            if (commandIndex >= 0)
+            {
+                byte previousFacing = actor.Facing;
+                actor.Facing = facing;
+                var command = image.Binding!.Info.Commands[commandIndex];
+                if (ExecuteMove(index, $"p:{command.Icon}", milliseconds))
+                {
+                    spells.Cast(index, milliseconds);
+                    return;
+                }
+                actor.Facing = previousFacing;
+            }
+        }
         int flags = actor.ActionFlags;
         if (flags is not (0 or 1))
         {

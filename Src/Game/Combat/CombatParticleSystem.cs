@@ -172,7 +172,7 @@ public sealed class CombatParticleSystem(CombatAnimationAssets effectAssets)
         return new(active, draws.ToArray());
     }
 
-    private static bool KeepAlive(CombatParticleState particle, Action<CombatParticleState, int> transform)
+    internal static bool KeepAlive(CombatParticleState particle, Action<CombatParticleState, int> transform)
     {
         bool expire = particle.ExpiryRule switch
         {
@@ -203,7 +203,7 @@ public sealed class CombatParticleSystem(CombatAnimationAssets effectAssets)
         }
     }
 
-    private static void AdvanceMotion(CombatParticleState particle, uint now, Action<int> playSound)
+    internal static void AdvanceMotion(CombatParticleState particle, uint now, Action<int> playSound)
     {
         if (particle.NextFrameTime > unchecked((int)now))
         {

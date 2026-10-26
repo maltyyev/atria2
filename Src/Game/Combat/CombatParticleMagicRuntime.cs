@@ -12,6 +12,7 @@ public sealed class CombatParticleMagicRuntime
     private readonly Action<int> sound;
     private readonly Action<uint> screenEffect;
     private readonly CombatHitExecutor hits;
+    private readonly Dictionary<int, CombatAnimationAssets> magicAssets = [];
     public CombatStatusSlot[] GlobalStatus { get; } = new CombatStatusSlot[CombatStatusSlots.GlobalCount];
     public CombatAnimationAssets? ActiveMagic
     {
@@ -84,7 +85,12 @@ public sealed class CombatParticleMagicRuntime
             else
             {
                 particle.Kind = 11;
-                ActiveMagic = CombatParticleMagic.Load(root, id);
+                if (!magicAssets.TryGetValue(id, out var assets))
+                {
+                    assets = CombatParticleMagic.Load(root, id);
+                    magicAssets.Add(id, assets);
+                }
+                ActiveMagic = assets;
                 particle.ContainerAssets = ActiveMagic;
             }
         }

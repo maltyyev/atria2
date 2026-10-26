@@ -95,6 +95,7 @@ public sealed class CombatExecutionRuntime : ICombatControlEffects
         };
         Camera = entry.Assets.CreateCamera(entry.Runtime, Particles.Translate);
         Controller = new(entry.Runtime, state, bindings, input, this, nextRandom);
+        Controller.Spells = new(root, entry.Runtime, Magic, Hits, random);
         Frames = new(entry.Runtime, state, Camera, Controller, this, nextRandom);
         impacts = new(entry.Runtime, Particles, Hits, () => now, () => VisualDetail, sound, Magic.Transform);
         hitPass = new(entry.Runtime, Hits);

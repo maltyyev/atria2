@@ -1,5 +1,11 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--party-spells")
+{
+    Console.WriteLine(Atria.Tests.Combat.PartySpellTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--travel-cost")
 {
     Console.WriteLine(Atria.Tests.Exploration.ExplorationTests.Run(args[0]));
@@ -302,6 +308,7 @@ Console.WriteLine(Atria.Tests.Status.StatusMenuTests.Run());
 Console.WriteLine(Atria.Tests.Status.QuestJournalTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Status.Feedback035Tests.Run(args[0]));
 Atria.Tests.Status.StatusRendererTests.Run(args[0]);
+Console.WriteLine(Atria.Tests.Combat.PartySpellTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatSlowDurationTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatEntryTests.Run(args[0]));
