@@ -118,7 +118,7 @@ public static class UnicodeTextTests
         }
     }
 
-    private static void SaveBitmap(string path, ushort[] pixels)
+    internal static void SaveBitmap(string path, ushort[] pixels)
     {
         const int width = 640, height = 480, headerBytes = 54, bytesPerPixel = 3;
         using var writer = new BinaryWriter(File.Create(path));

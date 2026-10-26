@@ -146,6 +146,7 @@ public static class ScriptTests
         Quest63RecoveryTests.Run(resourceRoot, subevent);
         results.Add("Scalar contracts: precedence, calls, globals, nested-return cursor, step limit, missing quest handler and unresolved builtin diagnostics passed.");
         Check(failures.Count == 0, string.Join(Environment.NewLine, failures));
+        results.Add(ScriptArgumentAuditTests.Run(resourceRoot));
         return results;
     }
 

@@ -27,7 +27,8 @@ public sealed record StatusDrawCommand(
     ushort Color = 0,
     bool Small = true,
     int Palette = 0,
-    string Text = ""
+    string Text = "",
+    bool Wrap = false
 );
 public readonly record struct StatusRenderFrame(int ArrowPhase = 0, int TextPhase = 0, bool PageFlash = false, bool SelectionFlash = false);
 public sealed class StatusRenderClock
@@ -79,7 +80,18 @@ public sealed class StatusMenuRenderer
     private readonly BitmapFont small, large;
     private readonly ItemCatalog items;
     private readonly ReadOnlyMemory<byte> introductions;
-    private readonly IReadOnlyList<string> messages;
+    private readonly IReadOnlyList<ReadOnlyMemory<byte>> messageBytes;
+    private LocalizationCatalog? messageLanguage;
+    private string[] translatedMessages = [];
+    private string Message(int index)
+    {
+        if (!ReferenceEquals(messageLanguage, GameText.Current))
+        {
+            translatedMessages = messageBytes.Select(text => GameText.Decode(text.Span)).ToArray();
+            messageLanguage = GameText.Current;
+        }
+        return translatedMessages[index];
+    }
     public StatusMenuRenderer(
         SpriteFile item,
         SpriteFile etc,
@@ -107,7 +119,7 @@ public sealed class StatusMenuRenderer
         this.small = small;
         this.large = large;
         this.items = items;
-        this.messages = messages.Select(text => GameText.Decode(text.Span)).ToArray();
+        messageBytes = messages;
         this.introductions = introductions;
     }
 
@@ -121,11 +133,11 @@ public sealed class StatusMenuRenderer
             throw new InvalidDataException("Status actor class exceeds six native records.");
         }
 
-        void Text(string text, int x, int y, bool sm = true, int palette = 0, ushort color = 0) => ops.Add(new(StatusPrimitive.Text, x, y, Color: color, Small: sm, Palette: palette, Text: text));
-        void Pair(string text, int x, int y, int palette = 0, ushort color = 0xffe0)
+        void Text(string text, int x, int y, bool sm = true, int palette = 0, ushort color = 0, int w = 0, int h = 16, bool wrap = false) => ops.Add(new(StatusPrimitive.Text, x, y, w, h, Color: color, Small: sm, Palette: palette, Text: text, Wrap: wrap));
+        void Pair(string text, int x, int y, int palette = 0, ushort color = 0xffe0, int w = 0, int h = 16, bool wrap = false)
         {
-            Text(text, x + 1, y + 1);
-            Text(text, x, y, palette: palette, color: color);
+            Text(text, x + 1, y + 1, w: w, h: h, wrap: wrap);
+            Text(text, x, y, palette: palette, color: color, w: w, h: h, wrap: wrap);
         }
 
         void Box(StatusPrimitive op, int x, int y, int w, int h, ushort color = 0) => ops.Add(new(op, x, y, w, h, color));
@@ -140,24 +152,24 @@ public sealed class StatusMenuRenderer
         for (int i = 0; i < 5; i++)
         {
             int y = 245 + i * 38;
-            var text = messages[12 + i];
-            Text(text, 25, y + 1, false);
-            Text(text, 25, y - 1, false);
-            Text(text, 23, y + 1, false);
-            Text(text, 23, y - 1, false);
-            Text(text, 24, y, false, palette: menu.Page == i && !frame.PageFlash ? 0x4cc484 : menu.Page == i ? 0 : 0x4cc228, color: 0xffff);
+            var text = Message(12 + i);
+            Text(text, 25, y + 1, true, w: 116, h: 32, wrap: true);
+            Text(text, 25, y - 1, true, w: 116, h: 32, wrap: true);
+            Text(text, 23, y + 1, true, w: 116, h: 32, wrap: true);
+            Text(text, 23, y - 1, true, w: 116, h: 32, wrap: true);
+            Text(text, 24, y, true, palette: menu.Page == i && !frame.PageFlash ? 0x4cc484 : menu.Page == i ? 0 : 0x4cc228, color: 0xffff, w: 116, h: 32, wrap: true);
         }
 
         //414780 labels and414ba0 static main statistics.
         for (int i = 0; i < 3; i++)
         {
-            Text(messages[73 + i], 20, 120 + i * 18, palette: 0x4cc228);
+            Text(Message(73 + i), 20, 120 + i * 18, palette: 0x4cc228, w: 44);
         }
 
-        Pair(messages[352], 178, 20, 0x4cc228);
+        Pair(Message(352), 178, 20, 0x4cc228, w: 280);
         for (int i = 0; i < 9; i++)
         {
-            Pair(messages[25 + i + (i == 8 ? 1 : 0)], 194, 38 + i * 17, 0x4cc228);
+            Pair(Message(25 + i + (i == 8 ? 1 : 0)), 194, 38 + i * 17, 0x4cc228, w: 116);
         }
 
         ops.Add(new(StatusPrimitive.Portrait, 21, 30, actor));
@@ -168,20 +180,20 @@ public sealed class StatusMenuRenderer
             name = name[..end];
         }
 
-        Text(GameText.Decode(GameText.Legacy($"messages.{actor:D3}", name).Span), 68, 120, palette: 0x4cc228);
-        Text(messages[6 + kind], 68, 156, palette: 0x4cc228);
+        Text(GameText.Decode(GameText.Legacy($"messages.{actor:D3}", name).Span), 68, 120, palette: 0x4cc228, w: 76);
+        Text(Message(6 + kind), 68, 156, palette: 0x4cc228, w: 76);
         int level = state.Party[actor].Level;
         if (level == 13)
         {
             int stage = state.Party[actor].AchievementRank;
             if ((uint)stage < 3)
             {
-                Text(messages[76 + stage], 68, 138, palette: stage switch
+                Text(Message(76 + stage), 68, 138, palette: stage switch
                 {
                     0 => 0x4cc484,
                     1 => 0x4cc26c,
                     _ => 0x4cc400
-                });
+                }, w: 76);
             }
         }
         else
@@ -206,7 +218,7 @@ public sealed class StatusMenuRenderer
         for (int slot = 0; slot < Math.Max(3, capacity); slot++)
         {
             int y = 24 + slot * 70, category = StatusEquipment.Category(kind, slot), id = state.Party[actor].Equipment[slot];
-            Pair(messages[35 + category], 556, y, 0x4cc228);
+            Pair(Message(35 + category), 556, y, 0x4cc228, w: 64, h: 32, wrap: true);
             if (id == -1)
             {
                 ops.Add(new(StatusPrimitive.ItemSprite, 516, y, category));
@@ -219,7 +231,7 @@ public sealed class StatusMenuRenderer
                 }
 
                 ops.Add(new(StatusPrimitive.ItemSprite, 516, y, id + 10));
-                Pair(GameText.Decode(GameText.ItemName(items, id).Span), 496, y + 34, color: 0xffe0);
+                Pair(GameText.Decode(GameText.ItemName(items, id).Span), 496, y + 34, color: 0xffe0, w: 122, h: 32, wrap: true);
             }
         }
 
@@ -234,6 +246,7 @@ public sealed class StatusMenuRenderer
         bool alternateJournalHeading = false
     )
     {
+        runtime.RefreshLanguage(state);
         var ops = BuildRootPlan(runtime, state, frame).ToList();
         if (!runtime.Menu.DetailActive)
         {
@@ -241,18 +254,18 @@ public sealed class StatusMenuRenderer
         }
 
         int actor = runtime.Menu.SelectedActor;
-        void Pair(string text, int x, int y, int palette = 0, ushort color = 0xffff, bool sm = true)
+        void Pair(string text, int x, int y, int palette = 0, ushort color = 0xffff, bool sm = true, int w = 0, int h = 16, bool wrap = false)
         {
-            ops.Add(new(StatusPrimitive.Text, x + 1, y + 1, Small: sm, Text: text));
-            ops.Add(new(StatusPrimitive.Text, x, y, Color: color, Small: sm, Palette: palette, Text: text));
+            ops.Add(new(StatusPrimitive.Text, x + 1, y + 1, w, h, Small: sm, Text: text, Wrap: wrap));
+            ops.Add(new(StatusPrimitive.Text, x, y, w, h, Color: color, Small: sm, Palette: palette, Text: text, Wrap: wrap));
         }
 
         if (runtime.Menu.Page == 2)
         {
             for (int i = 0; i < 4; i++)
             {
-                Pair(messages[17 + i], 194, 225 + i * 17, 0x4cc26c);
-                Pair(messages[21 + i], 322, 225 + i * 17, 0x4cc26c);
+                Pair(Message(17 + i), 194, 225 + i * 17, 0x4cc26c, w: 84, h: 32, wrap: true);
+                Pair(Message(21 + i), 322, 225 + i * 17, 0x4cc26c, w: 84, h: 32, wrap: true);
                 Pair(Number(state.Party[actor].GetAttribute(i)), 286, 225 + i * 17, 0x4cc26c);
             }
 
@@ -263,11 +276,11 @@ public sealed class StatusMenuRenderer
                 Pair(Number(values[i]), 414, 225 + i * 17, 0x4cc26c);
             }
 
-            for (int line = 0; line < Math.Min(10, runtime.Description.Length - runtime.DescriptionOffset); line++)
+            for (int line = 0; line < Math.Min(StatusMenuLayout.BiographyLines, runtime.Description.Length - runtime.DescriptionOffset); line++)
             {
-                Pair(runtime.Description[runtime.DescriptionOffset + line], 196, 298 + line * 16);
+                Pair(runtime.Description[runtime.DescriptionOffset + line], 196, StatusMenuLayout.BiographyTop + line * 16, w: StatusMenuLayout.BiographyWidth);
             }
-            AppendDescriptionArrows(ops, runtime.DescriptionOffset, runtime.Description.Length, 10, 298, 450);
+            AppendDescriptionArrows(ops, runtime.DescriptionOffset, runtime.Description.Length, StatusMenuLayout.BiographyLines, StatusMenuLayout.BiographyTop, 450, x: 450);
         }
         else if (runtime.Menu.Page == 1)
         {
@@ -294,7 +307,7 @@ public sealed class StatusMenuRenderer
             ops.Add(new(StatusPrimitive.Panel, 96, 288, 12, 4));
             if (list.Ids.Count == 0)
             {
-                var empty = messages[page == 3 ? 353 : 359];
+                var empty = Message(page == 3 ? 353 : 359);
                 int x = page == 3 ? 218 : 208, y = 380;
                 foreach (var delta in new[]
                 {
@@ -318,7 +331,7 @@ public sealed class StatusMenuRenderer
                 var text = Name(id);
                 if (stage != 0)
                 {
-                    text = Join(text, " ", messages[stage == 1 ? 118 : 119]);
+                    text = Join(text, " ", Message(stage == 1 ? 118 : 119));
                 }
 
                 Pair(text, 136, 324 + row * 48, stage switch
@@ -357,11 +370,11 @@ public sealed class StatusMenuRenderer
                     int stage = StatusQuestRules.Stage(state, id);
                     if (stage == 1)
                     {
-                        ops.Add(new(StatusPrimitive.Text, 80, 196, Color: 0x07ff, Text: messages[358]));
+                        ops.Add(new(StatusPrimitive.Text, 80, 196, Color: 0x07ff, Text: Message(358)));
                     }
                     else if (stage == 2)
                     {
-                        ops.Add(new(StatusPrimitive.Text, 80, 196, Palette: 0x4cc370, Text: messages[68 + StatusQuestRules.Region(id)]));
+                        ops.Add(new(StatusPrimitive.Text, 80, 196, Palette: 0x4cc370, Text: Message(68 + StatusQuestRules.Region(id))));
                     }
 
                     for (int line = 0; line < Math.Min(5, runtime.Description.Length - runtime.DescriptionOffset); line++)
@@ -394,7 +407,7 @@ public sealed class StatusMenuRenderer
                 ops.Add(new(StatusPrimitive.Panel, 288, 16 + dy, 8, 0));
                 void Option(int message, int x, bool selected)
                 {
-                    var text = messages[message];
+                    var text = Message(message);
                     ops.Add(new(StatusPrimitive.Text, x + 1, 39 + dy, Small: false, Text: text));
                     ops.Add(new(
                         StatusPrimitive.Text,
@@ -421,15 +434,15 @@ public sealed class StatusMenuRenderer
                 {
                     ops.Add(new(StatusPrimitive.Tint, 78, 334, 484, 68, 15));
                     ops.Add(new(StatusPrimitive.Panel, 64, 320, 14, 1));
-                    Pair(messages[356], 128, 340, 0x4cc370, sm: false);
-                    Pair(messages[357], 128, 372, 0x4cc370, sm: false);
+                    Pair(Message(356), 128, 340, 0x4cc370, sm: false);
+                    Pair(Message(357), 128, 372, 0x4cc370, sm: false);
                 }
 
                 if (equipment.Conflict)
                 {
                     ops.Add(new(StatusPrimitive.Tint, 78, 334, 484, 36, 15));
                     ops.Add(new(StatusPrimitive.Panel, 64, 320, 14, 0));
-                    Pair(messages[355], 96, 340, 0x4cc370, sm: false);
+                    Pair(Message(355), 96, 340, 0x4cc370, sm: false);
                 }
             }
         }
@@ -468,10 +481,10 @@ public sealed class StatusMenuRenderer
             }
             )
             {
-                Text(messages[353], 218 + delta.Item1, 380 + delta.Item2, sm: false);
+                Text(Message(353), 218 + delta.Item1, 380 + delta.Item2, sm: false);
             }
 
-            Text(messages[353], 218, 380, 0x4cc370, sm: false);
+            Text(Message(353), 218, 380, 0x4cc370, sm: false);
             return;
         }
 
@@ -488,7 +501,7 @@ public sealed class StatusMenuRenderer
             ushort availabilityColor = state.AvailableItems[id] > 0 ? (ushort)0xffe0 : (ushort)0x8410;
             ops.Add(new(StatusPrimitive.ItemSprite, 72, y - 16, id + 10));
             Pair(GameText.Decode(GameText.ItemName(items, id).Span), 108, y - 16, color: availabilityColor);
-            Pair(messages[354], 238, y - 16, color: availabilityColor);
+            Pair(Message(354), 238, y - 16, color: availabilityColor);
             Pair(
                 Join(Number(state.AvailableItems[id]), "/", Number(state.OwnedItems[id]), " ]"),
                 322,
@@ -497,10 +510,10 @@ public sealed class StatusMenuRenderer
             );
             if (Read(50) != 0 && id < 48)
             {
-                Text(Join(messages[id < 25 ? 79 : 81], Number(Read(50))), 382, y - 16, color: 0xffff);
+                Text(Join(Message(id < 25 ? 79 : 81), Number(Read(50))), 382, y - 16, color: 0xffff);
                 if (Read(54) != 0)
                 {
-                    Text(Join(messages[id < 25 ? 80 : 82], Number(Read(54)), "%"), 482, y - 16, color: 0xffff);
+                    Text(Join(Message(id < 25 ? 80 : 82), Number(Read(54)), "%"), 482, y - 16, color: 0xffff);
                 }
             }
 
@@ -515,14 +528,14 @@ public sealed class StatusMenuRenderer
             {
                 int j = modifiers[index];
                 int code = Read(62 + j * 4), amount = Read(74 + j * 4);
-                if ((uint)(45 + code) >= (uint)messages.Count)
+                if ((uint)(45 + code) >= (uint)messageBytes.Count)
                 {
                     throw new InvalidDataException("Status modifier label exceeds TEXTmsg.");
                 }
 
                 var text = Join(
                     index == 0 ? "( " : " ",
-                    messages[45 + code],
+                    Message(45 + code),
                     amount > 0 ? "+" : "",
                     Number(amount),
                     index == modifiers.Length - 1 ? " )" : ""
@@ -569,7 +582,7 @@ public sealed class StatusMenuRenderer
                         parts.Add("   ");
                     }
 
-                    parts.Add(messages[special[j]]);
+                    parts.Add(Message(special[j]));
                 }
 
                 parts.Add(" )");
@@ -601,15 +614,15 @@ public sealed class StatusMenuRenderer
         }
     }
 
-    private static void AppendDescriptionArrows(List<StatusDrawCommand> ops, int offset, int count, int visible, int top, int bottom)
+    private static void AppendDescriptionArrows(List<StatusDrawCommand> ops, int offset, int count, int visible, int top, int bottom, int x = 552)
     {
         if (offset > 0)
         {
-            ops.Add(new(StatusPrimitive.EtcSprite, 552, top, 18));
+            ops.Add(new(StatusPrimitive.EtcSprite, x, top, 18));
         }
         if (offset + visible < count)
         {
-            ops.Add(new(StatusPrimitive.EtcSprite, 552, bottom, 19));
+            ops.Add(new(StatusPrimitive.EtcSprite, x, bottom, 19));
         }
     }
 
@@ -650,7 +663,12 @@ public sealed class StatusMenuRenderer
                     break;
                 case StatusPrimitive.Text:
                     var font = op.Small ? small : large;
-                    if (op.Palette == 0)
+                    if (op.A > 0)
+                    {
+                        TextBoxRaster.Draw(font, op.Text, target, 640, 480, 640, new(op.X, op.Y, op.X + op.A, op.Y + op.B), op.Color,
+                            op.Palette == 0 ? default : Palette(op.Palette), frame.TextPhase, op.Wrap);
+                    }
+                    else if (op.Palette == 0)
                     {
                         font.DrawText(op.Text, target, 640, 480, 640, op.X, op.Y, op.Color);
                     }

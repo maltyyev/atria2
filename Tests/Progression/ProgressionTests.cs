@@ -205,7 +205,11 @@ public static class ProgressionTests
         notice.AfterRenderedFrame(0, true);
         Check(notice.Completed, "Held confirm skips only after one rendered frame.");
         byte[] fontBytes = new byte[4096];
-        fontBytes[(byte)'1' * 16] = 0x80;
+        // Test placement independently of which language or word starts the notice.
+        for (int glyph = 0; glyph < fontBytes.Length / 16; glyph++)
+        {
+            fontBytes[glyph * 16] = 0x80;
+        }
         BitmapFont font = BitmapFont.DecodeEng(fontBytes, true);
         ushort[] pixels = new ushort[640 * 480];
         ProgressionNoticeRaster.Draw(new LevelUpNotice(2, 13, 0).Frame, font, pixels);
@@ -227,10 +231,13 @@ public static class ProgressionTests
             }
             )
             {
-                double quotient = 155d / threshold;
-                double product = quotient * xp;
-                Check(ExperienceBarMath.Ratio(155, threshold, xp, X87Precision.Bits53) == (int)Math.Truncate(product), "XP bar explicit53-bit operations equal independently rounded division/multiplication.");
-                Check(ExperienceBarMath.Ratio(-155, threshold, xp, X87Precision.Bits53) == -(int)Math.Truncate(product), "Award bar signed ratio.");
+                foreach (int barWidth in new[] { 135, 155 })
+                {
+                    double quotient = (double)barWidth / threshold;
+                    double product = quotient * xp;
+                    Check(ExperienceBarMath.Ratio(barWidth, threshold, xp, X87Precision.Bits53) == (int)Math.Truncate(product), "XP bar explicit53-bit operations equal independently rounded division/multiplication.");
+                    Check(ExperienceBarMath.Ratio(-barWidth, threshold, xp, X87Precision.Bits53) == -(int)Math.Truncate(product), "Award bar signed ratio.");
+                }
             }
         }
 
@@ -243,9 +250,9 @@ public static class ProgressionTests
         ushort[] pixels = Enumerable.Repeat((ushort)0xffff, 640 * 480).ToArray();
         raster.Draw(state.Party, new[] { 250, 0, 0, 0, 0, 0 }, 0, 0, 0, pixels);
         Check(pixels[115 * 640 + 125] == 0x7bef && pixels[127 * 640 + 136] == 0x000f, "XP panelhalf-shade and selected actor rectangle.");
-        Check(pixels[131 * 640 + 252] == 0x739f && pixels[131 * 640 + 328] == 0x739f, "Earned XP bar exactgradient/span.");
-        Check(pixels[131 * 640 + 329] == 0xffee && pixels[131 * 640 + 366] == 0xffee, "Allocated XP bar exactgradient/span.");
-        Check(pixels[131 * 640 + 367] == 0xfb8e && pixels[131 * 640 + 406] == 0xfb8e && pixels[131 * 640 + 407] == 0x7bef, "Remaining bar/end-exclusive horizontal raster.");
+        Check(pixels[131 * 640 + 272] == 0x739f && pixels[131 * 640 + 338] == 0x739f, "Earned XP bar exactgradient/span.");
+        Check(pixels[131 * 640 + 339] == 0xffee && pixels[131 * 640 + 371] == 0xffee, "Allocated XP bar exactgradient/span.");
+        Check(pixels[131 * 640 + 372] == 0xfb8e && pixels[131 * 640 + 406] == 0xfb8e && pixels[131 * 640 + 407] == 0x7bef, "Remaining bar/end-exclusive horizontal raster.");
         Check(pixels[267 * 640 + 147] == 0x000f, "Allocation-mode label highlight origin.");
     }
 

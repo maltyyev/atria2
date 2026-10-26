@@ -11,10 +11,11 @@ public enum X87Precision
 /// <summary>4248f6/424948: round division and multiplication to native x87 precision, then truncate toward zero.</summary>
 public static class ExperienceBarMath
 {
-    public static int Ratio(int signed155, int threshold, int multiplier, X87Precision precision)
+    public static int Ratio(int signedWidth, int threshold, int multiplier, X87Precision precision)
     {
         int bits = (int)precision;
-        if (bits is not (53 or 64) || signed155 is not (155 or -155) || threshold < 1000)
+        long pixelWidth = Math.Abs((long)signedWidth);
+        if (bits is not (53 or 64) || pixelWidth == 0 || pixelWidth >= threshold || threshold < 1000)
         {
             throw new ArgumentException("Invalid native XP bar arithmetic parameters.");
         }
@@ -24,8 +25,8 @@ public static class ExperienceBarMath
             return 0;
         }
 
-        UInt128 numerator = 155, divisor = (uint)threshold;
-        int logarithm = 7 - BitOperations.Log2((uint)threshold);
+        UInt128 numerator = (uint)pixelWidth, divisor = (uint)threshold;
+        int logarithm = BitOperations.Log2((uint)pixelWidth) - BitOperations.Log2((uint)threshold);
         if ((numerator << -logarithm) < divisor)
         {
             logarithm--;
@@ -54,7 +55,7 @@ public static class ExperienceBarMath
 
         UInt128 integer = exponent >= 0 ? mantissa << exponent : mantissa >> -exponent;
         long result = checked((long)integer);
-        if ((signed155 < 0) != (multiplier < 0))
+        if ((signedWidth < 0) != (multiplier < 0))
         {
             result = -result;
         }

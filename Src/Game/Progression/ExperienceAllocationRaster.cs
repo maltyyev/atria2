@@ -8,6 +8,11 @@ namespace Atria.Game.Progression;
 /// <summary>4247b0,426a50 and409a30. Input bytes remain CP1251 glyph IDs; no Unicode reflow.</summary>
 public sealed class ExperienceAllocationRaster(SpriteFile etc, BitmapFont smallFont, IReadOnlyList<ReadOnlyMemory<byte>> battleLabels, X87Precision precision)
 {
+    private const int LevelLabelX = 207;
+    private const int BarLeft = 272;
+    private const int BarRight = 407;
+    private const int BarWidth = BarRight - BarLeft;
+
     public void Draw(
         IReadOnlyList<PartyMember> party,
         ReadOnlySpan<int> allocation,
@@ -55,14 +60,14 @@ public sealed class ExperienceAllocationRaster(SpriteFile etc, BitmapFont smallF
             text[length++] = (byte)'/';
             Append(next, text, ref length);
             smallFont.DrawText(text[..length], target, width, height, stride, 419, row - 12, NativeUiPalette.Normal[4]);
-            string rank = level.ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(2);
+            string rank = level.ToString(System.Globalization.CultureInfo.InvariantCulture);
             string levelLabel = GameText.Format("ui.progression.level", ("level", rank));
-            smallFont.DrawText(levelLabel, target, width, height, stride, 207, row - 12, 0xffe0);
-            int earnedEnd = 252 + Math.Min(ExperienceBarMath.Ratio(155, next, xp, precision), 155);
-            int awardEnd = Math.Min(unchecked(earnedEnd - ExperienceBarMath.Ratio(-155, next, allocation[actor], precision)), 407);
-            if (earnedEnd > 252)
+            smallFont.DrawText(levelLabel, target, width, height, stride, LevelLabelX, row - 12, 0xffe0);
+            int earnedEnd = BarLeft + Math.Clamp(ExperienceBarMath.Ratio(BarWidth, next, xp, precision), 0, BarWidth);
+            int awardEnd = earnedEnd + Math.Clamp(ExperienceBarMath.Ratio(BarWidth, next, allocation[actor], precision), 0, BarRight - earnedEnd);
+            if (earnedEnd > BarLeft)
             {
-                Gradient(target, width, height, stride, 252, earnedEnd, row - 10, row, ExperiencePalette.Earned);
+                Gradient(target, width, height, stride, BarLeft, earnedEnd, row - 10, row, ExperiencePalette.Earned);
             }
 
             if (awardEnd > earnedEnd)
@@ -70,9 +75,9 @@ public sealed class ExperienceAllocationRaster(SpriteFile etc, BitmapFont smallF
                 Gradient(target, width, height, stride, earnedEnd, awardEnd, row - 10, row, ExperiencePalette.Award);
             }
 
-            if (awardEnd < 407)
+            if (awardEnd < BarRight)
             {
-                Gradient(target, width, height, stride, awardEnd, 407, row - 10, row, ExperiencePalette.Remaining);
+                Gradient(target, width, height, stride, awardEnd, BarRight, row - 10, row, ExperiencePalette.Remaining);
             }
         }
 

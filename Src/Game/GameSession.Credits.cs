@@ -46,12 +46,16 @@ public sealed partial class GameSession
         EnterMode(transition.Mode);
         actions.SetRenderEnabled(true);
     });
-    private void ComposeCredits(Span<ushort> target) => CreditsRenderer.Draw(
+    private void ComposeCredits(Span<ushort> target)
+    {
+        credits.SetTextRows(creditsText!.Flow.Lines.Count);
+        CreditsRenderer.Draw(
         credits.AdvanceFrame(),
         creditsText ?? throw new InvalidOperationException("Credits text missing."),
         creditsSprites ?? throw new InvalidOperationException("Credits sprite missing."),
         smallFont,
         creditsBackground ?? throw new InvalidOperationException("Credits background missing."),
         target
-    );
+        );
+    }
 }

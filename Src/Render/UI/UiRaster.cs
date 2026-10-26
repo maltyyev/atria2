@@ -79,18 +79,18 @@ public static class UiRaster
 
     //0x425830 ->425790/4257e0 ->4253a0/4254b0. Phase is native48e3ac, normally0.
     public static int DrawStyledText(BitmapFont font, string text, ReadOnlySpan<ushort> palette, int phase,
-        Span<ushort> target, int width, int height, int stride, int x, int y)
+        Span<ushort> target, int width, int height, int stride, int x, int y, RasterClip? clip = null)
     {
         if (BitmapFont.TryLegacy(text, out var encoded))
         {
-            return DrawStyledText(font, encoded, palette, phase, target, width, height, stride, x, y);
+            return DrawStyledText(font, encoded, palette, phase, target, width, height, stride, x, y, clip);
         }
         if (palette.Length != 32 || (uint)phase >= 32)
         {
             throw new ArgumentException("Style requires 32 colors and phase 0..31.");
         }
         var mask = UnicodeText.Layout(text, font.Height * 0.75f);
-        UnicodeText.Draw(mask, target, width, height, stride, x, y, palette[phase], palette: palette, phase: phase);
+        UnicodeText.Draw(mask, target, width, height, stride, x, y, palette[phase], clip, palette: palette, phase: phase);
         return mask.Advance;
     }
 
@@ -104,7 +104,8 @@ public static class UiRaster
         int height,
         int stride,
         int x,
-        int y
+        int y,
+        RasterClip? clip = null
     )
     {
         Validate(target, width, height, stride);
@@ -113,6 +114,11 @@ public static class UiRaster
             throw new ArgumentException("Style requires32 colors and phase0..31.");
         }
 
+        RasterClip bounds = clip ?? new(0, 0, width, height);
+        if (bounds.Left < 0 || bounds.Top < 0 || bounds.RightExclusive < bounds.Left || bounds.BottomExclusive < bounds.Top || bounds.RightExclusive > width || bounds.BottomExclusive > height)
+        {
+            throw new ArgumentException("Text clip is outside the destination.");
+        }
         int count = 0;
         foreach (byte character in text)
         {
@@ -131,7 +137,7 @@ public static class UiRaster
                 }
 
                 long dy = (long)y + row;
-                if (dy < 0 || dy >= height)
+                if (dy < bounds.Top || dy >= bounds.BottomExclusive)
                 {
                     continue;
                 }
@@ -139,7 +145,7 @@ public static class UiRaster
                 for (int column = 0; column < font.Width; column++)
                 {
                     long dx = (long)x + (long)count * font.Advance + column;
-                    if (dx >= 0 && dx < width && (glyph[row * (font.Width / 8) + column / 8] & (0x80 >> (column & 7))) != 0)
+                    if (dx >= bounds.Left && dx < bounds.RightExclusive && (glyph[row * (font.Width / 8) + column / 8] & (0x80 >> (column & 7))) != 0)
                     {
                         target[(int)dy * stride + (int)dx] = palette[paletteIndex];
                     }

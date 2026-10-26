@@ -64,6 +64,9 @@ public readonly record struct EndingEffect(EndingEffectKind Kind, int Value = 0)
 public sealed class EndingController
 {
     private EndingDefinition? definition;
+    private EndingDefinition? sourceDefinition;
+    private ScrollingText? flowingText;
+    private LocalizationCatalog language = GameText.Current;
     private bool pendingPicture;
     public int PictureIndex
     {
@@ -81,6 +84,9 @@ public sealed class EndingController
     public void Enter(int selection, Action<EndingEffect> emit, ScrollingText? text = null)
     {
         definition = EndingCatalog.Get(selection);
+        sourceDefinition = definition;
+        flowingText = text;
+        language = GameText.Current;
         if (text is not null)
         {
             definition = definition with { ThresholdRows = definition.ThresholdRows.Select(text.MapSourceRow).ToArray(), TotalRows = text.Lines.Count + 9 };
@@ -94,6 +100,15 @@ public sealed class EndingController
     //4210f0 has no player-input queries. Completion and picture changes happen here before draw.
     public void Input(Action<EndingEffect> emit)
     {
+        if (!ReferenceEquals(language, GameText.Current) && flowingText is not null && sourceDefinition is not null)
+        {
+            definition = sourceDefinition with
+            {
+                ThresholdRows = sourceDefinition.ThresholdRows.Select(flowingText.MapSourceRow).ToArray(),
+                TotalRows = flowingText.Lines.Count + 9
+            };
+            language = GameText.Current;
+        }
         var data = definition ?? throw new InvalidOperationException("Ending not entered.");
         if (data.TotalRows * 24 < Scroll)
         {

@@ -97,7 +97,9 @@ public sealed class WorldHudRenderer
         bool title = state.Mode != 320 || previousMode is 300 or 310 or 330 or 400;
         if (title)
         {
-            Styled(GameText.Current.NameSpan(areaName), 196, y + 7, 198, y + 8, NativeUiPalette.Normal, target);
+            string name = GameText.Decode(GameText.Current.NameSpan(areaName)).Trim().ToUpperInvariant();
+            TextBoxRaster.Draw(font, name, target, 640, 480, 640, new(182, y + 8, 462, y + 24), 0, centered: true);
+            TextBoxRaster.Draw(font, name, target, 640, 480, 640, new(180, y + 7, 460, y + 23), 0xffff, NativeUiPalette.Normal, centered: true);
         }
 
         Icon(1, 40, y + 8, target);

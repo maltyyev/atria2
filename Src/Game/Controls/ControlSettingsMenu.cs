@@ -11,6 +11,7 @@ public sealed class ControlSettingsMenu
     private readonly MoveCatalog catalog;
     private readonly ControlPanel panel;
     private readonly Action<ControlProfile, NativeSettingsState> apply;
+    private readonly Action<string>? changeLanguage;
     private readonly List<ControlRow> rows = [];
     private enum Page
     {
@@ -41,7 +42,8 @@ public sealed class ControlSettingsMenu
         SpriteFile tiles,
         BitmapFont font,
         NativeSettingsState audio,
-        Action<ControlProfile, NativeSettingsState> apply
+        Action<ControlProfile, NativeSettingsState> apply,
+        Action<string>? changeLanguage = null
     )
     {
         this.input = input;
@@ -49,6 +51,7 @@ public sealed class ControlSettingsMenu
         this.catalog = catalog;
         panel = new(tiles, font);
         this.apply = apply;
+        this.changeLanguage = changeLanguage;
         Draft = input.Profile.Clone();
         Audio = NativeSettingsState.Parse(audio.Encode());
     }
@@ -192,6 +195,11 @@ public sealed class ControlSettingsMenu
     private void BuildRootRows()
     {
         title = GameText.Get("ui.settings.title");
+        if (changeLanguage is not null)
+        {
+            Add(GameText.Get("ui.settings.language"), GameText.Get("ui.languages." + GameText.Current.Language),
+                ToggleLanguage, _ => ToggleLanguage());
+        }
         Add(GameText.Get("ui.settings.music"), Audio.Music.ToString(), adjust: d => Audio.Set((byte)Math.Clamp(Audio.Music + d, 0, 4), Audio.Effects, Audio.ThirdOption));
         Add(
             GameText.Get("ui.settings.effects"),
@@ -231,6 +239,22 @@ public sealed class ControlSettingsMenu
             notice = GameText.Get("ui.settings.resetNotice");
         });
         Add(GameText.Get("ui.settings.cancel"), "", () => Closed = true);
+    }
+
+    private void ToggleLanguage()
+    {
+        try
+        {
+            string next = GameText.Current.Language == LocalizationCatalog.BaseLanguage
+                ? LocalizationCatalog.BelarusianLanguage : LocalizationCatalog.BaseLanguage;
+            changeLanguage!(next);
+            notice = GameText.Get("ui.settings.languageImmediate");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            notice = GameText.Get("ui.settings.saveFailed");
+            Console.WriteLine("Language was not changed: " + error.Message);
+        }
     }
 
     private void BuildPlayerRows()

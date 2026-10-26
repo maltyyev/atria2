@@ -1,4 +1,5 @@
 using Atria.Render.Codecs;
+using Atria.Resources;
 using Atria.Render.UI;
 
 namespace Atria.Game.ActionMenu;
@@ -39,25 +40,26 @@ public sealed class ActionMenuRenderer
         for (int i = 0; i < frame.Labels.Length; i++)
         {
             int y = checked(startY + i * 32);
-            ReadOnlySpan<byte> text = frame.Labels[i].Span;
+            string text = GameText.Decode(frame.Labels[i].Span).Trim();
+            int textWidth = (frame.HorizontalTiles + 2) * 32 - 67;
             if (i != frame.Selection)
             {
-                font.DrawText(text, target, 640, 480, 640, x, y, 0x7bef);
+                TextBoxRaster.Draw(font, text, target, 640, 480, 640, new(x, y, x + textWidth, y + 32), 0x7bef, wrap: true);
                 continue;
             }
 
             // Four diagonal black copies create the native outline; preserve draw order.
-            font.DrawText(text, target, 640, 480, 640, x + 1, y + 1, 0);
-            font.DrawText(text, target, 640, 480, 640, x + 1, y - 1, 0);
-            font.DrawText(text, target, 640, 480, 640, x - 1, y + 1, 0);
-            font.DrawText(text, target, 640, 480, 640, x - 1, y - 1, 0);
+            TextBoxRaster.Draw(font, text, target, 640, 480, 640, new(x + 1, y + 1, x + 1 + textWidth, y + 1 + 32), 0, wrap: true);
+            TextBoxRaster.Draw(font, text, target, 640, 480, 640, new(x + 1, y - 1, x + 1 + textWidth, y - 1 + 32), 0, wrap: true);
+            TextBoxRaster.Draw(font, text, target, 640, 480, 640, new(x - 1, y + 1, x - 1 + textWidth, y + 1 + 32), 0, wrap: true);
+            TextBoxRaster.Draw(font, text, target, 640, 480, 640, new(x - 1, y - 1, x - 1 + textWidth, y - 1 + 32), 0, wrap: true);
             if (frame.Flash == 0)
             {
-                UiRaster.DrawStyledText(font, text, NativeUiPalette.Selected, 0, target, 640, 480, 640, x, y);
+                TextBoxRaster.Draw(font, text, target, 640, 480, 640, new(x, y, x + textWidth, y + 32), 0xffff, NativeUiPalette.Selected, wrap: true);
             }
             else
             {
-                font.DrawText(text, target, 640, 480, 640, x, y, frame.Flash == 2 ? (ushort)0xffff : (ushort)0xffe0);
+                TextBoxRaster.Draw(font, text, target, 640, 480, 640, new(x, y, x + textWidth, y + 32), frame.Flash == 2 ? (ushort)0xffff : (ushort)0xffe0, wrap: true);
             }
         }
     }

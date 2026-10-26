@@ -43,6 +43,55 @@ public static class LocalizationTests
             var items = ItemCatalog.Parse(Read("ATITEM.DAT"));
             var journal = QuestJournalCatalog.Parse(Read("DANGEL.DAT"));
             var messages = LegacyTextTables.ParseMessages(Read("TEXTmsg.dat"));
+            var embedded = new LocalizationCatalog();
+            byte[] originalSwallow = messages[2].ToArray();
+            Check(Decode(embedded.Legacy("messages.002", messages[2]).Span) == "Своллоу",
+                "new embedded defaults replace original binary labels without external edits");
+            Check(Decode(baseline.Legacy("messages.002", messages[2]).Span) == "Своллоу",
+                "fresh matching external JSON replaces original labels");
+            Check(Decode(embedded.Name(messages[2]).Span) == "Своллоу"
+                && Decode(embedded.Name(GameText.Encoding.GetBytes("Сволоу")).Span) == "Своллоу",
+                "old party and scene name aliases survive changed embedded defaults");
+            Check(originalSwallow.SequenceEqual(messages[2].ToArray()), "name display preserves old save/resource bytes");
+            string legacyMessages = Path.Combine(temporary, LocalizationCatalog.BaseLanguage, "messages.json");
+            Write("messages.json", new Dictionary<string, string>(LocalizationCatalog.Defaults["messages.json"])
+            {
+                ["messages.002"] = "ШПИОНКА",
+                ["messages.005"] = "Мой воин"
+            });
+            string beforeUpgrade = File.ReadAllText(legacyMessages);
+            Check(TextResourceSchema.UpgradeFiles(temporary) == 1, "one installed translation file requires migration");
+            var migrated = new LocalizationCatalog(temporary);
+            Check(migrated.Get("messages.002") == "Своллоу" && migrated.Get("messages.005") == "Мой воин",
+                "old default upgrades while user customization survives");
+            Check(Directory.GetFiles(Path.GetDirectoryName(legacyMessages)!, "messages.json.*.bak")
+                .Any(path => File.ReadAllText(path) == beforeUpgrade), "migration retains exact pre-update bytes");
+            Check(TextResourceSchema.UpgradeFiles(temporary) == 0, "translation migration is idempotent");
+            Write("messages.json", LocalizationCatalog.Defaults["messages.json"]);
+            Write("dialogue.json", new Dictionary<string, string>(LocalizationCatalog.Defaults["dialogue.json"])
+            {
+                ["dialogue.0001.text"] = "[Мист] Роланд, Извини, но...",
+                ["dialogue.0002.text"] = "[Роланд] Моя редакция реплики."
+            });
+            Check(TextResourceSchema.UpgradeFiles(temporary) == 1, "released narrative paragraphs migrate too");
+            var migratedDialogue = new LocalizationCatalog(temporary);
+            Check(migratedDialogue.Get("dialogue.0001.text") == baseline.Get("dialogue.0001.text")
+                && migratedDialogue.Get("dialogue.0002.text") == "[Роланд] Моя редакция реплики.",
+                "narrative migration distinguishes released wording from player edits");
+            Write("dialogue.json", LocalizationCatalog.Defaults["dialogue.json"]);
+            Write("scripts.json", new Dictionary<string, string>(LocalizationCatalog.Defaults["scripts.json"])
+            {
+                ["scripts.AED00.5062.text"] = "[Мист] Сюда? Наследник должен исследовать темницу. Значит Карос победил монстров ранее.",
+                ["scripts.SUBEVENT.10079.2"] = "  1. Нет, не беремся, я заплачу.",
+                ["scripts.ED01.417.text"] = "Моя надпись на стене."
+            });
+            Check(TextResourceSchema.UpgradeFiles(temporary) == 1, "old installed physical-row migration is recognized");
+            var migratedScripts = new LocalizationCatalog(temporary);
+            Check(migratedScripts.Get("scripts.AED00.5062.text") == baseline.Get("scripts.AED00.5062.text")
+                && migratedScripts.Get("scripts.SUBEVENT.10079.2") == baseline.Get("scripts.SUBEVENT.10079.2")
+                && migratedScripts.Get("scripts.ED01.417.text") == "Моя надпись на стене.",
+                "historical script ordering and answer padding upgrade without replacing user text");
+            Write("scripts.json", LocalizationCatalog.Defaults["scripts.json"]);
             var dialogue = DialogueCatalog.Load(Path.Combine(resources, "ROLAND.IDX"), Path.Combine(resources, "ROLAND.DAT"));
             byte[] rawDialogue = dialogue.GetText(0).ToArray();
             byte[] rawItem = items.GetItem(0).Raw.ToArray();

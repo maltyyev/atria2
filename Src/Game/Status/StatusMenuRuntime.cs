@@ -16,6 +16,26 @@ public sealed class StatusMenuRuntime
     public string[] Description { get; private set; } = [];
 
     public int DescriptionOffset { get; private set; }
+    private LocalizationCatalog language = GameText.Current;
+
+    public void RefreshLanguage(GameState state)
+    {
+        if (ReferenceEquals(language, GameText.Current))
+            return;
+
+        language = GameText.Current;
+        if (!Menu.DetailActive)
+            return;
+
+        if (Menu.Page == 2)
+            LoadDescription(GameText.Get($"characters.{Menu.SelectedActor}.introduction"), StatusMenuLayout.BiographyWidth);
+        else if (TextList?.DescriptionOpen == true)
+        {
+            int id = TextList.SelectedId;
+            LoadDescription(Menu.Page == 4 ? QuestJournalText.Description(state, id)
+                : GameText.Get($"{(Menu.Page == 1 ? "items" : "questItems")}.{id:D2}.description"));
+        }
+    }
 
     private void LoadDescription(string text, int width = 464)
     {
@@ -50,7 +70,7 @@ public sealed class StatusMenuRuntime
                 DescriptionOffset = 0;
                 if (Menu.Page == 2)
                 {
-                    LoadDescription(GameText.Get($"characters.{Menu.SelectedActor}.introduction"), 352);
+                    LoadDescription(GameText.Get($"characters.{Menu.SelectedActor}.introduction"), StatusMenuLayout.BiographyWidth);
                 }
                 if (Menu.Page == 0)
                 {
@@ -85,7 +105,7 @@ public sealed class StatusMenuRuntime
             }
             if (action is 0 or 1 && (TextList?.DescriptionOpen == true || Menu.Page == 2))
             {
-                int visible = Menu.Page == 2 ? 10 : 5;
+                int visible = Menu.Page == 2 ? StatusMenuLayout.BiographyLines : 5;
                 int nextOffset = Math.Clamp(DescriptionOffset + (action == 0 ? 1 : -1), 0, Math.Max(0, Description.Length - visible));
                 if (nextOffset != DescriptionOffset)
                 {
@@ -192,7 +212,7 @@ public sealed class StatusMenuRuntime
                 Sound(1);
                 if (Menu.Page == 2)
                 {
-                    LoadDescription(GameText.Get($"characters.{next}.introduction"), 352);
+                    LoadDescription(GameText.Get($"characters.{next}.introduction"), StatusMenuLayout.BiographyWidth);
                 }
                 if (Menu.Page == 0)
                 {

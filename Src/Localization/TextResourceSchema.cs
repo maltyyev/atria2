@@ -9,6 +9,7 @@ public static class TextResourceSchema
     private static readonly HashSet<string> scriptQuestions;
     private static readonly Dictionary<string, string> scrollKeys;
     private static readonly Dictionary<string, string> previousDefaults;
+    private static readonly Dictionary<string, HashSet<string>> translationHistory;
     private static readonly Regex whitespace = new(@"\s+", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
 
     static TextResourceSchema()
@@ -20,6 +21,13 @@ public static class TextResourceSchema
         scriptQuestions = document.RootElement.GetProperty("questionScriptCalls").EnumerateArray().Select(v => v.GetString()!).ToHashSet(StringComparer.Ordinal);
         previousDefaults = document.RootElement.GetProperty("previousDefaults").EnumerateObject()
             .ToDictionary(entry => entry.Name, entry => entry.Value.GetString()!, StringComparer.Ordinal);
+        using var historyStream = typeof(TextResourceSchema).Assembly.GetManifestResourceStream("Atria.Content.Atria2.TranslationHistory.json")
+            ?? throw new InvalidDataException("Translation history is missing.");
+        using var historyDocument = JsonDocument.Parse(historyStream);
+        translationHistory = historyDocument.RootElement.EnumerateObject().ToDictionary(
+            entry => entry.Name,
+            entry => entry.Value.EnumerateArray().Select(value => value.GetString()!).ToHashSet(StringComparer.Ordinal),
+            StringComparer.Ordinal);
         scrollKeys = new(StringComparer.Ordinal);
         foreach (var block in document.RootElement.GetProperty("scrollBlocks").EnumerateObject())
         {
@@ -114,7 +122,9 @@ public static class TextResourceSchema
                 {
                     foreach (var entry in LocalizationCatalog.Defaults[file])
                     {
-                        if (upgraded.TryGetValue(entry.Key, out string? value) && previousDefaults.GetValueOrDefault(entry.Key) == value)
+                        if (upgraded.TryGetValue(entry.Key, out string? value)
+                            && (previousDefaults.GetValueOrDefault(entry.Key) == value
+                                || translationHistory.TryGetValue(entry.Key, out var history) && history.Contains(value)))
                         {
                             upgraded[entry.Key] = entry.Value;
                         }
@@ -132,7 +142,7 @@ public static class TextResourceSchema
         foreach (var update in updates)
         {
             string temporary = update.Path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-            string backup = update.Path + ".before-0.7." + Guid.NewGuid().ToString("N") + ".bak";
+            string backup = update.Path + ".before-upgrade." + Guid.NewGuid().ToString("N") + ".bak";
             try
             {
                 using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))

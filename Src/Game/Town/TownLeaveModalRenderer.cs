@@ -8,15 +8,14 @@ public sealed class TownLeaveModalRenderer
 {
     private readonly SpriteFile etc;
     private readonly BitmapFont font;
-    private readonly ReadOnlyMemory<byte> yes, no;
+    private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages;
+    private ReadOnlyMemory<byte> yes => messages[171];
+    private ReadOnlyMemory<byte> no => messages[172];
     public TownLeaveModalRenderer(SpriteFile etc, BitmapFont activeFont, ReadOnlySpan<byte> textMessages)
     {
         this.etc = etc;
         font = activeFont;
-        var messages = GameText.Messages(LegacyTextTables.ParseMessages(textMessages));
-        // Native41d570 strings454cf8/454d48: message slots171/172.
-        yes = messages[171];
-        no = messages[172];
+        messages = GameText.Messages(LegacyTextTables.ParseMessages(textMessages));
     }
 
     public void Draw(TownFrame frame, Span<ushort> target)

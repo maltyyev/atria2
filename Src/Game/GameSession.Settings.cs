@@ -17,6 +17,7 @@ public sealed partial class GameSession
     {
         preferencesStore = new(outputDirectory, root);
         var saved = preferencesStore.Read(originalBindings);
+        GameText.Use(new LocalizationCatalog(GameText.Current.Root, saved.Language));
         settings.Set(saved.Audio.Music, saved.Audio.Effects, saved.Audio.ThirdOption);
         initialControlProfile = saved.Controls;
         ControlBindings result = saved.LegacyBindings;
@@ -37,7 +38,7 @@ public sealed partial class GameSession
 
     private void ApplyModernSettings(ControlProfile profile, NativeSettingsState audioSettings)
     {
-        preferencesStore!.Write(new(profile, audioSettings, configuredSettingsBindings!));
+        preferencesStore!.Write(new(profile, audioSettings, configuredSettingsBindings!, GameText.Current.Language));
         controls.Profile = profile;
         controls.StopVibration();
         controls.Clear();
@@ -54,7 +55,19 @@ public sealed partial class GameSession
         ApplySettingsAudio();
     }
 
-    private ControlSettingsMenu CreateModernSettings() => new(controls, bindings, Moves, etc, smallFont, settings, ApplyModernSettings);
+    private void ChangeLanguage(string language)
+    {
+        var catalog = new LocalizationCatalog(GameText.Current.Root, language);
+        if (catalog.Issues.Any(issue => issue.IsError))
+            throw new InvalidDataException("The selected translation contains invalid resources.");
+
+        // Persist first: a failed write must not leave the running language different from the saved choice.
+        preferencesStore!.Write(new(controls.Profile, settings, configuredSettingsBindings!, language));
+        GameText.Use(catalog);
+        controls.Notice = "";
+    }
+
+    private ControlSettingsMenu CreateModernSettings() => new(controls, bindings, Moves, etc, smallFont, settings, ApplyModernSettings, ChangeLanguage);
     private void EnterSettings()
     {
         if (optionBackground is null)

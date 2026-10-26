@@ -21,6 +21,8 @@ public sealed class ActionMenuController
     private sealed record Entry(int X, int Y, int Horizontal, int Vertical, int Type, ReadOnlyMemory<byte>[] Labels)
     {
         public int Selection;
+        public Func<ReadOnlyMemory<byte>[]>? TranslatedLabels;
+        public LocalizationCatalog Language = GameText.Current;
     }
 
     private readonly List<Entry> stack = new(4);
@@ -111,7 +113,10 @@ public sealed class ActionMenuController
             labels[i] = messages[first + i].ToArray();
         }
 
-        stack.Add(new(x, y, horizontalTiles, verticalTiles, type, labels));
+        stack.Add(new(x, y, horizontalTiles, verticalTiles, type, labels)
+        {
+            TranslatedLabels = () => Enumerable.Range(first, count).Select(index => messages[index]).ToArray()
+        });
         RenderEnabled = true;
         // Native push does not reset global c69a0 flash; retain it across nesting.
     }
@@ -177,15 +182,13 @@ public sealed class ActionMenuController
         int Read(int at) => BinaryPrimitives.ReadInt32LittleEndian(map.TileBytes.Slice((state.WorldY * 10 + state.WorldX) * 328 + at, 4));
         bool blocked = isSceneReferenceBlocked(Read(92)) && Read(8) != 0;
         bool scene = Read(24) == 1 && Read(112) == 0 && Read(120) == 0;
-        var labels = new List<ReadOnlyMemory<byte>>
+        var indices = new List<int>
         {
-            messages[275],
-            messages[276],
-            messages[277]
+            275, 276, 277
         };
         if (blocked)
         {
-            labels.Add(messages[278]);
+            indices.Add(278);
         }
 
         if (scene)
@@ -193,20 +196,21 @@ public sealed class ActionMenuController
             //426ea0 writes slot3 again and increments count again if both conditions hold.
             if (blocked)
             {
-                labels[3] = messages[279];
-                labels.Add(ReadOnlyMemory<byte>.Empty);
+                indices[3] = 279;
+                indices.Add(-1);
             }
             else
             {
-                labels.Add(messages[279]);
+                indices.Add(279);
             }
         }
 
-        PushOwned(5, 3 + (blocked ? 1 : 0) + (scene ? 1 : 0), 1, labels);
+        PushOwned(5, 3 + (blocked ? 1 : 0) + (scene ? 1 : 0), 1,
+            () => indices.Select(index => index < 0 ? ReadOnlyMemory<byte>.Empty : messages[index]).ToArray());
     }
 
-    public void OpenDungeon(bool isSwitch, IReadOnlyList<ReadOnlyMemory<byte>> messages) => PushOwned(5, 3, 9, isSwitch ? [messages[283], messages[284], messages[285]] : [messages[283], messages[284]]);
-    public void OpenWorldReveal(IReadOnlyList<ReadOnlyMemory<byte>> messages) => PushOwned(5, 3, 2, [messages[275], messages[276], messages[277]]);
+    public void OpenDungeon(bool isSwitch, IReadOnlyList<ReadOnlyMemory<byte>> messages) => PushOwned(5, 3, 9, () => isSwitch ? [messages[283], messages[284], messages[285]] : [messages[283], messages[284]]);
+    public void OpenWorldReveal(IReadOnlyList<ReadOnlyMemory<byte>> messages) => PushOwned(5, 3, 2, () => [messages[275], messages[276], messages[277]]);
     public void OpenWorldMessage(
         int type,
         IReadOnlyList<ReadOnlyMemory<byte>> messages,
@@ -247,11 +251,12 @@ public sealed class ActionMenuController
             }
         }
 
-        PushOwned(9, vertical, type, type == 88 ? [messages[first]] : [messages[first], messages[first + 1]]);
+        PushOwned(9, vertical, type, () => type == 88 ? [messages[first]] : [messages[first], messages[first + 1]]);
     }
 
-    private void PushOwned(int horizontal, int vertical, int type, IReadOnlyList<ReadOnlyMemory<byte>> labels)
+    private void PushOwned(int horizontal, int vertical, int type, Func<ReadOnlyMemory<byte>[]> translate)
     {
+        IReadOnlyList<ReadOnlyMemory<byte>> labels = translate();
         if (stack.Count >= 4)
         {
             throw new InvalidOperationException("Native four-entry action menu stack capacity exceeded.");
@@ -273,7 +278,7 @@ public sealed class ActionMenuController
             owned[i] = labels[i].ToArray();
         }
 
-        stack.Add(new(320 - (horizontal + 2) * 16, 240 - (vertical + 2) * 16, horizontal, vertical, type, owned));
+        stack.Add(new(320 - (horizontal + 2) * 16, 240 - (vertical + 2) * 16, horizontal, vertical, type, owned) { TranslatedLabels = translate });
         RenderEnabled = true;
     }
 
@@ -284,7 +289,7 @@ public sealed class ActionMenuController
         430 => 6,
         _ => throw new ArgumentOutOfRangeException(nameof(mode))
     }, messages, mode);
-    public void OpenTalk(IReadOnlyList<ReadOnlyMemory<byte>> labels, bool hasEventOffer, int currentMode)
+    public void OpenTalk(IReadOnlyList<ReadOnlyMemory<byte>> labels, bool hasEventOffer, int currentMode, Func<ReadOnlyMemory<byte>[]>? translate = null)
     {
         if (currentMode is not (410 or 420 or 430))
         {
@@ -313,7 +318,7 @@ public sealed class ActionMenuController
             owned[i] = labels[i].ToArray();
         }
 
-        stack.Add(new(320 - (horizontal + 2) * 16, 240 - (vertical + 2) * 16, horizontal, vertical, 8, owned));
+        stack.Add(new(320 - (horizontal + 2) * 16, 240 - (vertical + 2) * 16, horizontal, vertical, 8, owned) { TranslatedLabels = translate });
         RenderEnabled = true;
     }
 
@@ -352,6 +357,14 @@ public sealed class ActionMenuController
         }
 
         Entry top = stack[^1];
+        if (!ReferenceEquals(top.Language, GameText.Current) && top.TranslatedLabels is not null)
+        {
+            var translated = top.TranslatedLabels();
+            if (translated.Length != top.Labels.Length)
+                throw new InvalidOperationException("Translation changed the action menu choices.");
+            translated.CopyTo(top.Labels, 0);
+            top.Language = GameText.Current;
+        }
         var frame = new ActionMenuFrame(top.X, top.Y, top.Horizontal, top.Vertical, top.Type, top.Selection, flash, (ReadOnlyMemory<byte>[])top.Labels.Clone());
         if (flash != 0)
         {

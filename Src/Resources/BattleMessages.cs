@@ -17,14 +17,9 @@ public sealed class BattleMessages
     {
         get;
     }
-    public ReadOnlyMemory<byte> Automation
-    {
-        get;
-    }
-    public ReadOnlyMemory<byte> Pause
-    {
-        get;
-    }
+    private readonly IReadOnlyList<ReadOnlyMemory<byte>> labels;
+    public ReadOnlyMemory<byte> Automation => labels[AutomationIndex];
+    public ReadOnlyMemory<byte> Pause => labels[PauseIndex];
 
     public BattleMessages(IReadOnlyList<ReadOnlyMemory<byte>> labels)
     {
@@ -33,9 +28,21 @@ public sealed class BattleMessages
             throw new InvalidDataException("Incomplete BATTLE.DAT message groups.");
         }
 
-        Ranks = labels.Take(RankNoticeCount).ToArray();
-        Items = labels.Skip(ItemNoticeStart).Take(ItemNoticeCount).ToArray();
-        Automation = labels[AutomationIndex];
-        Pause = labels[PauseIndex];
+        this.labels = labels;
+        Ranks = new MessageGroup(labels, 0, RankNoticeCount);
+        Items = new MessageGroup(labels, ItemNoticeStart, ItemNoticeCount);
+    }
+
+    private sealed class MessageGroup(IReadOnlyList<ReadOnlyMemory<byte>> source, int offset, int count) : IReadOnlyList<ReadOnlyMemory<byte>>
+    {
+        public int Count => count;
+        public ReadOnlyMemory<byte> this[int index] => (uint)index < (uint)count
+            ? source[offset + index] : throw new ArgumentOutOfRangeException(nameof(index));
+        public IEnumerator<ReadOnlyMemory<byte>> GetEnumerator()
+        {
+            for (int index = 0; index < Count; index++)
+                yield return this[index];
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

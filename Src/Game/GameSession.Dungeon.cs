@@ -82,7 +82,7 @@ public sealed partial class GameSession
             assets,
             smallFont,
             displayMessages,
-            Enumerable.Range(0, ItemCatalog.Count).Select(i => GameText.ItemName(items, i)).ToArray(),
+            GameText.ItemNames(items),
             retainedMessage
         );
         int title = decoded.EmbeddedScene is { } scene ? BinaryPrimitives.ReadInt32LittleEndian(scene.Header.Span.Slice(73, 4)) : throw new InvalidDataException("Dungeon title requires actual embedded scene metadata.");

@@ -14,6 +14,8 @@ public sealed class DungeonComposer
     private readonly DungeonModalRenderer modals;
     private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages, itemNames;
     private byte[] dynamicText;
+    private DungeonArrivalEffect? dynamicEffect;
+    private LocalizationCatalog language = GameText.Current;
     public DungeonSceneRenderer Raster
     {
         get;
@@ -51,6 +53,7 @@ public sealed class DungeonComposer
         this.itemNames = itemNames;
         Raster = new(assets.Base, assets.ObjectMarkers);
         modals = new(assets.Base.Etc, font, messages);
+        // shortcut: old saves retain only popup text; persist semantic IDs when the save context is next revised.
         dynamicText = retainedDynamicText.ToArray();
     }
 
@@ -101,9 +104,10 @@ public sealed class DungeonComposer
         foreach (var command in step.Commands)
         {
             if (command.Arrival is { } effect
-&& effect.Kind is DungeonArrivalEffectKind.TreasureMoney or DungeonArrivalEffectKind.TreasureItem or DungeonArrivalEffectKind.TreasureTorch)
+                && effect.Kind is DungeonArrivalEffectKind.TreasureMoney or DungeonArrivalEffectKind.TreasureItem or DungeonArrivalEffectKind.TreasureTorch)
             {
                 dynamicText = DungeonModalRenderer.BuildDynamicText(effect, messages, itemNames);
+                dynamicEffect = effect;
             }
         }
 
@@ -118,6 +122,16 @@ public sealed class DungeonComposer
         if (!controller.ExitPending && state.DungeonFog == 1 && state.DungeonFogDirty == 0)
         {
             Raster.DrawDarkness(state.WorldX, state.WorldY, readNativeVisibility, target);
+        }
+
+        if (!ReferenceEquals(language, GameText.Current))
+        {
+            if (dynamicEffect is { } translatedEffect)
+            {
+                dynamicText = DungeonModalRenderer.BuildDynamicText(translatedEffect, messages, itemNames);
+            }
+
+            language = GameText.Current;
         }
 
         modals.Draw(controller, state.ResourceCounterFc9a, dynamicText, target);

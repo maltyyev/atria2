@@ -1,0 +1,16 @@
+{
+  "ui.validation.json": "Памылка JSON: {detail}",
+  "ui.validation.file": "Не ўдалося прачытаць файл перакладу: {detail}",
+  "ui.validation.unknownKey": "Невядомы ключ перакладу.",
+  "ui.validation.missing": "Пераклад адсутнічае; выкарыстоўваецца базавы тэкст.",
+  "ui.validation.unknownFile": "Невядомы файл лакалізацыі.",
+  "ui.validation.parameters": "Падстаноўкі не супадаюць. Адсутнічаюць: {missing}. Невядомыя: {unknown}.",
+  "ui.validation.template": "Памылка шаблону: {detail}",
+  "ui.validation.lines": "Недапушчальны перанос радка або NUL. Захавайце структуру радкоў і варыянтаў адказу.",
+  "ui.validation.length": "Тэкст перавышае цяперашнюю мяжу: {limit} (сімвалаў для інтэрфейсу Unicode, байтаў для старых табліц).",
+  "ui.validation.font": "Недапушчальны Unicode або сімвал па-за CP1251 у старым байтавым інтэрфейсе. Гл. пералік экранаў, якія падтрымліваюцца.",
+  "ui.validation.duplicate": "Паўторны ключ: {key}.",
+  "ui.validation.value": "Для ключа {key} патрабуецца радковае значэнне.",
+  "ui.validation.object": "Чакаецца аб'ект JSON з тэкставымі ключамі і радковымі значэннямі.",
+  "ui.validation.summary": "Праверка лакалізацыі: памылак — {errors}, папярэджанняў — {warnings}."
+}

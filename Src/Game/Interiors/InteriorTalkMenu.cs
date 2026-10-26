@@ -2,7 +2,10 @@ using Atria.Game.State;
 
 namespace Atria.Game.Interiors;
 
-public sealed record InteriorTalkChoice(ReadOnlyMemory<byte> Label, ReadOnlyMemory<byte> ScriptMember, ReadOnlyMemory<byte> Function, bool IsEvent);
+public sealed record InteriorTalkChoice(ReadOnlyMemory<byte> SourceLabel, ReadOnlyMemory<byte> ScriptMember, ReadOnlyMemory<byte> Function, bool IsEvent, string? TextKey = null)
+{
+    public ReadOnlyMemory<byte> Label => TextKey is null ? GameText.Name(SourceLabel) : GameText.Legacy(TextKey, SourceLabel);
+}
 /// <summary>Owned talk choices from people_name and actual bounded event offer; choosing never invents a script result.</summary>
 public sealed class InteriorTalkMenu
 {
@@ -22,7 +25,7 @@ public sealed class InteriorTalkMenu
         var choices = new List<InteriorTalkChoice>();
         foreach (var person in state.People)
         {
-            choices.Add(new(GameText.Name(person.DisplayName), currentScript.ToArray(), person.Handler.ToArray(), false));
+            choices.Add(new(person.DisplayName.ToArray(), currentScript.ToArray(), person.Handler.ToArray(), false));
         }
 
         if (offer is not null)
@@ -39,7 +42,7 @@ public sealed class InteriorTalkMenu
                 throw new InvalidDataException("TEXTmsg lacks native event-offer labels.");
             }
 
-            choices.Add(new(messages[label].ToArray(), offer.ScriptMember.ToArray(), offer.Function.ToArray(), true));
+            choices.Add(new(messages[label].ToArray(), offer.ScriptMember.ToArray(), offer.Function.ToArray(), true, $"messages.{label:D3}"));
         }
 
         return new(choices.ToArray());

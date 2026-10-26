@@ -7,10 +7,15 @@ namespace Atria.Localization;
 public sealed class LocalizationCatalog
 {
     public const string BaseLanguage = "ru-RU";
+    public const string BelarusianLanguage = "be-BY";
+    public static bool IsSupportedLanguage(string? language) => language is BaseLanguage or BelarusianLanguage;
+    public string? Root { get; }
+    public string Language { get; }
     private const int MaximumInterfaceTextCharacters = 1024;
     private const int MaximumLegacyRowTextBytes = 79;
     private const int MaximumParagraphCharacters = 16_384;
     private static readonly Lazy<Dictionary<string, Dictionary<string, string>>> defaults = new(ReadDefaults);
+    private static readonly Lazy<Dictionary<string, string>> originalNames = new(ReadOriginalNames);
     private readonly Dictionary<string, string> texts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, byte[]> legacyOverrides = new(StringComparer.Ordinal);
     private readonly Dictionary<string, byte[]> nameOverrides = new(StringComparer.Ordinal);
@@ -19,6 +24,8 @@ public sealed class LocalizationCatalog
 
     public LocalizationCatalog(string? root = null, string language = BaseLanguage)
     {
+        Root = root;
+        Language = language;
         foreach (var file in defaults.Value.Values)
         {
             foreach (var entry in file)
@@ -45,21 +52,35 @@ public sealed class LocalizationCatalog
         {
             foreach (var entry in file)
             {
-                if (texts[entry.Key] != entry.Value && !entry.Key.StartsWith("ui.", StringComparison.Ordinal) && !TextResourceSchema.IsFlowingText(entry.Key))
+                if (!entry.Key.StartsWith("ui.", StringComparison.Ordinal) && !TextResourceSchema.IsFlowingText(entry.Key))
                 {
                     legacyOverrides.Add(entry.Key, GameText.Encoding.GetBytes(texts[entry.Key]));
-                    if (!string.IsNullOrEmpty(entry.Value) && (entry.Key.StartsWith("names.", StringComparison.Ordinal) || IsStoredName(entry.Key)))
-                    {
-                        nameOverrides[entry.Value] = legacyOverrides[entry.Key];
-                    }
                 }
+            }
+        }
+
+        // Old saves and binary resources retain the source names even after embedded translations change.
+        foreach (var entry in originalNames.Value)
+        {
+            if (!string.IsNullOrEmpty(entry.Value) && legacyOverrides.TryGetValue(entry.Key, out var translated))
+            {
+                nameOverrides[entry.Value] = translated;
             }
         }
     }
 
     public string Get(string key) => texts.TryGetValue(key, out var value) ? value : throw new KeyNotFoundException($"Unknown localization key: {key}");
     public bool TryGet(string key, out string text) => texts.TryGetValue(key, out text!);
-    public ReadOnlyMemory<byte> Legacy(string key, ReadOnlyMemory<byte> original) => legacyOverrides.TryGetValue(key, out var bytes) ? bytes : original;
+    public ReadOnlyMemory<byte> Legacy(string key, ReadOnlyMemory<byte> original)
+    {
+        if (!legacyOverrides.TryGetValue(key, out var bytes)
+            || TextResourceSchema.Normalize(GameText.Decode(original.Span)) == texts[key])
+        {
+            return original;
+        }
+
+        return bytes;
+    }
     public ReadOnlyMemory<byte> Name(ReadOnlyMemory<byte> original)
         => FindName(original.Span) is { } replacement ? replacement : original;
 
@@ -78,11 +99,12 @@ public sealed class LocalizationCatalog
         return nameOverrides.GetValueOrDefault(name);
     }
 
-    private static bool IsStoredName(string key)
+    private static Dictionary<string, string> ReadOriginalNames()
     {
-        // Saved names retain original bytes; only these message ranges supply name fields.
-        return key.StartsWith("messages.", StringComparison.Ordinal) && int.TryParse(key.AsSpan("messages.".Length), out int index)
-            && index is >= 0 and < 6 or >= 119 and <= 170 or >= 298 and <= 305 or 361;
+        using var stream = typeof(LocalizationCatalog).Assembly.GetManifestResourceStream("Atria.Content.Atria2.OriginalNames.json")
+            ?? throw new InvalidDataException("Original name identities are missing.");
+        using var document = JsonDocument.Parse(stream);
+        return ReadObject(document.RootElement);
     }
 
     public byte[] Bytes(string key)

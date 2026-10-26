@@ -4,7 +4,7 @@ using Atria.Resources;
 
 namespace Atria.Game.Settings;
 
-internal sealed record UserPreferences(ControlProfile Controls, NativeSettingsState Audio, ControlBindings LegacyBindings);
+internal sealed record UserPreferences(ControlProfile Controls, NativeSettingsState Audio, ControlBindings LegacyBindings, string Language = LocalizationCatalog.BaseLanguage);
 /// <summary>One atomic document for audio and input; older files are read only for migration.</summary>
 internal sealed class UserPreferencesStore(string directory, string originalRoot)
 {
@@ -31,7 +31,10 @@ internal sealed class UserPreferencesStore(string directory, string originalRoot
 
                 var controls = ControlProfileStore.Decode(System.Text.Encoding.UTF8.GetBytes(root.GetProperty("controls").GetRawText()));
                 var settings = LocalSettingsCodec.Parse(root.GetProperty("legacySettings").GetBytesFromBase64());
-                return new(controls, settings.Settings, settings.Bindings);
+                string? language = root.TryGetProperty("language", out var selectedLanguage) && selectedLanguage.ValueKind == JsonValueKind.String
+                    ? selectedLanguage.GetString() : null;
+                return new(controls, settings.Settings, settings.Bindings,
+                    LocalizationCatalog.IsSupportedLanguage(language) ? language! : LocalizationCatalog.BaseLanguage);
             }
             catch (Exception error) when (IsReadError(error))
             {
@@ -65,6 +68,8 @@ internal sealed class UserPreferencesStore(string directory, string originalRoot
 
     public void Write(UserPreferences preferences)
     {
+        if (!LocalizationCatalog.IsSupportedLanguage(preferences.Language))
+            throw new InvalidDataException("Unsupported interface language.");
         // Preserve the original-resource and redirected-directory protections used by legacy settings.
         new LocalSettingsStore(directory, originalRoot).CheckDirectory();
         Directory.CreateDirectory(directory);
@@ -85,6 +90,7 @@ internal sealed class UserPreferencesStore(string directory, string originalRoot
         {
             writer.WriteStartObject();
             writer.WriteNumber("version", 1);
+            writer.WriteString("language", preferences.Language);
             writer.WritePropertyName("controls");
             writer.WriteRawValue(controls);
             writer.WriteBase64String("legacySettings", settings);

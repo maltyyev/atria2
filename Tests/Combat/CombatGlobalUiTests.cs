@@ -97,7 +97,7 @@ public static class CombatGlobalUiTests
         raster.Draw(ui, true, false, image);
         Check(!image.SequenceEqual(cached), "Pause label follows the externally owned native pause flag.");
         string text = CombatGlobalUiRaster.FormatSettings(3, 225);
-        Check(text == "Detail Level 3  Speed=225", "Exact executable detail/speed punctuation and spacing.");
+        Check(text == "Детализация 3  Интервал 225", "Localized settings retain distinct detail and interval values.");
         return "Combat global UI: lazy speed/detail priority, shared deadline, strict sliding/dwell phases, item53 actor MP, pause and actual BATTLE/ENG1 raster passed.";
     }
 

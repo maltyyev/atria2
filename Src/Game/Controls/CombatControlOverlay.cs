@@ -15,6 +15,7 @@ public sealed class CombatControlOverlay
     private readonly List<ControlRow> rows = [];
     private int owner = -1, actor = -1, party;
     private IReadOnlyList<MoveDefinition> moves = [];
+    private LocalizationCatalog language = GameText.Current;
     private string notice = "";
     public CombatControlOverlay(
         InputRouter input,
@@ -129,6 +130,12 @@ public sealed class CombatControlOverlay
 
     private void BuildRows()
     {
+        if (!ReferenceEquals(language, GameText.Current))
+        {
+            moves = MoveCatalog.FromInfo(runtime.Actors[actor].Binding!.Info);
+            notice = "";
+            language = GameText.Current;
+        }
         rows.Clear();
         int rank = runtime.Actors[actor].State.MagicRank;
         foreach (var m in moves)

@@ -65,7 +65,9 @@ public sealed class InteriorActionMenuAdapter
             return;
         }
 
-        menus.OpenTalk(talk.Choices.Select(c => c.Label).ToArray(), offer is not null, interior.Mode);
+        var currentTalk = talk;
+        menus.OpenTalk(currentTalk.Choices.Select(c => c.Label).ToArray(), offer is not null, interior.Mode,
+            () => currentTalk.Choices.Select(c => c.Label).ToArray());
     }
 
     public void HandleCommand(ActionMenuCommand command)

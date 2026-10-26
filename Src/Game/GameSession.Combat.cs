@@ -104,7 +104,7 @@ public sealed partial class GameSession
                 etc,
                 smallFont,
                 entry.Assets.MagicIcons,
-                () => preferencesStore!.Write(new(controls.Profile, settings, configuredSettingsBindings!))
+                () => preferencesStore!.Write(new(controls.Profile, settings, configuredSettingsBindings!, GameText.Current.Language))
             );
             host.Overlay = combatControls.Draw;
             CombatFrameResult result = RunLegacyCombatDiagnostic(combat, transport);

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Atria.Game.Credits;
 using Atria.Game.Dialogue;
 using Atria.Game.State;
 using Atria.Game.Termination;
@@ -41,6 +42,18 @@ public static class TextFlowTests
         int pages = 0;
         while (!narrative.Completed && pages++ < 100) narrative.ApplyInput(new(true, false, false), state);
         Check(pages == (narrative.Request.DisplayLines!.Length + 3) / 4 && state.Globals[10] == 2, "all narrative pages preserve previous choice");
+
+        var creditsText = CreditsText.Parse(File.ReadAllBytes(Path.Combine(resources, "CREDIT.DAT")));
+        Check(creditsText.Flow.Lines.All(line => TextFlow.MeasureSmall(line) <= 248),
+            "restored author notes fit the credits text column");
+        var credits = new CreditsController();
+        credits.Enter(creditsText.Flow.Lines.Count);
+        for (int tick = 0; tick < 50000 && !credits.Completed; tick++)
+        {
+            Check(credits.AdvanceFrame().Pictures.All(picture => picture.Frame is >= 0 and < 13),
+                "expanded credits retain valid portrait and animation frames");
+        }
+        Check(credits.Completed, "expanded credits scroll to completion");
 
         for (int selection = 1; selection <= 9; selection++)
         {

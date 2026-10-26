@@ -35,7 +35,8 @@ public sealed record ShopDrawCommand(
     bool Small = false,
     ShopTextStyle Style = ShopTextStyle.Solid,
     ReadOnlyMemory<byte> Text = default,
-    SpriteBlend Blend = SpriteBlend.Copy
+    SpriteBlend Blend = SpriteBlend.Copy,
+    bool Wrap = false
 );
 public readonly record struct ShopRenderFrame(int ArrowPhase, int TextPhase = 0);
 public sealed class ShopRenderClock
@@ -106,11 +107,11 @@ public sealed class ShopRenderer
         }
 
         var ops = new List<ShopDrawCommand>();
-        void Text(ReadOnlyMemory<byte> value, int x, int y, bool smallFont, ShopTextStyle style = ShopTextStyle.Solid, ushort color = 0xffff) => ops.Add(new(ShopPrimitive.Text, x, y, Color: color, Small: smallFont, Style: style, Text: value));
-        void Pair(ReadOnlyMemory<byte> value, int x, int y, bool sm, ShopTextStyle style, ushort color = 0xffff, int shadowX = 1, int shadowY = 1)
+        void Text(ReadOnlyMemory<byte> value, int x, int y, bool smallFont, ShopTextStyle style = ShopTextStyle.Solid, ushort color = 0xffff, int w = 0, int h = 16, bool wrap = false) => ops.Add(new(ShopPrimitive.Text, x, y, w, h, Color: color, Small: smallFont, Style: style, Text: value, Wrap: wrap));
+        void Pair(ReadOnlyMemory<byte> value, int x, int y, bool sm, ShopTextStyle style, ushort color = 0xffff, int shadowX = 1, int shadowY = 1, int w = 0, int h = 16, bool wrap = false)
         {
-            Text(value, x + shadowX, y + shadowY, sm, color: 0);
-            Text(value, x, y, sm, style, color);
+            Text(value, x + shadowX, y + shadowY, sm, color: 0, w: w, h: h, wrap: wrap);
+            Text(value, x, y, sm, style, color, w, h, wrap);
         }
 
         void Tint(int x, int y, int w, int h, ushort color) => ops.Add(new(ShopPrimitive.Tint, x, y, w, h, color));
@@ -121,11 +122,9 @@ public sealed class ShopRenderer
         Panel(96, 32, 8, 0);
         Tint(110, 110, 292, 260, 0);
         Panel(96, 96, 8, 7);
-        Tint(446, 110, 132, 164, 15);
-        Panel(432, 96, 3, 4);
-        Tint(446, 302, 132, 68, 15);
-        Panel(432, 288, 3, 1);
-        Pair(Msg(365), 470, 310, true, ShopTextStyle.Solid, shadowX: 2);
+        Tint(430, 110, 164, 292, 15);
+        Panel(416, 96, 4, 8);
+        Pair(Msg(365), 432, 370, true, ShopTextStyle.Solid, w: 104);
         int[] categoryFrames = [21, 35, 58];
         for (int c = 0; c < 3; c++)
         {
@@ -147,7 +146,7 @@ public sealed class ShopRenderer
         foreach (var row in session.VisibleRows())
         {
             Sprite(true, row.SpriteFrame, row.X, row.Y);
-            Pair(GameText.ItemName(items, row.ItemId), 180, row.Y + 8, true, ShopTextStyle.Selected);
+            Pair(GameText.ItemName(items, row.ItemId), 180, row.Y + 8, true, ShopTextStyle.Selected, w: 166, h: 32, wrap: true);
             Pair(Number(row.Quantity), 356, row.Y + 5, false, ShopTextStyle.Selected);
         }
 
@@ -161,10 +160,10 @@ public sealed class ShopRenderer
         int Int(int offset) => item.GetInteger((offset - 30) / 4);
         if (session.Buying)
         {
-            for (int line = 0; line < 3; line++)
-            {
-                Pair(GameText.Legacy($"items.{id:D2}.extra.{line}", DatTables.GetItemExtraLine(itemExtra, id, line)), 448, 120 + line * 16, true, ShopTextStyle.Normal);
-            }
+            string description = string.Join(" ", Enumerable.Range(0, 3)
+                .Select(line => GameText.Decode(GameText.Legacy($"items.{id:D2}.extra.{line}", DatTables.GetItemExtraLine(itemExtra, id, line)).Span).Trim())
+                .Where(line => line.Length > 0));
+
 
             int modifiers = Int(58);
             if ((uint)modifiers > 3)
@@ -172,7 +171,7 @@ public sealed class ShopRenderer
                 throw new InvalidDataException("Item modifier count exceeds original three slots.");
             }
 
-            int visibleModifiers = 0;
+            var details = new List<string>();
             for (int i = 0; i < modifiers; i++)
             {
                 int code = Int(62 + i * 4), value = Int(74 + i * 4);
@@ -186,30 +185,15 @@ public sealed class ShopRenderer
                     throw new InvalidDataException("Shop modifier label exceeds TEXTmsg.");
                 }
 
-                Pair(Msg(45 + code), 460, 180 + visibleModifiers * 18, true, ShopTextStyle.Solid, 0xffe0);
-                Pair(
-                    Join(value > 0 ? "+"u8.ToArray() : Array.Empty<byte>(), Number(value)),
-                    542,
-                    180 + visibleModifiers * 18,
-                    true,
-                    ShopTextStyle.Solid,
-                    0xffe0
-                );
-                visibleModifiers++;
+                string amount = (value > 0 ? "+" : "") + value.ToString(CultureInfo.InvariantCulture);
+                details.Add(GameText.Decode(Msg(45 + code).Span).Trim() + " " + amount);
             }
 
-            int lineY = 180 + visibleModifiers * 18;
             if (session.Category < 2 && Int(50) != 0)
             {
-                Pair(Join(Msg(session.Category == 0 ? 366 : 370), Number(Int(50))), 460, lineY, true, ShopTextStyle.Solid);
-                lineY += 18;
-                Pair(
-                    Join(Msg(session.Category == 0 ? 367 : 371), Number(Int(54)), session.Category == 1 ? "%"u8.ToArray() : Array.Empty<byte>()),
-                    460,
-                    lineY,
-                    true,
-                    ShopTextStyle.Solid
-                );
+                details.Add(GameText.Decode(Msg(session.Category == 0 ? 366 : 370).Span).Trim() + " " + Int(50).ToString(CultureInfo.InvariantCulture));
+                details.Add(GameText.Decode(Msg(session.Category == 0 ? 367 : 371).Span).Trim() + " " + Int(54).ToString(CultureInfo.InvariantCulture)
+                    + (session.Category == 1 ? "%" : ""));
             }
 
             if (session.Category == 2)
@@ -223,21 +207,19 @@ public sealed class ShopRenderer
                     >= 84 and <= 87 => [340 + (id - 84) * 2, 341 + (id - 84) * 2],
                     _ => []
                 };
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    Pair(Msg(labels[i]), 460, lineY + i * 18, true, ShopTextStyle.Solid);
-                }
+                details.AddRange(labels.Select(label => GameText.Decode(Msg(label).Span).Trim()));
             }
 
-            Pair(Msg(368), 460, 255, true, ShopTextStyle.Solid);
-            Pair(Join(Number(Int(46)), Msg(369)), 505, 255, true, ShopTextStyle.Selected);
+            Pair(GameText.Encoding.GetBytes(description + "\n\n" + string.Join("\n", details)), 432, 116, true, ShopTextStyle.Normal, w: 160, h: 224, wrap: true);
+            Pair(Msg(368), 432, 350, true, ShopTextStyle.Solid, w: 40);
+            Pair(Join(Number(Int(46)), Msg(369)), 480, 350, true, ShopTextStyle.Selected, w: 112);
         }
         else
         {
-            Pair(Join(Number(Int(46) / 2), Msg(369)), 464, 128, false, ShopTextStyle.Selected, shadowY: session.Category == 2 ? 1 : 2);
+            Pair(Join(Number(Int(46) / 2), Msg(369)), 432, 128, true, ShopTextStyle.Selected, shadowY: session.Category == 2 ? 1 : 2, w: 160, h: 32, wrap: true);
             if (Int(46) == 0)
             {
-                Pair(Msg(349), 464, 160, false, ShopTextStyle.Title);
+                Pair(Msg(349), 432, 176, true, ShopTextStyle.Title, w: 160, h: 64, wrap: true);
             }
         }
 
@@ -254,9 +236,9 @@ public sealed class ShopRenderer
         Sprite(false, 22 + frame.ArrowPhase, 120, 133 + session.Row * 46);
         Pair(
             Join(Number(unchecked(state.OwnedItems[id] - state.AvailableItems[id])), " / "u8.ToArray(), Number(state.OwnedItems[id])),
-            480,
-            340,
-            false,
+            432,
+            386,
+            true,
             ShopTextStyle.Selected
         );
         if (session.QuantityActive)
@@ -310,7 +292,12 @@ public sealed class ShopRenderer
                     break;
                 case ShopPrimitive.Text:
                     var font = op.Small ? small : large;
-                    if (op.Style == ShopTextStyle.Solid)
+                    if (op.A > 0)
+                    {
+                        TextBoxRaster.Draw(font, GameText.Decode(op.Text.Span), target, 640, 480, 640, new(op.X, op.Y, op.X + op.A, op.Y + op.B), op.Color,
+                            op.Style == ShopTextStyle.Solid ? default : Palette(op.Style), frame.TextPhase, op.Wrap);
+                    }
+                    else if (op.Style == ShopTextStyle.Solid)
                     {
                         font.DrawText(op.Text.Span, target, 640, 480, 640, op.X, op.Y, op.Color);
                     }

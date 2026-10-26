@@ -63,6 +63,7 @@ public sealed partial class CreditsController
     private bool transition;
     private int animationCounter, animationFrame;
     private int scrollLimit = 9120;
+    public void SetTextRows(int count) => scrollLimit = checked((count + 14) * 24);
 
     public void Enter(int? textRows = null)
     {

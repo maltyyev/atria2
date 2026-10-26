@@ -288,8 +288,8 @@ public static class PersistenceRuntimeTests
         check(plan.Count(p => p.Primitive == SaveMenuPrimitive.Panel) == 2
 && plan.Any(p => p.Primitive == SaveMenuPrimitive.Panel && p.X == 96 && p.Y == 64 && p.A == 12 && p.B == 7), "native static save panels");
         check(plan.Any(p => p.Text == GameText.Decode(messages[362].Span) && p.X == 156 && p.Y == 390 && p.Style == SaveMenuTextStyle.Selected), "save footer362 native coordinates");
-        check(plan.Any(p => p.Text == GameText.Decode(filled.PrimaryName.Span) && p.X == 140 && p.Y == 99 && p.Style == SaveMenuTextStyle.Purple), "selected occupied slot native name position/palette");
-        check(plan.Any(p => p.Text == GameText.Decode(empty.PrimaryName.Span) && p.X == 208 && p.Y == 148), "empty second slot centered position");
+        check(plan.Any(p => p.Text == GameText.Decode(filled.PrimaryName.Span).Trim().ToUpperInvariant() && p.X == 140 && p.Y == 99 && p.Style == SaveMenuTextStyle.Purple), "selected occupied slot native name position/palette");
+        check(plan.Any(p => p.Text == GameText.Decode(empty.PrimaryName.Span).Trim().ToUpperInvariant() && p.X == 140 && p.Y == 147), "empty second slot shares occupied-name alignment");
         plan = renderer.BuildPlan(frame with
         {
             Confirmation = true
@@ -341,7 +341,7 @@ public static class PersistenceRuntimeTests
                 }, blankSlots, alternate);
                 for (int row = 0; row < 5; row++)
                 {
-                    check(plan.Any(p => p.Primitive == SaveMenuPrimitive.Text && p.X == 208 && p.Y == 100 + 48 * row && p.Text == GameText.Decode(messages[361].Span)
+                    check(plan.Any(p => p.Primitive == SaveMenuPrimitive.Text && p.X == 140 && p.Y == 99 + 48 * row && p.Text == GameText.Decode(messages[361].Span).Trim().ToUpperInvariant()
 && p.Style == (row == 2 ? SaveMenuTextStyle.Purple : SaveMenuTextStyle.Normal)), "blank slot has localized visible label and selection palette");
                 }
 

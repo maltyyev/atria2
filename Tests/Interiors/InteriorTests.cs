@@ -53,7 +53,9 @@ public static class InteriorTests
         Check(offer is not null && offer.EventId == 64 && offer.Function.Span.SequenceEqual("suba_064"u8) && state.EventCounter == 64, "Variant2 skips inactive event and builds actual padded handler.");
         var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
         var talk = InteriorTalkMenu.Build(state, "test.scr"u8.ToArray(), offer, messages);
-        Check(talk.Choices.Count == 1 && talk.Select(0).IsEvent && talk.Select(0).Label.Span.SequenceEqual(messages[316].Span)
+        Check(talk.Choices.Count == 1 && talk.Select(0).IsEvent
+            && talk.Select(0).SourceLabel.Span.SequenceEqual(messages[316].Span)
+            && talk.Select(0).Label.Span.SequenceEqual(Atria.Localization.GameText.Legacy("messages.316", messages[316]).Span)
 && talk.Select(0).Function.Span.SequenceEqual("suba_064"u8), "Actual event talk label and script dispatch data.");
         state.EventStatuses[63] = 5;
         Check(InteriorEventOffers.Select(state, new(1, 2, 63, 64)) is null, "Status5 stops event offer scan.");
@@ -111,6 +113,7 @@ public static class InteriorTests
         session.HandleInput(new(Confirm: true));
         Check(state.Money == 2 && state.OwnedItems[0] == 2, "Native signed IMUL cost wraps before affordability comparison.");
         ShopRendererTests.Run(root);
+        ShopStockTests.Run(root);
         return "Interiors: entry metadata/action/render flags, bounded event-offer order, native buy/sell/special-item/stock and signed-cost fixtures passed; original gameplay/UI parity pending.";
     }
 

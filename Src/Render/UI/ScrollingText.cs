@@ -3,10 +3,33 @@ namespace Atria.Render.UI;
 public sealed class ScrollingText
 {
     private readonly List<(int SourceRow, int DisplayRow)> anchors = [];
-    public IReadOnlyList<string> Lines { get; }
+    private readonly string domain;
+    private readonly int width;
+    private LocalizationCatalog? language;
+    private IReadOnlyList<string> lines = [];
+    public IReadOnlyList<string> Lines
+    {
+        get
+        {
+            RefreshLanguage();
+            return lines;
+        }
+    }
 
     public ScrollingText(string domain, int width)
     {
+        this.domain = domain;
+        this.width = width;
+        RefreshLanguage();
+    }
+
+    private void RefreshLanguage()
+    {
+        if (ReferenceEquals(language, GameText.Current))
+            return;
+
+        language = GameText.Current;
+        anchors.Clear();
         var lines = new List<string>();
         var keys = LocalizationCatalog.Defaults.Values.SelectMany(file => file.Keys)
             .Where(key => key.StartsWith(domain + ".", StringComparison.Ordinal) && key.EndsWith(".text", StringComparison.Ordinal))
@@ -18,11 +41,12 @@ public sealed class ScrollingText
             lines.AddRange(TextFlow.Wrap(GameText.Get(entry.Key), width));
             lines.Add("");
         }
-        Lines = lines.AsReadOnly();
+        this.lines = lines.AsReadOnly();
     }
 
     public int MapSourceRow(int sourceRow)
     {
+        RefreshLanguage();
         foreach (var anchor in anchors)
         {
             if (anchor.SourceRow >= sourceRow)

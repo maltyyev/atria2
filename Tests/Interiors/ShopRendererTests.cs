@@ -1,3 +1,4 @@
+using Atria.Localization;
 using System.Buffers.Binary;
 using Atria.Game.Interiors;
 using Atria.Game.State;
@@ -34,7 +35,7 @@ public static class ShopRendererTests
         var session = new ShopSession(state, items);
         session.BeginBuy(ShopStock.FromCatalog(ShopCatalog.Parse(shopBytes), 0));
         var empty = renderer.BuildPlan(session, state, new(0));
-        Check(empty.Count(op => op.Primitive == ShopPrimitive.Panel) == 4, "four original cached-base panels");
+        Check(empty.Count(op => op.Primitive == ShopPrimitive.Panel) == 3, "list, categories and expanded item-detail panels");
         Check(empty.Any(op => op.Text.Span.SequenceEqual(messages[353].Span) && op.X == 160 && op.Y == 228 && op.Style == ShopTextStyle.Title && !op.Small), "empty message353 exact large gradient coordinates");
         var clock = new ShopRenderClock();
         Check(clock.AdvanceLogicalFrame(false).ArrowPhase == 0, "empty render does not advance cursor");
@@ -62,10 +63,10 @@ public static class ShopRendererTests
             Check(plan.Any(op => op.Primitive == ShopPrimitive.Text && op.X == 180 && op.Y == 140 && op.Small && op.Style == ShopTextStyle.Selected), "small list name font/coordinates");
             Check(plan.Any(op => op.Primitive == ShopPrimitive.Text && op.X == 356 && op.Y == 137 && !op.Small && op.Style == ShopTextStyle.Selected), "large quantity font/coordinates");
             Check(plan.Any(op => op.Primitive == ShopPrimitive.EtcSprite && op.A == 24 && op.X == 120 && op.Y == 133), "native cursor frame22+phase");
-            Check(plan.Any(op => op.X == 505 && op.Y == 255 && op.Small && op.Style == ShopTextStyle.Selected), "buy price small font native coordinates");
+            Check(plan.Any(op => op.X == 480 && op.Y == 350 && op.Small && op.Style == ShopTextStyle.Selected), "buy price below wrapped description");
             if (category == 2)
             {
-                Check(plan.Any(op => op.Text.Span.SequenceEqual(messages[340].Span) && op.X == 460), "special84 description uses actual TEXTmsg340");
+                Check(plan.Any(op => GameText.Decode(op.Text.Span).Contains(GameText.Decode(messages[340].Span).Trim(), StringComparison.Ordinal) && op.X == 432 && op.Wrap), "special84 description uses actual TEXTmsg340");
             }
 
             Array.Fill(pixels, (ushort)0x7bef);
@@ -105,7 +106,7 @@ public static class ShopRendererTests
         state.OwnedItems[0] = 2;
         session.BeginSell();
         var sell = renderer.BuildPlan(session, state, new(0));
-        Check(sell.Any(op => op.X == 464 && op.Y == 128 && !op.Small && op.Style == ShopTextStyle.Selected), "sale price large font and128 baseline");
+        Check(sell.Any(op => op.X == 432 && op.Y == 128 && op.Small && op.Style == ShopTextStyle.Selected), "sale price uses original small font inside detail panel");
         renderer.Draw(session, state, new(0), pixels);
     }
 

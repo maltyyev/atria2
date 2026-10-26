@@ -56,8 +56,18 @@ public sealed class DialogueSession
         get;
     }
 
+    private LocalizationCatalog? layoutCatalog;
+
     public void PrepareLayout(BitmapFont font)
     {
+        bool languageChanged = layoutCatalog is not null && !ReferenceEquals(layoutCatalog, GameText.Current);
+        int selectedChoice = Request.ChoiceByRow is { Length: > 0 } mapping ? mapping[Math.Clamp(SelectedLine, 0, mapping.Length - 1)] : SelectedLine;
+        if (languageChanged)
+        {
+            Request = Request.Translate();
+            FirstLine = 0;
+        }
+        layoutCatalog = GameText.Current;
         if (Request.DisplayLines is not null)
         {
             return;
@@ -79,6 +89,11 @@ public sealed class DialogueSession
                 choices.AddRange(Enumerable.Repeat(choice, wrapped.Length));
             }
             Request = Request with { DisplayLines = lines.ToArray(), ChoiceByRow = choices.ToArray() };
+            if (languageChanged)
+            {
+                SelectedLine = Math.Max(0, choices.IndexOf(selectedChoice));
+                FirstLine = Math.Max(0, SelectedLine - 3);
+            }
         }
         else
         {

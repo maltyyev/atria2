@@ -194,7 +194,7 @@ internal sealed class SessionSnapshotLoader(
                 assets,
                 smallFont,
                 GameText.Messages(messages),
-                Enumerable.Range(0, ItemCatalog.Count).Select(i => GameText.ItemName(items, i)).ToArray(),
+                GameText.ItemNames(items),
                 dungeonSaved.DynamicText
             );
             result.DungeonComposer.Raster.RestoreRuntime(dungeonSaved.Raster);

@@ -264,6 +264,7 @@ public sealed class DialogueModalDriver : IDialogueModalDriver
                 }
 
                 host.Gate.CommitScheduled();
+                session.PrepareLayout(font);
                 host.BeginLogicalFrame(host.Gate.LastFrameMilliseconds);
                 if (state.Mode != 1)
                 {

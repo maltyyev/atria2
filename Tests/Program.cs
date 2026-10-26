@@ -1,5 +1,62 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--experience-layout")
+{
+    Console.WriteLine(Atria.Tests.Progression.ProgressionTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Progression.ExperienceLayoutTests.Run(args[0]));
+    return;
+}
+
+if (args.Length == 4 && args[3] == "--language-session")
+{
+    Console.WriteLine(Atria.Game.GameSession.VerifyLanguageIntegration(args[0], args[1], args[2]));
+    return;
+}
+
+if (args.Length == 2 && args[1] == "--live-language")
+{
+    Console.WriteLine(Atria.Tests.Localization.LiveLanguageTests.Run(args[0]));
+    return;
+}
+
+if (args.Length == 2 && args[1] == "--belarusian-layout")
+{
+    Console.WriteLine(Atria.Tests.Render.LayoutFeedbackTests.Run(args[0], "be-BY"));
+    return;
+}
+
+if (args.Length == 2 && args[1] == "--script-arguments")
+{
+    Console.WriteLine(Atria.Tests.Script.ScriptArgumentAuditTests.Run(args[0]));
+    return;
+}
+
+if (args.Length is 2 or 3 && args[1] == "--quest-timer")
+{
+    Console.WriteLine(Atria.Tests.State.QuestDayCounterTests.Run(args[0], args.Length == 3 ? args[2] : null));
+    Console.WriteLine(Atria.Tests.State.StateTests.Run(args[0]));
+    return;
+}
+
+if (args.Length == 2 && args[1] == "--layout-feedback")
+{
+    Console.WriteLine(Atria.Tests.Render.LayoutFeedbackTests.Run(args[0]));
+    Atria.Tests.Interiors.ShopRendererTests.Run(args[0]);
+    Atria.Tests.Status.StatusRendererTests.Run(args[0]);
+    Console.WriteLine(Atria.Tests.Persistence.PersistenceRuntimeTests.RunMenuRaster(args[0]));
+    Console.WriteLine(Atria.Tests.ActionMenu.ActionMenuTests.Run(args[0]));
+    Atria.Tests.Exploration.WorldRenderTests.Run(args[0]);
+    return;
+}
+
+
+if (args.Length is 2 or 3 && args[1] == "--shop-stock")
+{
+    Console.WriteLine(Atria.Tests.Interiors.ShopStockTests.Run(args[0], args.Length == 3 ? args[2] : null));
+    Console.WriteLine(Atria.Tests.Interiors.InteriorTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--vertical-menu")
 {
     Console.WriteLine(Atria.Tests.Menu.MainMenuTests.Run());
@@ -190,6 +247,7 @@ if (!v.TryMapInput(2239, 1439, out int x, out int y) || x != 639 || y != 479)
 
 Console.WriteLine("Presentation geometry checks passed.");
 Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.Localization.LiveLanguageTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Resources.StateModelTests.Run());
 Console.WriteLine(Atria.Tests.Resources.GameDefinitionTests.Run());
 Console.WriteLine(Atria.Tests.RefactoringTests.Run(args[0]));
@@ -228,6 +286,7 @@ Console.WriteLine(Atria.Tests.ActionMenu.ActionMenuTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Exploration.ExplorationTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Exploration.RuinsAccessTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Progression.ProgressionTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.Progression.ExperienceLayoutTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Interiors.InteriorTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Interiors.GeographerTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Interiors.GathaGuildTests.Run(args[0]));

@@ -72,15 +72,16 @@ public sealed class SaveLoadMenuRenderer
 
         var ops = new List<SaveMenuDrawCommand>();
         void Box(SaveMenuPrimitive kind, int x, int y, int a, int b, ushort color = 0) => ops.Add(new(kind, x, y, a, b, color));
-        void Text(string text, int x, int y, SaveMenuTextStyle style = SaveMenuTextStyle.Solid, bool sm = false, ushort color = 0) => ops.Add(new(SaveMenuPrimitive.Text, x, y, Color: color, Small: sm, Style: style, Text: text));
-        void Pair(string text, int x, int y, SaveMenuTextStyle style, bool sm = false, bool flash = false, int shadowX = 1, int shadowY = 1)
+        void Text(string text, int x, int y, SaveMenuTextStyle style = SaveMenuTextStyle.Solid, bool sm = false, ushort color = 0, int w = 0, int h = 24) => ops.Add(new(SaveMenuPrimitive.Text, x, y, w, h, Color: color, Small: sm, Style: style, Text: text));
+        void Pair(string text, int x, int y, SaveMenuTextStyle style, bool sm = false, bool flash = false, int shadowX = 1, int shadowY = 1, int w = 0)
         {
-            Text(text, x + shadowX, y + shadowY, sm: sm);
-            Text(text, x, y, flash ? SaveMenuTextStyle.Solid : style, sm, 0xffff);
+            Text(text, x + shadowX, y + shadowY, sm: sm, w: w);
+            Text(text, x, y, flash ? SaveMenuTextStyle.Solid : style, sm, 0xffff, w: w);
         }
 
         void Outline(string text, int x, int y, SaveMenuTextStyle style, bool flash = false)
         {
+            text = text.Trim().ToUpperInvariant();
             foreach (var d in new[]
             {
                 (1, 1),
@@ -90,10 +91,10 @@ public sealed class SaveLoadMenuRenderer
             }
             )
             {
-                Text(text, x + d.Item1, y + d.Item2);
+                Text(text, x + d.Item1, y + d.Item2, sm: true, w: 280);
             }
 
-            Text(text, x, y, flash ? SaveMenuTextStyle.Solid : style, color: 0xffff);
+            Text(text, x, y, flash ? SaveMenuTextStyle.Solid : style, sm: true, color: 0xffff, w: 280);
         }
 
         Box(SaveMenuPrimitive.Tint, 110, 78, 420, 260);
@@ -123,7 +124,7 @@ public sealed class SaveLoadMenuRenderer
             {
                 if (slots[i].Status is SaveSlotStatus.Invalid or SaveSlotStatus.Unreadable)
                 {
-                    Outline(GameText.Get("ui.saves.readFailed"), 208, y + 1, style, flash);
+                    Outline(GameText.Get("ui.saves.readFailed"), 140, y, style, flash);
                     continue;
                 }
 
@@ -135,12 +136,12 @@ public sealed class SaveLoadMenuRenderer
                     label = messages[361];
                 }
 
-                Outline(GameText.Decode(GameText.Name(label).Span), 208, y + 1, style, flash);
+                Outline(GameText.Decode(GameText.Name(label).Span), 140, y, style, flash);
                 continue;
             }
 
             Outline(GameText.Decode(GameText.Name(metadata.PrimaryName).Span), 140, y, style, flash);
-            Pair(Join(GameText.Decode(messages[310].Span), " ", Number(metadata.ActorZeroLevel)), 440, y + 1, style, flash: flash, shadowX: -1, shadowY: -1);
+            Pair(Join(GameText.Decode(messages[310].Span), " ", Number(metadata.ActorZeroLevel)), 440, y + 1, style, flash: flash, shadowX: -1, shadowY: -1, w: 82);
             var date = slots[i].Date;
             var dateText = Join(
                 GameText.Decode(messages[311].Span),
@@ -241,7 +242,12 @@ public sealed class SaveLoadMenuRenderer
                     break;
                 case SaveMenuPrimitive.Text:
                     var font = op.Small ? small : large;
-                    if (op.Style == SaveMenuTextStyle.Solid)
+                    if (op.A > 0)
+                    {
+                        TextBoxRaster.Draw(font, op.Text, target, 640, 480, 640, new(op.X, op.Y, op.X + op.A, op.Y + op.B), op.Color,
+                            op.Style == SaveMenuTextStyle.Solid ? default : Palette(op.Style));
+                    }
+                    else if (op.Style == SaveMenuTextStyle.Solid)
                     {
                         font.DrawText(op.Text, target, 640, 480, 640, op.X, op.Y, op.Color);
                     }

@@ -197,8 +197,14 @@ public sealed class ScriptStateHost(GameState state, IScriptEffects? effects = n
                 state.ShopNumber = Int(0);
                 return 1;
             case "set_daycount":
-                Count(1);
-                state.DayCounterStorage = (state.DayCounterStorage & ~255) | (Int(0) & 255);
+                // Five shipped timed quests omit the initial value when starting their deadline.
+                int elapsedDays = 0;
+                if (call.Arguments.Count != 0)
+                {
+                    Count(1);
+                    elapsedDays = Int(0);
+                }
+                state.DayCounterStorage = (state.DayCounterStorage & ~255) | (elapsedDays & 255);
                 return 1;
             case "get_daycount":
                 Count(0);

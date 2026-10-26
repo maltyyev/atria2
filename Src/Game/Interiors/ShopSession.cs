@@ -146,14 +146,13 @@ public sealed class ShopSession
     {
         persistent = stock;
         data = stock.Clone();
+        PreparePurchaseStock();
         Buying = true;
         ResetCursor();
         if (data.Counts[0] == 0)
         {
             Category = data.Counts[1] == 0 ? 2 : 1;
         }
-
-        ValidateActiveItems();
     }
 
     public void BeginSell()
@@ -206,7 +205,7 @@ public sealed class ShopSession
         Quantity = 0;
     }
 
-    private void ValidateActiveItems()
+    private void PreparePurchaseStock()
     {
         for (int g = 0; g < 3; g++)
         {
@@ -215,10 +214,24 @@ public sealed class ShopSession
                 throw new InvalidDataException("Shop count exceeds25 slots.");
             }
 
+            int activeCount = 0;
             for (int i = 0; i < data.Counts[g]; i++)
             {
-                _ = ItemInt(data.Ids[g][i], 46);
+                int id = data.Ids[g][i], quantity = data.Quantities[g][i];
+                // Original SHOP.DAT can include an unused slot inside the declared stock count.
+                if (id == -1 && quantity == 0)
+                {
+                    continue;
+                }
+
+                _ = ItemInt(id, 46);
+                data.Ids[g][activeCount] = id;
+                data.Quantities[g][activeCount++] = quantity;
             }
+
+            Array.Fill(data.Ids[g], -1, activeCount, data.Counts[g] - activeCount);
+            Array.Clear(data.Quantities[g], activeCount, data.Counts[g] - activeCount);
+            data.Counts[g] = activeCount;
         }
     }
 

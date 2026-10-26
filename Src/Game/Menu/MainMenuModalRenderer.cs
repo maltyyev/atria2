@@ -8,16 +8,15 @@ public sealed class MainMenuModalRenderer
 {
     private readonly SpriteFile tiles;
     private readonly BitmapFont font;
-    private readonly ReadOnlyMemory<byte> heading, yesText, noText;
+    private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages;
+    private ReadOnlyMemory<byte> heading => messages[268];
+    private ReadOnlyMemory<byte> yesText => messages[269];
+    private ReadOnlyMemory<byte> noText => messages[270];
     public MainMenuModalRenderer(SpriteFile etc, BitmapFont font, ReadOnlySpan<byte> textMessages)
     {
         tiles = etc;
         this.font = font;
-        var messages = GameText.Messages(LegacyTextTables.ParseMessages(textMessages));
-        // Native message base451788, stride80:456b48/456b98/456be8.
-        heading = messages[268];
-        yesText = messages[269];
-        noText = messages[270];
+        messages = GameText.Messages(LegacyTextTables.ParseMessages(textMessages));
     }
 
     public void Draw(MenuFrame frame, Span<ushort> target)

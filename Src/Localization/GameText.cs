@@ -19,7 +19,37 @@ public static class GameText
         return Encoding.GetString(end < 0 ? text : text[..end]);
     }
     public static IReadOnlyList<ReadOnlyMemory<byte>> Messages(IReadOnlyList<ReadOnlyMemory<byte>> original, string domain = "messages") =>
-        original.Select((text, index) => Legacy($"{domain}.{index:D3}", text)).ToArray();
+        new LocalizedRows(original, domain);
+
+    public static IReadOnlyList<ReadOnlyMemory<byte>> ItemNames(Atria.Resources.ItemCatalog items) =>
+        new LocalizedRows(Enumerable.Range(0, Atria.Resources.ItemCatalog.Count).Select(index => items.GetItem(index).Name).ToArray(), "items", "D2", ".name");
+
+    private sealed class LocalizedRows(IReadOnlyList<ReadOnlyMemory<byte>> original, string domain, string indexFormat = "D3", string suffix = "") : IReadOnlyList<ReadOnlyMemory<byte>>
+    {
+        private readonly string[] keys = Enumerable.Range(0, original.Count)
+            .Select(index => $"{domain}.{index.ToString(indexFormat, System.Globalization.CultureInfo.InvariantCulture)}{suffix}").ToArray();
+        private LocalizationCatalog? catalog;
+        private ReadOnlyMemory<byte>[] translated = [];
+        public int Count => original.Count;
+        public ReadOnlyMemory<byte> this[int index]
+        {
+            get
+            {
+                if (!ReferenceEquals(catalog, Current))
+                {
+                    translated = keys.Select((key, row) => Legacy(key, original[row])).ToArray();
+                    catalog = Current;
+                }
+                return translated[index];
+            }
+        }
+        public IEnumerator<ReadOnlyMemory<byte>> GetEnumerator()
+        {
+            for (int index = 0; index < Count; index++)
+                yield return this[index];
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
 
     public static ReadOnlyMemory<byte> Name(ReadOnlyMemory<byte> original) => Current.Name(original);
 

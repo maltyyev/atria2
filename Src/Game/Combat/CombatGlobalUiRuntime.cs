@@ -34,8 +34,15 @@ public sealed class CombatGlobalUiRuntime(CombatRenderSchedule schedule, BattleM
     }
     public ReadOnlyMemory<byte> NoticeText
     {
-        get; private set;
+        get
+        {
+            ReadOnlyMemory<byte> text = noticeLabels is null ? ReadOnlyMemory<byte>.Empty : noticeLabels[noticeIndex];
+            int end = text.Span.IndexOf((byte)0);
+            return end < 0 ? text : text[..end];
+        }
     }
+    private IReadOnlyList<ReadOnlyMemory<byte>>? noticeLabels;
+    private int noticeIndex;
     public uint SampledNow
     {
         get; private set;
@@ -60,9 +67,8 @@ public sealed class CombatGlobalUiRuntime(CombatRenderSchedule schedule, BattleM
             return false; //Actual4045f0/404640 upper bound leaves an existing notice unchanged.
         }
 
-        ReadOnlyMemory<byte> text = labels[index];
-        int nul = text.Span.IndexOf((byte)0);
-        NoticeText = nul < 0 ? text : text[..nul];
+        noticeLabels = labels;
+        noticeIndex = index;
         NoticeDeadline = 0;
         NoticeX = NoticeEntryX;
         NoticeY = NoticeTop;

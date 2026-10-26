@@ -11,6 +11,16 @@ public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, I
     public IReadOnlyList<string>? Choices { get; init; }
     public string[]? DisplayLines { get; init; }
     public int[]? ChoiceByRow { get; init; }
+    public string? TextKey { get; init; }
+    public string[]? ChoiceKeys { get; init; }
+
+    public DialogueRequest Translate() => this with
+    {
+        Paragraph = TextKey is null ? Paragraph : GameText.Paragraph(TextKey, Paragraph ?? ""),
+        Choices = ChoiceKeys is null ? Choices : ChoiceKeys.Select((key, index) => GameText.Paragraph(key, Choices![index])).ToArray(),
+        DisplayLines = null,
+        ChoiceByRow = null
+    };
 
     public const int LineCapacity = 100;
     public const int LineByteCapacity = 128;
@@ -85,6 +95,8 @@ public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, I
 
         return new(Scalar(0), Scalar(1), question, lines.AsReadOnly())
         {
+            TextKey = question ? null : textKey + ".text",
+            ChoiceKeys = question ? sourceLines.Select((_, i) => indexed ? $"{textKey}.choice.{i:D2}" : $"{textKey}.{i + 2}").ToArray() : null,
             Paragraph = question ? null : GameText.Paragraph(textKey + ".text", TextResourceSchema.Normalize(string.Join(" ", sourceLines.Select(line => GameText.Decode(line.Span))))),
             Choices = question ? sourceLines.Select((line, i) => GameText.Paragraph(indexed ? $"{textKey}.choice.{i:D2}" : $"{textKey}.{i + 2}", GameText.Decode(line.Span).Trim())).ToArray() : null
         };

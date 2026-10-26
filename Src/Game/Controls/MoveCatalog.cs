@@ -17,6 +17,7 @@ public sealed class MoveCatalog
     public static string Name(int character) => GameText.Get(characterKeys[character]);
     private readonly CombatInfoCharacter[,] infos = new CombatInfoCharacter[6, 5];
     private readonly IReadOnlyList<MoveDefinition>[] all = new IReadOnlyList<MoveDefinition>[6];
+    private LocalizationCatalog language = GameText.Current;
     public MoveCatalog(string root)
     {
         for (int party = 0; party < 6; party++)
@@ -37,7 +38,20 @@ public sealed class MoveCatalog
     }
 
     public CombatInfoCharacter Info(int party, int form) => infos[party, form - 1];
-    public IReadOnlyList<MoveDefinition> All(int party) => all[party];
+    public IReadOnlyList<MoveDefinition> All(int party)
+    {
+        if (!ReferenceEquals(language, GameText.Current))
+        {
+            for (int character = 0; character < all.Length; character++)
+            {
+                all[character] = Enumerable.Range(1, 5)
+                    .SelectMany(form => FromInfo(infos[character, form - 1], form))
+                    .DistinctBy(move => move.Id).ToArray();
+            }
+            language = GameText.Current;
+        }
+        return all[party];
+    }
     public static string DirectionName(int code) => code switch
     {
         1 => GameText.Get("ui.moves.downBack"),
