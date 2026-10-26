@@ -62,6 +62,22 @@ public sealed class CombatParticleMagicRuntime
             return;
         }
 
+        if (!transformed && id >= 101 && id != 999)
+        {
+            if (!magicAssets.TryGetValue(id, out var assets))
+            {
+                assets = CombatParticleMagic.Load(root, id);
+                magicAssets.Add(id, assets);
+            }
+            ActiveMagic = assets;
+        }
+
+        // Dispatched spells allocate their own particles; do not partially overwrite another live effect.
+        if (Dispatch(owner, id))
+        {
+            return;
+        }
+
         var particle = existing ?? pool.ReserveRetained();
         if (existing is not null)
         {
@@ -85,12 +101,6 @@ public sealed class CombatParticleMagicRuntime
             else
             {
                 particle.Kind = 11;
-                if (!magicAssets.TryGetValue(id, out var assets))
-                {
-                    assets = CombatParticleMagic.Load(root, id);
-                    magicAssets.Add(id, assets);
-                }
-                ActiveMagic = assets;
                 particle.ContainerAssets = ActiveMagic;
             }
         }
@@ -98,11 +108,6 @@ public sealed class CombatParticleMagicRuntime
         {
             particle.X = unchecked(particle.X - particle.CurrentSprite.Width);
             particle.SpriteX = particle.X;
-        }
-
-        if (Dispatch(owner, id))
-        {
-            return;
         }
 
         particle.Owner = owner;

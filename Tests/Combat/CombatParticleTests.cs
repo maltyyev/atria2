@@ -180,7 +180,7 @@ public static class CombatParticleTests
         Check(LegacyActorFixture.ReadInt32LittleEndian(caster.State.AsSpan(0x244, 4)) == 28100
 && LegacyActorFixture.ReadInt32LittleEndian(caster.State.AsSpan(0x248, 4)) == 48, "directbuff149 exact status code/deadline");
         spells.Apply(caster, null, 106, 0, false);
-        Check(magicPool.NextSlot == 5 && magicPool.Particles.Count(p => p.Facing != 0) == 4 && spells.ActiveMagic is not null && randomCalls == 0, "actualmagic106 reserves one slot then emits level+2 projectiles without RNG");
+        Check(magicPool.NextSlot == 4 && magicPool.Particles.Count(p => p.Facing != 0) == 4 && spells.ActiveMagic is not null && randomCalls == 0, "actualmagic106 allocates only its level+2 projectiles without RNG");
         var enemy = runtime.Actors[1];
         enemy.State.Team = 2;
         enemy.State.CanTurn = 1;
@@ -202,6 +202,7 @@ public static class CombatParticleTests
 && curse.GlobalStatus[0].Code == 15, "actualmagic116 uses one eligible-enemy RNG and shared status15");
         W(caster.State, 0x170, 0);
         Check(CombatParticleMagicRuntime.Relation(owner, caster) == 2, "invalid relation2 preserved beyond decompiler bool");
+        ParticlePoolOwnershipTests.Run(root);
         return "Combat particles: native ring/frame/sound/mirror/deadline/order, actual EFFECT/MAGIC06 resources, projectile damage gates";
     }
 
