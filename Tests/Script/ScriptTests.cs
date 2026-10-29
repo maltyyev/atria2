@@ -49,6 +49,13 @@ public static class ScriptTests
             try
             {
                 var program = ScriptProgram.Parse(name, archive.AsSpan(offset, size));
+                string filename = name.ToLowerInvariant() + ".ScR";
+                var fromFilename = ScriptProgram.Parse(filename, archive.AsSpan(offset, size));
+                Check(fromFilename.AppliedRepairs.SequenceEqual(program.AppliedRepairs)
+                    && fromFilename.Tokens.SequenceEqual(program.Tokens)
+                    && fromFilename.SourceSha256 == program.SourceSha256
+                    && fromFilename.MemberName == filename,
+                    "Filename and archive identity must apply identical repairs without rewriting caller identity: " + name);
                 programs.Add(name, program);
                 functions += program.Functions.Count;
             }
@@ -100,9 +107,12 @@ public static class ScriptTests
 
         Check(library is not null, "Library member fixture missing.");
         ExpectError(() => ScriptProgram.Parse("32_LIBRA", library!, false), "UNCLOSED_BLOCK");
+        ExpectError(() => ScriptProgram.Parse("32_libra.scr", library!, false), "UNCLOSED_BLOCK");
+        ExpectError(() => ScriptProgram.Parse("OTHER.scr", library!), "UNCLOSED_BLOCK");
         byte[] altered = (byte[])library!.Clone();
         altered[0] ^= 1;
         ExpectError(() => ScriptProgram.Parse("32_LIBRA", altered), "UNCLOSED_BLOCK");
+        ExpectError(() => ScriptProgram.Parse("32_libra.scr", altered), "UNCLOSED_BLOCK");
         var lib = programs["32_LIBRA"];
         Check(lib.LibraryRepairApplied && lib.Functions.Count == 8, "Library repair/function index mismatch.");
         Check(programs["32_SHOP"].Functions.ContainsKey("enter"), "Overlapping shop must remain loadable.");

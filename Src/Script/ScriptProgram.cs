@@ -85,11 +85,12 @@ public sealed class ScriptProgram
     ) => (MemberName, SourceSha256, LibraryRepairApplied, AppliedRepairs, Tokens, Functions, GlobalVariables, BlockEnds) = (name, hash, repair, repairs.AsReadOnly(), Array.AsReadOnly(tokens), functions, globals.AsReadOnly(), blocks);
     public static ScriptProgram Parse(string memberName, ReadOnlySpan<byte> bytes, bool applyKnownRepairs = true)
     {
+        string repairMember = Path.GetFileNameWithoutExtension(memberName);
         byte[] owned = bytes.ToArray();
         string hash = Convert.ToHexString(SHA256.HashData(owned)).ToLowerInvariant();
         bool repaired = false;
         var repairs = new List<string>();
-        if (applyKnownRepairs && memberName.Equals("02_EVE1", StringComparison.OrdinalIgnoreCase) && owned.Length == 122
+        if (applyKnownRepairs && repairMember.Equals("02_EVE1", StringComparison.OrdinalIgnoreCase) && owned.Length == 122
 && hash == "8630a2cf8fc0072daa44c7ea0d9f32f34e8434a9b0df2199a5821f9ca22ae1dc")
         {
             // Exact shipped Gatha guild lifecycle omits script_end in all four handlers.
@@ -98,7 +99,7 @@ public sealed class ScriptProgram
             repairs.Add("GATHA-GUILD-002-LIFECYCLE-END");
         }
 
-        if (applyKnownRepairs && memberName.Equals("32_LIBRA", StringComparison.OrdinalIgnoreCase) && owned.Length == 2063
+        if (applyKnownRepairs && repairMember.Equals("32_LIBRA", StringComparison.OrdinalIgnoreCase) && owned.Length == 2063
 && hash == "ed79301ba9bcdf6f8e69958436836400dac72ef1a4a26476b02ee33b61c3508a")
         {
             ";\r\n}\r\n"u8.CopyTo(owned.AsSpan(2057, 6));
@@ -106,7 +107,7 @@ public sealed class ScriptProgram
             repairs.Add("LIBRARY-001");
         }
 
-        if (applyKnownRepairs && memberName.Equals("SUBEVENT", StringComparison.OrdinalIgnoreCase) && owned.Length == 523350
+        if (applyKnownRepairs && repairMember.Equals("SUBEVENT", StringComparison.OrdinalIgnoreCase) && owned.Length == 523350
 && hash == "b6b93bbc65c1788447ac4cf996ea56518df99c0de0f5d84a76e2f66ee57e3723")
         {
             // 43c060 requires ';' after an identifier expression. Replace only the
@@ -120,7 +121,7 @@ public sealed class ScriptProgram
             repairs.Add("QUEST-063-PATCH-161-162-RU-TRANSLATION");
         }
 
-        if (applyKnownRepairs && memberName.Equals("35_BAR", StringComparison.OrdinalIgnoreCase) && owned.Length == 7842
+        if (applyKnownRepairs && repairMember.Equals("35_BAR", StringComparison.OrdinalIgnoreCase) && owned.Length == 7842
 && hash == "73f64dce39e1d4fd53762dc85cc59b075a5870f1f0407cf6b9842492e424b501")
         {
             // 43c0aa/43c6d0 seed the malformed leading && with3. The extra ')'
@@ -141,7 +142,7 @@ public sealed class ScriptProgram
             repairs.Add("VIDON-035-NATIVE-CONDITION-NORMALIZATION");
         }
 
-        if (applyKnownRepairs && memberName.Equals("5012SHRI", StringComparison.OrdinalIgnoreCase) && owned.Length == 10490
+        if (applyKnownRepairs && repairMember.Equals("5012SHRI", StringComparison.OrdinalIgnoreCase) && owned.Length == 10490
 && hash == "2e28879db63e19468eb889840490db8016d991731d8c157dbd0e595b35cf98df")
         {
             // Inferred intentional repair, not recovered corrected original behavior.

@@ -1,5 +1,16 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--library-save")
+{
+    Atria.Tests.Persistence.RuntimeSnapshotTests.Run(args[0]);
+    Console.WriteLine(Atria.Tests.Town.TigerLibraryTests.Run(args[0]));
+    foreach (string result in Atria.Tests.Script.ScriptTests.Run(args[0]))
+    {
+        Console.WriteLine(result);
+    }
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--frame-sounds")
 {
     Console.WriteLine(Atria.Tests.Combat.CombatFrameSoundTests.Run(args[0]));

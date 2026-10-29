@@ -1,11 +1,14 @@
+using Atria.Game;
 using Atria.Game.Dungeon;
 using Atria.Game.Exploration;
+using Atria.Game.Interiors;
 using Atria.Game.Persistence;
 using Atria.Game.State;
 using Atria.Game.Town;
 using Atria.Game.World;
 using Atria.Render.Codecs;
 using Atria.Resources;
+using Atria.Script;
 
 namespace Atria.Tests.Persistence;
 
@@ -247,6 +250,64 @@ internal static class RuntimeSnapshotTests
 
             Check(!SessionRuntimeCodec.Decode(new("atria.session", 1, old.ToArray())).ExactResume, "pre-autosave schema remains loadable");
         }
+
+        VerifyLibrarySnapshot(root, snapshot);
+    }
+
+    private static void VerifyLibrarySnapshot(string root, SessionRuntimeSnapshot template)
+    {
+        var townAssets = TownSceneAssets.Load(root, "32tiger.sod"u8);
+        var town = new TownController();
+        town.SetSavedSelection(4);
+        town.Enter(townAssets.Scene, townAssets.Objects, 32, 32, "32tiger.sod"u8.ToArray(), default,
+            TownCatalog.Get(32).MusicTrack, _ => { });
+        var doorway = townAssets.Scene.GetObject(town.Selection);
+        var libraryAssets = TownSceneAssets.Load(root, doorway.GetString(0).Span);
+        var interior = new InteriorController();
+        interior.Enter(GameMode.Interior, doorway, libraryAssets.Scene, _ => { });
+        interior.HandleInput(false, _ => { });
+        var stack = new ModeStack();
+        stack.StartNewGame();
+        stack.Push(GameMode.Interior);
+        var snapshot = template with
+        {
+            SavedMode = GameMode.Interior,
+            ExactResume = true,
+            Modes = stack.CaptureRuntime(),
+            Location = new(32, "32tiger.sod"u8.ToArray(), "32tiger.scr"u8.ToArray(), 0),
+            Town = town.CaptureRuntime(),
+            Interior = interior.CaptureRuntime(),
+            ScriptMember = libraryAssets.Scene.ScriptReference.ToArray(),
+            TownFile = "32tiger.sod"u8.ToArray(),
+            PreviousTown = 32
+        };
+        var liveState = new GameState { Money = 12345, Mode = GameMode.MainMenu };
+        byte[] liveStateBefore = NativeGameStateCodec.Encode(liveState);
+        var savedState = new GameState { Mode = GameMode.Interior };
+        var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng1.fnt")), true);
+        var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
+        var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
+        var loader = new SessionSnapshotLoader(root, liveState, new LegacyRandom(1), font, messages, items, _ => { });
+        byte[] source = GameResources.Read(root, "SCRIPT.000", snapshot.ScriptMember);
+        var checkpoint = new ScriptCheckpoint("32_LIBRA", "enter", Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source)), 0, GameMode.Interior, []);
+        var metadata = LegacySlotMetadata.Empty([]).WithCurrent("Library"u8, "Tiger Castle"u8, GameMode.Interior, 0, 32, 1, []);
+        var shops = LegacyShopProjection.DecodeAll(new byte[30 * 612]);
+        foreach (ScriptCheckpoint? replay in new ScriptCheckpoint?[] { null, checkpoint })
+        {
+            NativeRuntimeContext encoded = SessionRuntimeCodec.Encode(snapshot with { Script = replay });
+            var image = NativeSaveImage.Capture(savedState, GameMode.Interior, new WorldAreaStore(), shops, metadata, encoded);
+            var loaded = NativeSaveImage.Parse(image.Encode());
+            PreparedSession prepared = loader.Prepare(loaded.Context, loaded.State);
+            var restored = new InteriorController();
+            restored.RestoreRuntime(prepared.Snapshot.Interior!, prepared.InteriorAssets!.Scene);
+            if (restored.CaptureRuntime() != snapshot.Interior || prepared.Town.Selection != 4
+                || !prepared.Snapshot.ScriptMember.AsSpan().SequenceEqual("32_libra.scr"u8)
+                || !NativeGameStateCodec.Encode(liveState).AsSpan().SequenceEqual(liveStateBefore))
+            {
+                throw new InvalidOperationException("Library save preparation must restore the real interior without changing live state or saved script identity.");
+            }
+        }
+        Console.WriteLine("Library snapshot: serialized interior load, canonical checkpoint plus filename validation, controller restoration and untouched live state passed.");
     }
 
     private sealed class SnapshotMusicTransport : Atria.Audio.IMusicTransport
