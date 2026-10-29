@@ -78,10 +78,14 @@ public static class CombatAnimationFrameEffects
         }
 
         int soundIndex = frame.CharacterSoundSlot;
-        if (soundIndex != 0)
+        if (frame.UsesLegacyWarriorStrikeSound)
         {
-            // Native has nine inline DWORD slots; b30 after them is a runtime pointer.
-            if ((uint)soundIndex >= 9)
+            // The verified WARRIOR frame's invalid slot 13 read the adjacent INF guard threshold in the original.
+            playNumericSound(info.GuardFailureThreshold);
+        }
+        else if (soundIndex != 0)
+        {
+            if ((uint)soundIndex >= (uint)info.Sounds.Count)
             {
                 throw new InvalidDataException("Combat frame sound index exceeds native inline INF slots.");
             }

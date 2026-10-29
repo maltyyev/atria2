@@ -1,5 +1,11 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--frame-sounds")
+{
+    Console.WriteLine(Atria.Tests.Combat.CombatFrameSoundTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--tiger-library")
 {
     Console.WriteLine(Atria.Tests.Town.TigerLibraryTests.Run(args[0]));
@@ -375,6 +381,7 @@ Atria.Tests.Status.StatusRendererTests.Run(args[0]);
 Console.WriteLine(Atria.Tests.Combat.PartyAirCombatTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.PartySpellTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.Combat.CombatFrameSoundTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatSelectionAssetsTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatBalanceTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.State.HeroRosterTests.Run(args[0]));

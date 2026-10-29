@@ -25,6 +25,7 @@ public sealed record AnimationFrame(ushort[] Words, uint FinalDword, short Store
     public ushort HitDelay => Words[15];
     public ushort HitParticle => Words[16];
     public ushort CharacterSoundSlot => Words[17];
+    internal bool UsesLegacyWarriorStrikeSound { get; init; }
     public ushort Particle
     {
         get => Words[18]; set => Words[18] = value;
