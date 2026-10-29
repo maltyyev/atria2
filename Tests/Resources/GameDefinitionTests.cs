@@ -42,7 +42,7 @@ internal static class GameDefinitionTests
             }
         }
         Verify(values, "7D69F725766ABB41E7097B77267759BA2FC5FB4B04247EA0C3243790BAE7A946", "all class/level stat gains");
-        var party = new GameState();
+        var party = new GameState(OriginalRoster.Catalog);
         byte[] original = new byte[2800];
         for (int i = 0; i < original.Length; i++)
         {

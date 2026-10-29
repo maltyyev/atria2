@@ -35,14 +35,17 @@ public static class DialogueRaster
                 throw new InvalidDataException("Native face placement requires a loaded face sprite.");
             }
 
+            bool alpha = face.Runs.Any(run => run.Alpha.Length != 0);
+            int inset = alpha ? 0 : -64;
             SpriteRaster.Draw565(
                 face,
                 target,
                 width,
                 height,
                 stride,
-                request.Placement == 0 ? -64 : 704 - face.Width,
+                request.Placement == 0 ? inset : width - inset - face.Width,
                 480 - face.Height + frame.OpeningOffset,
+                blend: alpha ? SpriteBlend.AlphaPercent : SpriteBlend.Copy,
                 mirrored: request.Placement == 0
             );
         }

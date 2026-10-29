@@ -16,7 +16,10 @@ public static class QuestJournalTests
         Atria.Tests.Exploration.QuestMapTests.Run(root);
         static void Check(bool condition, string message)
         {
-            if (!condition) throw new InvalidOperationException("Quest journal: " + message);
+            if (!condition)
+            {
+                throw new InvalidOperationException("Quest journal: " + message);
+            }
         }
         var state = new GameState();
         var host = new ScriptStateHost(state);
@@ -24,7 +27,11 @@ public static class QuestJournalTests
         int authored = 0;
         for (int id = 1; id < QuestJournalText.OriginalEntryCount; id++)
         {
-            if (GameText.Get($"quests.{id:D3}.heading.0").Length == 0) continue;
+            if (GameText.Get($"quests.{id:D3}.heading.0").Length == 0)
+            {
+                continue;
+            }
+
             string prefix = $"quests.{id:D3}";
             string start = GameText.Get(prefix + ".start.text");
             Check(start.Length > 20, "every named entry has an authored start");
@@ -87,7 +94,8 @@ public static class QuestJournalTests
         Check(NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(old)).Journal.Entries.Count == 0, "old state without extension remains readable");
         Check(QuestJournalText.Description(old, 2) == GameText.Get("quests.002.start.text") + "\n\n" + GameText.Get("quests.002.description"), "old completed save does not invent an unrecorded intermediate stage");
         byte[] corrupt = NativeGameStateCodec.Encode(state);
-        corrupt[^5] = byte.MaxValue;
+        int journalOffset = corrupt.AsSpan().IndexOf("JRNL"u8);
+        corrupt[journalOffset + 16] = byte.MaxValue;
         try
         {
             NativeGameStateCodec.Decode(corrupt);
@@ -102,13 +110,25 @@ public static class QuestJournalTests
         void Input(StatusMenuInput input) => runtime.Input(input, state, items, default, journal, _ => { });
         Input(default);
         Input(default);
-        for (int i = 0; i < 4; i++) Input(new(NextPage: true));
+        for (int i = 0; i < 4; i++)
+        {
+            Input(new(NextPage: true));
+        }
+
         Input(new(Accept: true));
         Input(new(Accept: true));
         Check(runtime.Description.Length > 5, "full quest history exceeds one description page");
-        for (int i = 0; i < 100; i++) Input(new(NextPage: true));
+        for (int i = 0; i < 100; i++)
+        {
+            Input(new(NextPage: true));
+        }
+
         Check(runtime.DescriptionOffset == runtime.Description.Length - 5 && runtime.TextList!.SelectedId == 63, "scroll reaches final paragraph without changing selected quest");
-        for (int i = 0; i < 100; i++) Input(new(PreviousPage: true));
+        for (int i = 0; i < 100; i++)
+        {
+            Input(new(PreviousPage: true));
+        }
+
         Check(runtime.DescriptionOffset == 0, "description scroll clamps at start");
         InitialGameState.ResetRecoveredCore(state, items, messages);
         Check(state.Journal.Entries.Count == 0, "new game clears journal history");
@@ -120,8 +140,15 @@ public static class QuestJournalTests
         public int Answer { get; init; } = 1;
         public void Execute(ScriptEffect effect, GameState state)
         {
-            if (effect.Kind is ScriptEffectKind.QuestionKey or ScriptEffectKind.QuestionText) state.Globals[10] = (short)Answer;
-            if (effect.Kind is ScriptEffectKind.Battle or ScriptEffectKind.BattleWithPostAction or ScriptEffectKind.ForcedBattleWithPostAction) state.Globals[61] = 1;
+            if (effect.Kind is ScriptEffectKind.QuestionKey or ScriptEffectKind.QuestionText)
+            {
+                state.Globals[10] = (short)Answer;
+            }
+
+            if (effect.Kind is ScriptEffectKind.Battle or ScriptEffectKind.BattleWithPostAction or ScriptEffectKind.ForcedBattleWithPostAction)
+            {
+                state.Globals[61] = 1;
+            }
         }
     }
 }

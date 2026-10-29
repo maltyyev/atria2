@@ -57,6 +57,16 @@ internal static class PartyAirCombat
         {
             BanditAiDecision.Turn(a, direction, image.Animation!.CurrentSprite.Width);
         }
+        if (NecromancerCombatAssets.IsInfo(info) && Math.Abs(t.TrackingX - a.TrackingX) > NecromancerCombatAssets.AirEngagementDistance)
+        {
+            if (a.Motion != (int)CombatMotionKind.Walk || a.ActionFlags != (int)CombatActionFlags.Moving)
+            {
+                image.Animation!.BeginAutomaticMovement((int)CombatMotionKind.Walk, t.TrackingX - a.TrackingX, 0, now);
+            }
+
+            BanditAiDecision.AdvanceMovement(a, t, image.Animation!, now);
+            return true;
+        }
         for (int i = info.FirstVariation; i < info.VariationEnd; i++)
         {
             if (info.Attacks[i].Direction == (int)CombatDirection.Up && CanReach(image, target, i))
@@ -77,14 +87,29 @@ internal static class PartyAirCombat
         var a = image.State;
         var preview = new CombatActorState
         {
-            Active = a.Active, Health = a.Health, Team = a.Team, Facing = a.Facing,
-            AnchorX = a.AnchorX, AnchorY = a.AnchorY, SpriteX = a.SpriteX, SpriteY = a.SpriteY, Depth = a.Depth,
-            JumpStage = a.JumpStage, JumpOriginMotion = a.JumpOriginMotion, JumpSequenceIndex = a.JumpSequenceIndex,
-            JumpX = a.JumpX, JumpY = a.JumpY, JumpRiseTicks = a.JumpRiseTicks,
-            HorizontalVelocity = a.HorizontalVelocity, VerticalVelocity = a.VerticalVelocity,
-            MovementInterval = a.MovementInterval, MovementDeadline = a.MovementDeadline,
-            JumpFrameInterval = a.JumpFrameInterval, JumpAnimationDeadline = a.JumpAnimationDeadline,
-            Haste = a.Haste, Slow = a.Slow
+            Active = a.Active,
+            Health = a.Health,
+            Team = a.Team,
+            Facing = a.Facing,
+            AnchorX = a.AnchorX,
+            AnchorY = a.AnchorY,
+            SpriteX = a.SpriteX,
+            SpriteY = a.SpriteY,
+            Depth = a.Depth,
+            JumpStage = a.JumpStage,
+            JumpOriginMotion = a.JumpOriginMotion,
+            JumpSequenceIndex = a.JumpSequenceIndex,
+            JumpX = a.JumpX,
+            JumpY = a.JumpY,
+            JumpRiseTicks = a.JumpRiseTicks,
+            HorizontalVelocity = a.HorizontalVelocity,
+            VerticalVelocity = a.VerticalVelocity,
+            MovementInterval = a.MovementInterval,
+            MovementDeadline = a.MovementDeadline,
+            JumpFrameInterval = a.JumpFrameInterval,
+            JumpAnimationDeadline = a.JumpAnimationDeadline,
+            Haste = a.Haste,
+            Slow = a.Slow
         };
         var binding = image.Binding!;
         var cursor = new CombatAnimationCursor(preview, binding.Info, binding.Assets);
@@ -122,8 +147,12 @@ internal static class PartyAirCombat
         int firstHeight = binding.Assets.Sprites.Frames[frames[0].SpriteFrameIndex].Height;
         var preview = new CombatActorState
         {
-            Active = a.Active, Health = a.Health, Team = a.Team, Facing = a.Facing,
-            Depth = a.Depth, ActionFlags = attack.ResultFlags
+            Active = a.Active,
+            Health = a.Health,
+            Team = a.Team,
+            Facing = a.Facing,
+            Depth = a.Depth,
+            ActionFlags = attack.ResultFlags
         };
         foreach (var frame in frames)
         {

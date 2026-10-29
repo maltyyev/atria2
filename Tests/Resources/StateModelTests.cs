@@ -26,10 +26,10 @@ internal static class StateModelTests
 
             var partyImage = new byte[GameState.LegacyPartyRecordCount * PartyCodec.RecordSize];
             random.NextBytes(partyImage);
-            var party = new GameState();
+            var party = new GameState(OriginalRoster.Catalog);
             PartyCodec.Decode(partyImage, party.Party);
             Check(PartyCodec.Encode(party.Party).AsSpan().SequenceEqual(partyImage), "Party codec must retain original names, reserved bytes and signed values.");
-            var copy = new GameState();
+            var copy = new GameState(OriginalRoster.Catalog);
             PartyCodec.Copy(party.Party, copy.Party);
             copy.Party[0].Health ^= int.MinValue;
             copy.Party[0].Equipment[0] ^= int.MinValue;

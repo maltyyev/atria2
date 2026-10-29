@@ -19,6 +19,10 @@ public sealed record CombatBattleAssets(
     {
         get; init;
     }
+    public SpriteFrame? AdditionalHeroFace
+    {
+        get; init;
+    }
 
     public CombatCameraBounds CreateCamera(CombatSceneRuntime runtime, Action<int, int> translateParticles) => new(
         runtime,
@@ -67,7 +71,9 @@ public sealed record CombatBattleAssets(
             Sprite(sprites, "Number.spr"u8)
         )
         {
-            Secondary = secondary
+            Secondary = secondary,
+            AdditionalHeroFace = scene.HeroCatalog.Find("eiren_wald") >= 0
+                ? SpriteFile.Decode(File.ReadAllBytes(Path.Combine(root, "..", "interface", "EirenFaces.spr"))).Frames[2] : null
         };
     }
 

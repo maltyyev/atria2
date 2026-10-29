@@ -42,7 +42,18 @@ public sealed class CombatActorImage
     }
     public int ControlPlayer { get; internal set; } = -1;
     public int CurrentCommandIndex { get; internal set; } = -1; //native actor0 P-record pointer
-    public int InitialHealth { get; internal set; }
+    public int InitialHealth
+    {
+        get; internal set;
+    }
+    public bool IsSummon
+    {
+        get; internal set;
+    }
+    public bool IsRitualAnchor
+    {
+        get; internal set;
+    }
 }
 
 /// <summary>4128c0/412fa0 actual pointer-free actor and shared INF ownership, without claiming battle completion.</summary>
@@ -69,7 +80,14 @@ public sealed class CombatSceneRuntime
         get;
     }
     public int InitialControlRank { get; } = 3; //413930 default45acfc
-    public bool IsWeakEncounter { get; private set; }
+    public bool IsWeakEncounter
+    {
+        get; private set;
+    }
+    public CombatSummons Summons
+    {
+        get;
+    }
     public int AccumulatedAward
     {
         get; private set;
@@ -83,6 +101,7 @@ public sealed class CombatSceneRuntime
         actors = Enumerable.Range(0, scene.RuntimeActorCount).Select(_ => new CombatActorImage()).ToArray();
         Actors = Array.AsReadOnly(actors);
         TargetIndices = Enumerable.Repeat(-1, actors.Length).ToArray();
+        Summons = new(this);
         byte[] typeCache = new byte[CombatSceneBaselines.Count];
         int next = 0, markerFacing = 1;
         for (int i = 0; i < scene.Source.Count; i++)
@@ -204,7 +223,11 @@ public sealed class CombatSceneRuntime
             throw new InvalidOperationException("Combat party population is out of native setup order.");
         }
 
-        if (selection.Party.Count != Scene.HeroCatalog.Count) throw new InvalidDataException("Combat roster differs from selection.");
+        if (selection.Party.Count != Scene.HeroCatalog.Count)
+        {
+            throw new InvalidDataException("Combat roster differs from selection.");
+        }
+
         for (int party = 0; party < Scene.HeroCatalog.Count; party++)
         {
             var source = selection.Party[party];
@@ -233,6 +256,7 @@ public sealed class CombatSceneRuntime
         }
 
         partyPopulated = true;
+        Summons.Prepare(selection, LoadInfo);
     }
 
     public void BindAllAttributes(int regionIndex, int variant, uint milliseconds, Func<int> nextNativeRandom)
@@ -256,6 +280,7 @@ public sealed class CombatSceneRuntime
         }
 
         AccumulatedAward = award;
+        AuthoredEncounters.Apply(this);
         CaptureEncounterStrength();
         attributesBound = true;
     }

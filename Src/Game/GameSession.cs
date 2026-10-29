@@ -229,6 +229,12 @@ public sealed partial class GameSession : IScriptEffects
                     RunScript(scriptMember, pendingHandler);
                 }
 
+                if (state.Mode == GameMode.World && exploration is { Moving: false } && state.ScriptActive == 0
+                    && !battleActive && actions.Depth < 0 && NarrativeScenes.After(state, "WORLD", "arrival") is { } authored)
+                {
+                    RunScript(Encoding.ASCII.GetBytes(authored.Id), "run"u8);
+                }
+
                 FlushAutosave();
             }
 
@@ -913,22 +919,16 @@ public sealed partial class GameSession : IScriptEffects
 
     private void RunScript(ReadOnlySpan<byte> member, ReadOnlySpan<byte> handler, int continuation = 0, int continuationMode = 0, ScriptCheckpoint? replay = null)
     {
-        using var archive = BinderArchive.Open(Path.Combine(root, "SCRIPT.000"));
-        int index = archive.FindResource(member);
-        if (index < 0)
-        {
-            throw new InvalidDataException($"Required scenario member is missing: {Encoding.ASCII.GetString(member)} / {Encoding.ASCII.GetString(handler)}; mode={state.Mode}, town={town.TownId}.");
-        }
-
-        string name = archive.Entries[index].Name;
+        byte[] source = GameResources.Read(root, "SCRIPT.000", member);
+        string name = Path.GetFileNameWithoutExtension(Encoding.ASCII.GetString(member)).ToUpperInvariant();
         if (!programs.TryGetValue(name, out var program))
         {
-            programs.Add(name, program = ScriptProgram.Parse(name, archive.ReadMember(index)));
+            programs.Add(name, program = ScriptProgram.Parse(name, source));
         }
 
         string function = Encoding.ASCII.GetString(handler);
         Console.WriteLine($"Scenario started: {name}/{function}.");
-        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(archive.ReadMember(index)));
+        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source));
         if (replay is not null && replay.SourceHash != hash)
         {
             throw new InvalidDataException("Scenario source differs from the saved continuation.");
@@ -957,7 +957,16 @@ public sealed partial class GameSession : IScriptEffects
             activeScriptIdentity = null;
         }
 
+        if (state.Mode != GameMode.Defeat && NarrativeScenes.All.Any(scene => scene.Id == name))
+        {
+            state.NarrativeHistory.Add(name);
+        }
+
         Console.WriteLine($"Scenario returned: {name}/{function}; active={state.ScriptActive}, introFlag={state.Globals[501]}.");
+        if (state.Mode != GameMode.Defeat && NarrativeScenes.After(state, name, function) is { } scene)
+        {
+            RunScript(Encoding.ASCII.GetBytes(scene.Id), "run"u8, continuation, continuationMode);
+        }
     }
 
     public void Execute(ScriptEffect effect, GameState value)

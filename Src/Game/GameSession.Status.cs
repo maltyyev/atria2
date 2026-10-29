@@ -24,6 +24,11 @@ public sealed partial class GameSession
         var background = bitmap.ToRgb565();
         var item = SpriteFile.Decode(Read("AT2SPR.000", "item.spr"u8));
         var portraits = SpriteFile.Decode(Read("AT2SPR.000", "charinfo.spr"u8));
+        var additional = SpriteFile.Decode(File.ReadAllBytes(Path.Combine(root, "..", "interface", "EirenFaces.spr")));
+        portraits = portraits with
+        {
+            Frames = [.. portraits.Frames, additional.Frames[3]]
+        };
         var renderer = new StatusMenuRenderer(
             item,
             etc,

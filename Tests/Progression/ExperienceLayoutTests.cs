@@ -20,7 +20,7 @@ public static class ExperienceLayoutTests
         var state = new GameState();
         int[] levels = [1, 9, 10, 11, 12, 13];
         int[] experience = [0, 250, 500, 750, 1000, 1500];
-        int[] awards = [0, 250, 250, 750, 0, 1000];
+        int[] awards = [0, 250, 250, 750, 0, 1000, 0];
         ushort[] pixels = new ushort[640 * 480], expectedText = new ushort[pixels.Length];
         string output = Path.GetFullPath(Path.Combine(root, "..", "audit", "xp-0101"));
         Directory.CreateDirectory(output);
@@ -47,9 +47,15 @@ public static class ExperienceLayoutTests
                     Check(207 + font.MeasureText(label) <= 264, language + " level label leaves an eight-pixel gap");
                     font.DrawText(label, expectedText, 640, 480, 640, 207, top, 0xffe0);
                     for (int y = top; y < top + 16; y++)
-                    for (int x = 207; x < 272; x++)
-                        if (expectedText[y * 640 + x] != 0)
-                            Check(pixels[y * 640 + x] == expectedText[y * 640 + x], language + " complete level label survives bar rendering");
+                    {
+                        for (int x = 207; x < 272; x++)
+                        {
+                            if (expectedText[y * 640 + x] != 0)
+                            {
+                                Check(pixels[y * 640 + x] == expectedText[y * 640 + x], language + " complete level label survives bar rendering");
+                            }
+                        }
+                    }
 
                     CheckBar(actor, experience[actor], awards[actor]);
                 }
@@ -57,16 +63,21 @@ public static class ExperienceLayoutTests
                 UnicodeTextTests.SaveBitmap(Path.Combine(output, language + ".bmp"), pixels);
 
                 foreach (int level in Enumerable.Range(1, 13))
-                foreach (int xp in new[] { int.MinValue, -1, 0, 500, 1000, int.MaxValue })
-                foreach (int award in new[] { 0, 250, int.MaxValue })
                 {
-                    state.Party[0].Level = level;
-                    state.Party[0].Experience = xp;
-                    awards[0] = award;
-                    Array.Clear(pixels);
-                    raster.Draw(state.Heroes, awards, 0, 0, 0, pixels);
-                    CheckBar(0, xp, award);
+                    foreach (int xp in new[] { int.MinValue, -1, 0, 500, 1000, int.MaxValue })
+                    {
+                        foreach (int award in new[] { 0, 250, int.MaxValue })
+                        {
+                            state.Party[0].Level = level;
+                            state.Party[0].Experience = xp;
+                            awards[0] = award;
+                            Array.Clear(pixels);
+                            raster.Draw(state.Heroes, awards, 0, 0, 0, pixels);
+                            CheckBar(0, xp, award);
+                        }
+                    }
                 }
+
                 awards[0] = 0;
             }
         }
@@ -93,6 +104,9 @@ public static class ExperienceLayoutTests
 
     private static void Check(bool value, string message)
     {
-        if (!value) throw new InvalidOperationException(message);
+        if (!value)
+        {
+            throw new InvalidOperationException(message);
+        }
     }
 }

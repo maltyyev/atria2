@@ -31,7 +31,7 @@ public sealed class ScriptStateHost(GameState state, IScriptEffects? effects = n
     public GameState State => state;
 
     public bool SkipArguments(string name) => state.Mode == 1100
-&& name is "enter_out" or "dialogue_script" or "dialogue_script2" or "question_dialog" or "question_dialog2" or "battle_start" or "battle_start2" or "battle_start3" or "get_xp" or "dungeon_enter" or "change_chip" or "game_end";
+&& name is "enter_out" or "dialogue_text" or "journal_mark" or "recruit_hero" or "dialogue_script" or "dialogue_script2" or "question_dialog" or "question_dialog2" or "battle_start" or "battle_start2" or "battle_start3" or "get_xp" or "dungeon_enter" or "change_chip" or "game_end";
     public int Invoke(ScriptCall call)
     {
         int result = InvokeCore(call);
@@ -57,6 +57,27 @@ public sealed class ScriptStateHost(GameState state, IScriptEffects? effects = n
         QuestJournalTriggers.Observe(call, state);
         switch (call.Function)
         {
+            case "hero_present":
+                Count(1);
+                return state.HasHero(System.Text.Encoding.ASCII.GetString(Bytes(0, 128))) ? 1 : 0;
+            case "journal_mark":
+                Count(2);
+                if (!StoryQuests.Contains(Int(0)) || !Enum.IsDefined((QuestMilestones)Int(1)))
+                {
+                    throw Error("ARGUMENT_VALUE", "Invalid authored journal milestone.");
+                }
+
+                state.Journal.Record(state, Int(0), (QuestMilestones)Int(1));
+                return 0;
+            case "recruit_hero":
+                Count(1);
+                HeroRecruitment.Join(state, System.Text.Encoding.ASCII.GetString(Bytes(0, 128)));
+                return 0;
+            case "dialogue_text":
+                Count(3);
+                ValidateDialogue(false);
+                Effect(ScriptEffectKind.DialogueText);
+                return 0;
             case "set_global":
                 Count(2);
                 state.Globals[Index(0, GameState.GlobalCount)] = unchecked((short)Int(1));

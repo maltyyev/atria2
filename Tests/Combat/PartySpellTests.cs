@@ -12,15 +12,28 @@ public static class PartySpellTests
     private sealed class Effects : ICombatControlEffects
     {
         public bool GlobalEffectBusy => false;
-        public void PlaySound(int id) { }
-        public void SpawnActorParticle(int actor, int id, uint now) { }
-        public void ApplyFrameEffect(int actor, int id, int argument, uint now) { }
-        public void ShowConsumedItemNotice(int id, uint now) { }
-        public void ShowRankNotice(int rank, uint now) { }
+        public void PlaySound(int id)
+        {
+        }
+        public void SpawnActorParticle(int actor, int id, uint now)
+        {
+        }
+        public void ApplyFrameEffect(int actor, int id, int argument, uint now)
+        {
+        }
+        public void ShowConsumedItemNotice(int id, uint now)
+        {
+        }
+        public void ShowRankNotice(int rank, uint now)
+        {
+        }
     }
     private static void Check(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException("Party spells: " + message);
+        if (!condition)
+        {
+            throw new InvalidOperationException("Party spells: " + message);
+        }
     }
 
     internal static (CombatSceneRuntime Runtime, GameState State) Fixture(string root)
@@ -29,13 +42,21 @@ public static class PartySpellTests
         var state = InitialGameState.Create(ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT"))),
             LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat"))));
         runtime.BindDeclaredAnimations(0);
-        string[] names = ["ROLAND", "MIST", "SWALLOW", "BRAIUN", "EMERALD", "TIGER"];
+        string[] names = Enumerable.Range(0, state.HeroCatalog.Count).Select(i => state.HeroCatalog[i].CombatPrefix).ToArray();
         for (int i = 0; i < runtime.Actors.Count; i++)
         {
             var image = runtime.Actors[i];
             int party = i - runtime.Scene.PartyStartIndex;
-            if (party >= 0) Bind(image, root, names[party] + "5");
-            if (image.Binding is null) continue;
+            if (party >= 0)
+            {
+                Bind(image, root, names[party] + "5");
+            }
+
+            if (image.Binding is null)
+            {
+                continue;
+            }
+
             var a = image.State;
             a.Team = party >= 0 ? (byte)100 : (byte)1;
             a.Health = a.MaximumHealth = party >= 0 ? 100 : 79;
@@ -88,7 +109,11 @@ public static class PartySpellTests
         CombatStatusSlots.Insert(magic.GlobalStatus, 30, 1, 0, 9000, healer.Binding!.Info.Type, 1000);
         Check(Score(CombatSpellEffect.PartyDefense) == 0, "existing group defense is not recast");
         Array.Clear(magic.GlobalStatus);
-        foreach (var t in runtime.Actors.Where(t => t.State.Team < 100)) t.State.Health = 30;
+        foreach (var t in runtime.Actors.Where(t => t.State.Team < 100))
+        {
+            t.State.Health = 30;
+        }
+
         runtime.CaptureEncounterStrength();
         Check(runtime.IsWeakEncounter, "30% inclusive weak encounter");
         Check(Score(CombatSpellEffect.PartyDefense) == 0 && Score(CombatSpellEffect.WeakenAttack) == 0, "no defensive/debuff waste in weak fight");
@@ -115,14 +140,20 @@ public static class PartySpellTests
         // Actual fireball geometry: enemy in front, then behind, then outside its lane.
         var caster = runtime.Actors[runtime.Scene.PartyStartIndex];
         var fireball = caster.Binding!.Info.Commands.First(c => caster.Binding.Assets.Animation.Sequences[c.Animation].Frames.Any(f => f.Effect == (int)CombatSpellEffect.Fireball));
-        foreach (var t in runtime.Actors.Where(t => t.State.Team < 100)) t.State.Active = 0;
+        foreach (var t in runtime.Actors.Where(t => t.State.Team < 100))
+        {
+            t.State.Active = 0;
+        }
+
         enemy.State.Active = 1;
         enemy.State.Health = 100;
         healer.State.Health = 100;
         runtime.CaptureEncounterStrength();
         var forecast = new CombatProjectileForecast(root, runtime, hits, random);
-        enemy.State.HurtLeft = 240; enemy.State.HurtRight = 300;
-        enemy.State.HurtTop = 230; enemy.State.HurtBottom = 350;
+        enemy.State.HurtLeft = 240;
+        enemy.State.HurtRight = 300;
+        enemy.State.HurtTop = 230;
+        enemy.State.HurtBottom = 350;
         enemy.State.Depth = 350;
         ulong calls = random.Calls;
         Check(forecast.Score(caster, fireball, 1) == 1, "enemy on actual projectile path");
@@ -155,18 +186,24 @@ public static class PartySpellTests
         // Every original form/command must be recognized and safe to inspect.
         int count = 0;
         foreach (string name in new[] { "ROLAND", "MIST", "SWALLOW", "BRAIUN", "EMERALD", "TIGER" })
-        for (int form = 1; form <= 5; form++)
         {
-            Bind(caster, root, name + form);
-            caster.Animation!.BeginMotion(0, 0);
-            foreach (var command in caster.Binding!.Info.Commands.Where(c => c.Category > 0))
+            for (int form = 1; form <= 5; form++)
             {
-                foreach (var frame in caster.Binding.Assets.Animation.Sequences[command.Animation].Frames)
-                    Check(frame.Effect == 0 || Enum.IsDefined((CombatSpellEffect)frame.Effect), "known spell effect " + frame.Effect);
-                policy.Score(caster, command, 1000, out _);
-                count++;
+                Bind(caster, root, name + form);
+                caster.Animation!.BeginMotion(0, 0);
+                foreach (var command in caster.Binding!.Info.Commands.Where(c => c.Category > 0))
+                {
+                    foreach (var frame in caster.Binding.Assets.Animation.Sequences[command.Animation].Frames)
+                    {
+                        Check(frame.Effect == 0 || Enum.IsDefined((CombatSpellEffect)frame.Effect), "known spell effect " + frame.Effect);
+                    }
+
+                    policy.Score(caster, command, 1000, out _);
+                    count++;
+                }
             }
         }
+
         CheckAlliedCastCadence(root);
         CheckConcurrentCommandGuard(root);
         PartyManaSupplyTests.Run(root);
@@ -261,6 +298,3 @@ public static class PartySpellTests
         }
     }
 }
-
-
-

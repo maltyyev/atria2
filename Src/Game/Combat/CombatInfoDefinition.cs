@@ -29,6 +29,11 @@ public sealed class CombatInfoDefinition
 
     public static CombatInfoDefinition Load(string resourceRoot, ReadOnlySpan<byte> resource, Action<int>? loadNumericSound = null)
     {
+        if (NecromancerCombatAssets.IsHeroResource(resource))
+        {
+            return NecromancerCombatAssets.Info(resourceRoot, loadNumericSound);
+        }
+
         using var archive = BinderArchive.Open(Path.Combine(resourceRoot, "INF.000"));
         int index = archive.FindResource(resource);
         if (index < 0)

@@ -65,7 +65,7 @@ public static class StateTests
         Call("get_xp", 12000);
         Check(state.PendingExperience == 12000 && state.ExperiencePending == 1, "XP queues pending award.");
         ExpectError(() => Call("get_global", 1000), "STATE_INDEX");
-        ExpectError(() => Call("member_check", 10), "STATE_INDEX");
+        ExpectError(() => Call("member_check", state.Party.Length), "STATE_INDEX");
         ExpectError(() => Call("check_eventitem", 51), "STATE_INDEX");
         Check(Call("battle_start", 2) == 0 && state.PendingBattle == 2 && state.EndingResetFlag == 1 && state.BattleVariant == 0, "Plain battle queues42cdd0 transition without fabricating or invoking immediate combat.");
         ExpectError(() => Call("battle_start2", 1), "UNIMPLEMENTED_EFFECT");

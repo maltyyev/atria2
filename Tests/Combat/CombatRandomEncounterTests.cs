@@ -107,7 +107,7 @@ public static class CombatRandomEncounterTests
         {
             Check(seedCalls == 1 && entry.Seed == 1 && entry.Request.Kind == FixedEncounterKind.RandomField && entry.Request.ResourceName == "R1N01", "random entry resolves from raw inputs after entry seed");
             Check(entry.MusicTrack == 21 && random.Calls == 1 && random.State == 2745024, "random music does not consume an additional RNG draw");
-            Check(entry.Runtime.Scene.Actors.Count > 0 && entry.Runtime.Scene.PartySpawns.Count == 6 && entry.Assets.BackgroundWidth > 0, "actual random resource adapts actors, party markers and raster assets");
+            Check(entry.Runtime.Scene.Actors.Count > 0 && entry.Runtime.Scene.PartySpawns.Count == entry.Runtime.Scene.HeroCatalog.Count && entry.Assets.BackgroundWidth > 0, "actual random resource adapts actors, party markers and raster assets");
             var scene = entry.Runtime.Scene;
             int markers = 0;
             for (int i = 0; i < scene.Source.Count; i++)
@@ -118,7 +118,7 @@ public static class CombatRandomEncounterTests
                 }
             }
 
-            Check(scene.RuntimeActorCount == scene.Source.Count + 6 && scene.PartyStartIndex == scene.Source.Count
+            Check(scene.RuntimeActorCount == scene.PartyStartIndex + scene.HeroCatalog.Count && scene.PartyStartIndex == scene.Source.Count + scene.SummonSlotCount
 && scene.Actors.Count == scene.Source.Count - markers, "412a23 allocation and412bf1 marker removal preserve original party start");
             foreach (var spawn in scene.PartySpawns)
             {

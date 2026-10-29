@@ -1,0 +1,80 @@
+{
+  "sourceInfo": "45.inf",
+  "sourceAnimation": "ARCHMAGE.ANI",
+  "playerType": 1,
+  "idleSequence": 0,
+  "meleeSequence": 29,
+  "meleeDamage": 12,
+  "castSequence": 22,
+  "jumpTemplate": "MIST1",
+  "summons": {
+    "durationMilliseconds": 30000,
+    "healthPerLevel": 36,
+    "attackPerLevel": 4,
+    "defensePerLevel": 1,
+    "info": "23.inf",
+    "recoveryMilliseconds": 450,
+    "spawnSpacing": 20
+  },
+  "commands": [
+    {
+      "sequence": 30,
+      "effect": 1001,
+      "mana": 90,
+      "icon": 39,
+      "key": "eiren.spell.sentinel"
+    },
+    {
+      "sequence": 31,
+      "effect": 1002,
+      "mana": 90,
+      "icon": 40,
+      "key": "eiren.spell.guardians"
+    },
+    {
+      "sequence": 32,
+      "effect": 1003,
+      "mana": 90,
+      "icon": 41,
+      "key": "eiren.spell.servants"
+    },
+    {
+      "sequence": 33,
+      "effect": 126,
+      "mana": 70,
+      "icon": 26,
+      "key": "eiren.spell.weaken"
+    },
+    {
+      "sequence": 34,
+      "effect": 127,
+      "mana": 70,
+      "icon": 27,
+      "key": "eiren.spell.expose"
+    },
+    {
+      "sequence": 35,
+      "effect": 148,
+      "mana": 60,
+      "icon": 48,
+      "key": "eiren.spell.mend"
+    }
+  ],
+  "meleePoses": [
+    70,
+    75,
+    77,
+    76,
+    70
+  ],
+  "meleeStrikePose": 77,
+  "meleeRectangle": [
+    28,
+    14,
+    51,
+    32
+  ],
+  "meleeReaction": 3,
+  "meleePriority": 1,
+  "airEngagementDistance": 30
+}

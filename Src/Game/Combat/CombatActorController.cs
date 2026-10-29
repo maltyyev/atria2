@@ -29,7 +29,10 @@ public sealed class CombatActorController : ICombatActorActions
     private readonly Action<int> sound, rankNotice, itemNotice;
     private int leaderHeldSince;
     private uint now;
-    internal PartySpellDecision? Spells { get; set; }
+    internal PartySpellDecision? Spells
+    {
+        get; set;
+    }
     public bool CommandSelectionActive
     {
         get; private set;
@@ -39,7 +42,10 @@ public sealed class CombatActorController : ICombatActorActions
         get; private set;
     }
     public int ControlRank { get; private set; } = 3;
-    public string[][] SelectedMoves { get; }
+    public string[][] SelectedMoves
+    {
+        get;
+    }
     public bool[] SelectorOpen { get; } = new bool[2];
 
     public void SetAutomation(bool enabled)
@@ -96,6 +102,15 @@ public sealed class CombatActorController : ICombatActorActions
         now = milliseconds;
         CombatActorImage image = runtime.Actors[actorIndex];
         CombatActorState actor = image.State;
+        if (image.IsRitualAnchor)
+        {
+            if (actor.ActionState.CanStartGroundAttack && actor.Motion != (int)CombatMotionKind.Idle)
+            {
+                image.Animation!.BeginMotion((int)CombatMotionKind.Idle, milliseconds);
+            }
+
+            return;
+        }
         if (actor.ControlledBy == 0)
         {
             Automatic(actorIndex, milliseconds);

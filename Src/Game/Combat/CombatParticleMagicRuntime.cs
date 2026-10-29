@@ -49,6 +49,11 @@ public sealed class CombatParticleMagicRuntime
     public void ReleaseActiveMagic() => ActiveMagic = null; //40a820 only after40d410 reports no active entries.
     public void Apply(CombatActorImage owner, CombatParticleState? existing, int id, int argument, bool transformed)
     {
+        if (CombatSummons.IsEffect(id))
+        {
+            runtime.Summons.Cast(owner, id, now());
+            return;
+        }
         if (id is 148 or 149 or 152 or 154)
         {
             Dispatch(owner, id);

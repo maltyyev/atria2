@@ -129,7 +129,10 @@ public sealed class StatusMenuRenderer
         var menu = runtime.Menu;
         int actor = menu.SelectedActor;
         if ((uint)actor >= (uint)state.Heroes.Length)
+        {
             throw new InvalidDataException("Selected status hero is absent from the roster.");
+        }
+
         int kind = state.Heroes[actor].Class;
         if ((uint)kind >= ClassCatalog.Count)
         {
@@ -177,7 +180,7 @@ public sealed class StatusMenuRenderer
 
         ops.Add(new(StatusPrimitive.Portrait, 21, 30, state.HeroCatalog[actor].Portrait));
         Text(state.HeroCatalog[actor].Name, 68, 120, palette: 0x4cc228, w: 76);
-        Text(Message(6 + kind), 68, 156, palette: 0x4cc228, w: 76);
+        Text(state.HeroCatalog[actor].ClassNameKey is { } classKey ? GameText.Get(classKey) : Message(6 + kind), 68, 156, palette: 0x4cc228, w: 76);
         int level = state.Heroes[actor].Level;
         if (level == 13)
         {
@@ -655,7 +658,9 @@ public sealed class StatusMenuRenderer
                         throw new InvalidDataException("Status sprite frame absent.");
                     }
 
-                    SpriteRaster.Draw565(sprites.Frames[op.A], target, 640, 480, 640, op.X, op.Y, SpriteBlend.Copy);
+                    var sprite = sprites.Frames[op.A];
+                    SpriteRaster.Draw565(sprite, target, 640, 480, 640, op.X, op.Y,
+                        sprite.Runs.Any(run => run.Alpha.Length != 0) ? SpriteBlend.AlphaPercent : SpriteBlend.Copy);
                     break;
                 case StatusPrimitive.Text:
                     var font = op.Small ? small : large;

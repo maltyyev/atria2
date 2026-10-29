@@ -13,10 +13,20 @@ public sealed class GameState
     public int[] Events { get; } = new int[EventCount];
     public int[] EventStatuses { get; } = new int[EventStatusCount];
     public QuestJournal Journal { get; } = new();
+    internal HashSet<string> NarrativeHistory { get; } = new(StringComparer.Ordinal);
     // Preserve uninterpreted fields until actor/save recovery establishes their meaning.
-    public PartyMember[] Party { get; }
-    public PartyMember[] Heroes { get; }
-    public HeroCatalog HeroCatalog { get; }
+    public PartyMember[] Party
+    {
+        get;
+    }
+    public PartyMember[] Heroes
+    {
+        get;
+    }
+    public HeroCatalog HeroCatalog
+    {
+        get;
+    }
 
     public GameState(HeroCatalog? heroCatalog = null)
     {

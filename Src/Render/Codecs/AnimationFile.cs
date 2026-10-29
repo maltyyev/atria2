@@ -9,8 +9,14 @@ public sealed record AnimationFrame(ushort[] Words, uint FinalDword, short Store
     public ushort VerticalAcceleration => Words[5];
     public ushort HorizontalStep => Words[6];
     public ushort Sound => Words[7];
-    public ushort Damage => Words[8];
-    public ushort HitPriority => Words[9];
+    public ushort Damage
+    {
+        get => Words[8]; set => Words[8] = value;
+    }
+    public ushort HitPriority
+    {
+        get => Words[9]; set => Words[9] = value;
+    }
     public ushort ParticleFrameInterval => Words[10];
     public ushort LaunchDuration => Words[11];
     public ushort LaunchVelocityDecay => Words[12];
@@ -19,11 +25,23 @@ public sealed record AnimationFrame(ushort[] Words, uint FinalDword, short Store
     public ushort HitDelay => Words[15];
     public ushort HitParticle => Words[16];
     public ushort CharacterSoundSlot => Words[17];
-    public ushort Particle => Words[18];
+    public ushort Particle
+    {
+        get => Words[18]; set => Words[18] = value;
+    }
     public ushort EffectArgument => Words[19];
-    public ushort Effect => Words[20];
-    public ushort SecondaryEffect => Words[22];
-    public ushort Reaction => Words[23];
+    public ushort Effect
+    {
+        get => Words[20]; set => Words[20] = value;
+    }
+    public ushort SecondaryEffect
+    {
+        get => Words[22]; set => Words[22] = value;
+    }
+    public ushort Reaction
+    {
+        get => Words[23]; set => Words[23] = value;
+    }
     public ushort DepthTolerance => Words[24];
     public ushort EffectDuration => Words[25];
     public ushort HitPriorityAfterReaction => Words[26];
@@ -37,7 +55,10 @@ public sealed record AnimationFrame(ushort[] Words, uint FinalDword, short Store
         }
     }
 
-    public ushort SpriteFrameIndex => Words[0];
+    public ushort SpriteFrameIndex
+    {
+        get => Words[0]; set => Words[0] = value;
+    }
     public short OffsetX => unchecked((short)Words[1]);
     public short OffsetY => unchecked((short)Words[2]);
 }

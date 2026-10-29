@@ -643,6 +643,10 @@ public sealed class ScriptMachine
     } = new HashSet<string>(StringComparer.Ordinal)
     {
         "set_global",
+        "hero_present",
+        "journal_mark",
+        "recruit_hero",
+        "dialogue_text",
         "get_global",
         "set_event",
         "get_event",

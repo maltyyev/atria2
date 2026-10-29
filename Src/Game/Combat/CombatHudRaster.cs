@@ -103,7 +103,15 @@ public sealed class CombatHudRaster(CombatSceneRuntime runtime, CombatBattleAsse
         CombatActorImage image = runtime.Actors[leader];
         CombatActorState a = image.State;
         Bar(a, 0, 153, 448, target);
-        Sprite(assets.Faces, image.Binding!.Info.Type, 30, 425, target);
+        if (NecromancerCombatAssets.IsInfo(image.Binding!.Info) && assets.AdditionalHeroFace is { } portrait)
+        {
+            SpriteRaster.Draw565(portrait, target, 640, 480, 640, 30, 420, SpriteBlend.AlphaPercent);
+        }
+        else
+        {
+            Sprite(assets.Faces, image.Binding.Info.Type, 30, 425, target);
+        }
+
         ReadOnlySpan<int> equipmentX = [160, 214, 266];
         for (int i = 0; i < 3; i++)
         {

@@ -13,9 +13,12 @@ public static class TrackedQuestTests
     {
         static void Check(bool value, string message)
         {
-            if (!value) throw new InvalidOperationException("Tracked quest: " + message);
+            if (!value)
+            {
+                throw new InvalidOperationException("Tracked quest: " + message);
+            }
         }
-        var state = new GameState();
+        var state = new GameState(OriginalRoster.Catalog);
         state.Journal.Record(state, 63, QuestMilestones.Started);
         var runtime = new StatusMenuRuntime();
         var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
@@ -24,7 +27,11 @@ public static class TrackedQuestTests
         void Input(StatusMenuInput input) => runtime.Input(input, state, items, default, journal, _ => { });
         Input(default);
         Input(default);
-        for (int i = 0; i < 4; i++) Input(new(NextPage: true));
+        for (int i = 0; i < 4; i++)
+        {
+            Input(new(NextPage: true));
+        }
+
         Input(new(Accept: true));
         Input(new(Accept: true));
         Check(state.Journal.ActiveQuest(state) == null, "opening description does not silently select");
@@ -34,12 +41,12 @@ public static class TrackedQuestTests
         WorldHudRenderer.DrawActiveQuest(state, pixels);
         Check(pixels.Any(pixel => pixel != 0x1234), "HUD renders selected title");
         Check(pixels.Where((_, i) => i / 640 < 60 || i / 640 > 90).All(pixel => pixel == 0x1234), "HUD remains in strip below top panel");
-        state = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(state));
+        state = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(state), OriginalRoster.Catalog);
         Check(state.Journal.ActiveQuest(state) == 63, "selection survives save/load");
         byte[] current = NativeGameStateCodec.Encode(state);
         int extension = current.Length - (12 + state.Journal.Entries.Count * 5 + sizeof(int));
         BinaryPrimitives.WriteInt32LittleEndian(current.AsSpan(extension + sizeof(uint)), 1);
-        var previous = NativeGameStateCodec.Decode(current.AsSpan(0, current.Length - sizeof(int)));
+        var previous = NativeGameStateCodec.Decode(current.AsSpan(0, current.Length - sizeof(int)), OriginalRoster.Catalog);
         Check(previous.Journal.ActiveQuest(previous) == null && previous.Journal.Entries.ContainsKey(63), "v1 journal loads without tracking field");
         Input(new(Accept: true));
         Check(state.Journal.ActiveQuest(state) == null, "repeat confirm untracks");
@@ -54,7 +61,7 @@ public static class TrackedQuestTests
         state.Globals[905] = 1;
         state.Journal.ToggleTracking(state, 1000);
         Check(state.Journal.ActiveQuest(state) == 1000, "story quest can be tracked from old-save flags");
-        var copy = new GameState();
+        var copy = new GameState(OriginalRoster.Catalog);
         LegacySnapshotBridge.CopyRecoveredState(state, copy);
         Check(copy.Journal.ActiveQuest(copy) == 1000, "transactional load copies selection");
         state.Journal.Clear();

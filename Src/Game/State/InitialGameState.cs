@@ -15,6 +15,7 @@ public static class InitialGameState
     public static void ResetRecoveredCore(GameState state, ItemCatalog items, IReadOnlyList<ReadOnlyMemory<byte>> messages)
     {
         state.Journal.Clear();
+        state.NarrativeHistory.Clear();
         if (messages.Count < 260)
         {
             throw new InvalidDataException("TEXTmsg must contain initial names and event-item labels.");

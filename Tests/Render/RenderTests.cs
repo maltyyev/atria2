@@ -94,6 +94,16 @@ public static class RenderTests
         System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(legacyScratch.AsSpan(1), 0x001F);
         ushort legacyVisiblePixel = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(legacyScratch.AsSpan(2));
         Require(legacyVisiblePixel == 0 && pixels[0] == 0x001F, "Byte-misalignment regression changed.");
+        var alpha = synthetic with
+        {
+            Runs = [new(0, 0, 3, [0xF800, 0x001F], [50, 100])]
+        };
+        Array.Clear(pixels);
+        SpriteRaster.Draw565(alpha, pixels, 5, 1, 5, 0, 0, SpriteBlend.AlphaPercent, mirrored: true);
+        Require(pixels.SequenceEqual(new ushort[] { 0, 0x001F, 0x7800, 0, 0 }), "Authored portrait mirror retains per-pixel alpha.");
+        Array.Clear(pixels);
+        SpriteRaster.Draw565(alpha, pixels, 5, 1, 5, -1, 0, SpriteBlend.AlphaPercent, mirrored: true);
+        Require(pixels[0] == 0x001F && pixels[1] == 0x7800, "Mirrored alpha clipping preserves pixel alignment.");
         FontTests.Run(originalRoot);
         SceneRenderTests.Run(originalRoot);
         Console.WriteLine($"SPR: {files} files, {frames} frames, {alphaFiles} alpha files; bounds and blend vectors passed.");

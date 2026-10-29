@@ -7,6 +7,14 @@ namespace Atria.Game.State;
 public sealed record HeroDefinition(string Id, int StorageIndex, int Template, string CombatPrefix,
     int Portrait, string NameKey, string IntroductionKey)
 {
+    public int SummonSlots
+    {
+        get; init;
+    }
+    public string? ClassNameKey
+    {
+        get; init;
+    }
     public string Name => GameText.Get(NameKey);
     public string BattleResource(int form) => CombatPrefix + form.ToString(CultureInfo.InvariantCulture);
 }
@@ -17,7 +25,10 @@ public sealed class HeroCatalog
     public static HeroCatalog Default { get; } = Load();
     private readonly HeroDefinition[] heroes;
     public int Count => heroes.Length;
-    public int StorageCount { get; }
+    public int StorageCount
+    {
+        get;
+    }
     public HeroDefinition this[int index] => heroes[index];
 
     public HeroCatalog(IEnumerable<HeroDefinition> definitions)
@@ -32,7 +43,9 @@ public sealed class HeroCatalog
         using var initial = GameData.Open("InitialParty");
         int templateCount = initial.RootElement.GetProperty("Members").GetArrayLength();
         if (!heroes.Take(templateCount).Select(hero => hero.StorageIndex).SequenceEqual(Enumerable.Range(0, templateCount)))
+        {
             throw new InvalidDataException("Original hero indexes must retain their scenario identities.");
+        }
 
         StorageCount = checked(GameState.LegacyPartyRecordCount + heroes.Count(hero => hero.StorageIndex >= GameState.LegacyPartyRecordCount));
         foreach (var hero in heroes)
@@ -41,6 +54,7 @@ public sealed class HeroCatalog
                 || string.IsNullOrWhiteSpace(hero.NameKey)
                 || string.IsNullOrWhiteSpace(hero.IntroductionKey) || string.IsNullOrWhiteSpace(hero.CombatPrefix)
                 || (uint)hero.StorageIndex >= (uint)StorageCount || hero.Portrait < 0 || (uint)hero.Template >= templateCount
+                || hero.SummonSlots < 0 || hero.SummonSlots > 3
                 || hero.StorageIndex >= templateCount && hero.StorageIndex < GameState.LegacyPartyRecordCount)
             {
                 throw new InvalidDataException($"Invalid hero definition or reserved escort slot: {hero.Id}");
@@ -52,7 +66,10 @@ public sealed class HeroCatalog
 
     public void InitializeAdditionalHeroes(GameState state)
     {
-        if (StorageCount == GameState.LegacyPartyRecordCount) return;
+        if (StorageCount == GameState.LegacyPartyRecordCount)
+        {
+            return;
+        }
 
         var templates = Enumerable.Range(0, GameState.LegacyPartyRecordCount).Select(_ => new PartyMember()).ToArray();
         InitialPartyDefinition.Apply(templates);
@@ -75,5 +92,9 @@ public sealed class HeroCatalog
         row.GetProperty("id").GetString()!, row.GetProperty("storageIndex").GetInt32(),
         row.GetProperty("template").GetInt32(), row.GetProperty("combatPrefix").GetString()!,
         row.GetProperty("portrait").GetInt32(), row.GetProperty("nameKey").GetString()!,
-        row.GetProperty("introductionKey").GetString()!);
+        row.GetProperty("introductionKey").GetString()!)
+    {
+        SummonSlots = row.TryGetProperty("summonSlots", out var slots) ? slots.GetInt32() : 0,
+        ClassNameKey = row.TryGetProperty("classNameKey", out var key) ? key.GetString() : null
+    };
 }

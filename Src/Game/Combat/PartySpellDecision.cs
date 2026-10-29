@@ -71,6 +71,18 @@ internal sealed class PartySpellDecision
     {
         facing = image.State.Facing;
         var frames = image.Binding!.Assets.Animation.Sequences[command.Animation].Frames;
+        var summon = frames.FirstOrDefault(frame => CombatSummons.IsEffect(frame.Effect));
+        if (summon is not null)
+        {
+            if (!runtime.Summons.CanSummon(image) || runtime.IsWeakEncounter)
+            {
+                return 0;
+            }
+
+            int enemies = runtime.Actors.Count(IsEnemy);
+            int desiredCount = Math.Clamp(enemies, 1, 3);
+            return summon.Effect == CombatSummons.FirstEffect + desiredCount - 1 ? 220 : 0;
+        }
         if (frames.Any(f => CombatProjectileForecast.IsProjectile(f.Effect)))
         {
             int current = forecast.Score(image, command, facing);
@@ -135,7 +147,7 @@ internal sealed class PartySpellDecision
 
         return effect switch
         {
-            CombatSpellEffect.Resurrection => runtime.Actors.Any(t => t.Binding is not null && t.State.Team >= 100
+            CombatSpellEffect.Resurrection => runtime.Actors.Any(t => !t.IsSummon && t.Binding is not null && t.State.Team >= 100
                 && t.State.SpawnCondition == 0 && t.State.Health <= 0) ? 1_200 : 0,
             CombatSpellEffect.PartyHeal or CombatSpellEffect.FullHeal => Allies(NeedsHealing) ? 1_000 : 0,
             CombatSpellEffect.SelfHeal => NeedsHealing(owner) ? 1_000 : 0,

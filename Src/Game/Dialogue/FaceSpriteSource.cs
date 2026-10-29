@@ -10,13 +10,20 @@ public sealed class FaceSpriteSource : IDisposable
     private readonly SafeFileHandle handle;
     private readonly byte[] header;
     private readonly (long Offset, int Length)[] frames;
-    public int Count => frames.Length;
+    private readonly SpriteFile? additional;
+    public int Count => frames.Length + (additional is null ? 0 : 2);
 
     public FaceSpriteSource(string path)
     {
         handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.RandomAccess);
         try
         {
+            string authored = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(path)!, "..", "interface", "EirenFaces.spr"));
+            if (File.Exists(authored))
+            {
+                additional = SpriteFile.Decode(File.ReadAllBytes(authored));
+            }
+
             header = new byte[86];
             Read(header, 0);
             if (!header.AsSpan().StartsWith("JAMIE SYSTEM SPRITE TOOL"u8))
@@ -64,6 +71,11 @@ public sealed class FaceSpriteSource : IDisposable
 
     public SpriteFrame Load(int face)
     {
+        if (additional is not null && face >= frames.Length && face < Count)
+        {
+            return additional.Frames[face - frames.Length];
+        }
+
         if ((uint)face >= (uint)frames.Length)
         {
             throw new InvalidDataException("Face identifier is outside the original sprite.");

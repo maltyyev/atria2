@@ -14,16 +14,26 @@ public static class HeroRosterTests
     private sealed class Effects : ICombatControlEffects
     {
         public bool GlobalEffectBusy => false;
-        public void ShowRankNotice(int rank, uint milliseconds) { }
-        public void PlaySound(int id) { }
-        public void SpawnActorParticle(int actor, int id, uint now) { }
-        public void ApplyFrameEffect(int actor, int id, int argument, uint now) { }
-        public void ShowConsumedItemNotice(int id, uint now) { }
+        public void ShowRankNotice(int rank, uint milliseconds)
+        {
+        }
+        public void PlaySound(int id)
+        {
+        }
+        public void SpawnActorParticle(int actor, int id, uint now)
+        {
+        }
+        public void ApplyFrameEffect(int actor, int id, int argument, uint now)
+        {
+        }
+        public void ShowConsumedItemNotice(int id, uint now)
+        {
+        }
     }
 
     public static string Run(string root)
     {
-        var originals = Enumerable.Range(0, HeroCatalog.Default.Count).Select(i => HeroCatalog.Default[i]).ToArray();
+        var originals = Enumerable.Range(0, OriginalRoster.Catalog.Count).Select(i => OriginalRoster.Catalog[i]).ToArray();
         const int total = 20;
         var catalog = new HeroCatalog(originals.Concat(Enumerable.Range(originals.Length, total - originals.Length)
             .Select(i => originals[1] with { Id = $"test-{i}", StorageIndex = GameState.LegacyPartyRecordCount + i - originals.Length })));
@@ -73,7 +83,11 @@ public static class HeroRosterTests
         Check(escorts.AsSpan().SequenceEqual(PartyCodec.Encode(state.Party.Skip(originals.Length).Take(GameState.LegacyPartyRecordCount - originals.Length).ToArray())), "battle/inventory leave escort records unchanged");
 
         var xp = new ExperienceAllocationSession(PartyCodec.Encode(state.Party), total * 100, catalog);
-        for (int i = 1; i < total; i++) xp.ApplyInput(action => action == ExperienceInput.NextMember);
+        for (int i = 1; i < total; i++)
+        {
+            xp.ApplyInput(action => action == ExperienceInput.NextMember);
+        }
+
         Check(xp.SelectedMember == total - 1 && xp.Allocation.ToArray().All(award => award == 100), "all heroes receive XP and last is navigable");
         xp.ApplyInput(action => action == ExperienceInput.CycleMode);
         Check(xp.Allocation.ToArray().Sum() == total * 100, "waterfill preserves XP for expanded roster");
@@ -120,7 +134,7 @@ public static class HeroRosterTests
         Check(remapped.Heroes[remapped.HeroCatalog.Find("test-19")].Experience == 4321, "save identifies additions by stable ID");
         Reject(() => NativeGameStateCodec.Decode(saved), "missing hero definitions reject instead of losing data");
         Reject(() => NativeGameStateCodec.Decode(saved.AsSpan(0, saved.Length - 1), catalog), "truncated additions reject");
-        var old = InitialGameState.Create(items, messages);
+        var old = InitialGameState.Create(items, messages, OriginalRoster.Catalog);
         restored = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(old), catalog);
         Check(restored.Heroes.Skip(originals.Length).All(hero => hero.MemberStatus == 0 && hero.Level > 0), "old saves initialize unrecruited additions");
         Check(PartyCodec.Encode(old.Party).AsSpan().SequenceEqual(PartyCodec.Encode(restored.Party.Take(GameState.LegacyPartyRecordCount).ToArray())), "old save records stay byte-identical");
@@ -136,12 +150,18 @@ public static class HeroRosterTests
 
     private static void Check(bool condition, string message)
     {
-        if (!condition) throw new InvalidOperationException(message);
+        if (!condition)
+        {
+            throw new InvalidOperationException(message);
+        }
     }
 
     private static void Reject(Action action, string message)
     {
-        try { action(); }
+        try
+        {
+            action();
+        }
         catch (InvalidDataException) { return; }
         throw new InvalidOperationException(message);
     }

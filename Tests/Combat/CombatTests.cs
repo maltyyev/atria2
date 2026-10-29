@@ -29,7 +29,7 @@ public static class CombatTests
         Invoke("battle_start3", 200);
         Check(recorder.Calls == 2 && recorder.Kind == ScriptEffectKind.ForcedBattleWithPostAction && state.BattleVariant == 1 && state.Globals[71] == 123, "Forced callback changes only native type WORD.");
         var scripted = new CombatEntryRequest(FixedEncounterKind.Scripted, 2);
-        var scene = CombatSceneDefinition.Load(resourceRoot, scripted);
+        var scene = CombatSceneDefinition.Load(resourceRoot, scripted, OriginalRoster.Catalog);
         Check(scripted.ResourceName == "SBATTL02"
 && scripted.SelectMusic(() => throw new InvalidOperationException("Scripted battle must not consume RNG.")) == 24, "Fixed scripted resource/music without random consumption.");
         int calls = 0;
@@ -39,7 +39,7 @@ public static class CombatTests
             return 32767;
         }) == 23 && calls == 1, "Forced music consumes exactly one native random sample.");
         Check(scene.Source.BackgroundReference.Span.SequenceEqual("PUB01.bmp"u8) && scene.Header73 == 330 && scene.Header77 == 440, "Intro scene identity/header coordinates.");
-        Check(scene.Source.Count == 8 && scene.Actors.Count == 7 && scene.RuntimeActorCount == 14 && scene.PartyStartIndex == 8, "Marker removal retains native unused actor slot7 and party tail8..13.");
+        Check(scene.Source.Count == 8 && scene.Actors.Count == 7 && scene.RuntimeActorCount == scene.PartyStartIndex + scene.HeroCatalog.Count && scene.PartyStartIndex == 8 + scene.SummonSlotCount, "Marker removal retains native unused actor slot7 and party tail8..13.");
         int[] x = [249, 283, 653, 671, 427, 493, 562];
         int[] y = [265, 348, 271, 344, 78, 80, 77];
         for (int i = 0; i < 7; i++)
@@ -427,7 +427,7 @@ public static class CombatTests
     private static void CheckFrameController(string root, CombatSceneDefinition scene)
     {
         var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
-        var state = InitialGameState.Create(items, LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat"))));
+        var state = InitialGameState.Create(items, LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat"))), scene.HeroCatalog);
         var runtime = new CombatSceneRuntime(root, scene, 0);
         runtime.BindDeclaredAnimations(0);
         var selection = new CombatPartySelection(state, 1);
@@ -556,7 +556,7 @@ public static class CombatTests
         }
 
         var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
-        var state = InitialGameState.Create(items, LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat"))));
+        var state = InitialGameState.Create(items, LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat"))), scene.HeroCatalog);
         var selection = new CombatPartySelection(state, 1);
         var selectionSounds = new List<string>();
         selection.ApplyInput((_, input) => input is CombatSelectionInput.Toggle or CombatSelectionInput.Finish, selectionSounds.Add);

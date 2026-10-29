@@ -55,9 +55,9 @@ public static class CombatOutcomeTests
         {
             Money = 100
         };
-        var actors = Enumerable.Range(0, 8).Select(_ => new CombatActorImage()).ToArray();
+        var actors = Enumerable.Range(0, 2 + state.Heroes.Length).Select(_ => new CombatActorImage()).ToArray();
         void Put(int actor, int offset, int value) => LegacyActorFixture.WriteInt32LittleEndian(actors[actor].State.AsSpan(offset, 4), value);
-        for (int party = 0; party < 6; party++)
+        for (int party = 0; party < state.Heroes.Length; party++)
         {
             state.SetPartyInt(party, 252, 6);
             state.SetPartyInt(party, 72, 999);

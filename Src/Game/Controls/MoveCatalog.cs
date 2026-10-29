@@ -13,7 +13,10 @@ public sealed record MoveDefinition(string Id, string Name, int Direction, int R
 
 public sealed class MoveCatalog
 {
-    public HeroCatalog Heroes { get; }
+    public HeroCatalog Heroes
+    {
+        get;
+    }
     private readonly CombatInfoCharacter[,] infos;
     private readonly IReadOnlyList<MoveDefinition>[] all;
     private LocalizationCatalog language = GameText.Current;
@@ -107,7 +110,10 @@ public sealed class MoveCatalog
         {
             var command = info.Commands[i];
             int cat = command.Category, icon = command.Icon;
-            moves.Add(new(cat == 0 ? $"s:{i}" : $"p:{icon}", cat == 0 ? GameText.Format("ui.moves.strategy", ("strategy", i + 1)) : GameText.Format("ui.moves.ability", ("ability", icon)), 0, 0, icon - 1, cat, command.ManaCost, form));
+            string name = cat == 0 ? GameText.Format("ui.moves.strategy", ("strategy", i + 1))
+                : NecromancerCombatAssets.IsInfo(info) && NecromancerCombatAssets.Spells.FirstOrDefault(spell => spell.Icon == icon) is { } spell
+                    ? GameText.Get(spell.NameKey) : GameText.Format("ui.moves.ability", ("ability", icon));
+            moves.Add(new(cat == 0 ? $"s:{i}" : $"p:{icon}", name, 0, 0, icon - 1, cat, command.ManaCost, form));
         }
 
         return moves;

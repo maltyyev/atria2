@@ -52,7 +52,7 @@ foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Localizati
     }
 }
 
-foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Interface') -Recurse -File -Filter '*.bmp') {
+foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Interface') -Recurse -File | Where-Object Extension -In '.bmp', '.spr') {
     $relative = [IO.Path]::GetRelativePath((Join-Path $assetRoot 'Interface'), $source.FullName)
     $deployed = Join-Path $PackageRoot ('assets/interface/' + $relative)
     if (!(Test-Path -LiteralPath $deployed -PathType Leaf) -or

@@ -168,6 +168,8 @@ public static class LegacySnapshotBridge
         source.Events.CopyTo(target.Events, 0);
         source.EventStatuses.CopyTo(target.EventStatuses, 0);
         target.Journal.CopyFrom(source.Journal);
+        target.NarrativeHistory.Clear();
+        target.NarrativeHistory.UnionWith(source.NarrativeHistory);
         source.Globals.CopyTo(target.Globals, 0);
     }
 }

@@ -7,12 +7,30 @@ namespace Atria.Game.Dialogue;
 /// <summary>Owned raw display bytes. CP949 lookup keys never pass through display decoding.</summary>
 public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, IReadOnlyList<ReadOnlyMemory<byte>> Lines)
 {
-    public string? Paragraph { get; init; }
-    public IReadOnlyList<string>? Choices { get; init; }
-    public string[]? DisplayLines { get; init; }
-    public int[]? ChoiceByRow { get; init; }
-    public string? TextKey { get; init; }
-    public string[]? ChoiceKeys { get; init; }
+    public string? Paragraph
+    {
+        get; init;
+    }
+    public IReadOnlyList<string>? Choices
+    {
+        get; init;
+    }
+    public string[]? DisplayLines
+    {
+        get; init;
+    }
+    public int[]? ChoiceByRow
+    {
+        get; init;
+    }
+    public string? TextKey
+    {
+        get; init;
+    }
+    public string[]? ChoiceKeys
+    {
+        get; init;
+    }
 
     public DialogueRequest Translate() => this with
     {
@@ -41,6 +59,20 @@ public sealed record DialogueRequest(int Placement, int Face, bool IsQuestion, I
 
         int Scalar(int i) => call.Arguments[i].IsString ? throw Error("ARGUMENT_TYPE", "Expected dialogue scalar.") : call.Arguments[i].Integer;
         ReadOnlyMemory<byte> Bytes(int i) => call.Arguments[i].IsString ? call.Arguments[i].Bytes : throw Error("ARGUMENT_TYPE", "Expected raw dialogue bytes.");
+        if (call.Function == "dialogue_text")
+        {
+            if (call.Arguments.Count != 3)
+            {
+                throw Error("ARGUMENT_COUNT", "Localized dialogue requires a resource key.");
+            }
+
+            string key = System.Text.Encoding.ASCII.GetString(Bytes(2).Span);
+            return new(Scalar(0), Scalar(1), false, [])
+            {
+                TextKey = key,
+                Paragraph = GameText.Get(key)
+            };
+        }
         var lines = new List<ReadOnlyMemory<byte>>();
         byte[] bank = new byte[LineCapacity * LineByteCapacity];
         int lineCount = 0;

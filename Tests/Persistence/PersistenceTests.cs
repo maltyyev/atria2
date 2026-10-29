@@ -38,7 +38,7 @@ public static class PersistenceTests
         Put(278291 + 199 * 4, 161);
         BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(281093, 2), -32768);
         var image = LegacySaveImage.Parse(data);
-        var state = image.ReadRecoveredState();
+        var state = image.ReadRecoveredState(OriginalRoster.Catalog);
         Check(state.Mode == 300 && state.WorldIndex == 2 && state.WorldX == 4 && state.WorldY == 6, "Native mode/world offsets.");
         Check(state.Money == 0x12345678 && state.InitializedPartyCount == 6, "Low-byte XOR and adjacent packed integer.");
         Check(state.Year == 1450 && state.Month == 3 && state.Day == 14, "EOF slot-summary date offsets.");
@@ -65,9 +65,9 @@ public static class PersistenceTests
         }
 
         data[237] ^= 0xff;
-        Check(image.ReadRecoveredState().WorldIndex == 2, "Input ownership.");
+        Check(image.ReadRecoveredState(OriginalRoster.Catalog).WorldIndex == 2, "Input ownership.");
         output[237] ^= 0xff;
-        Check(image.ReadRecoveredState().WorldIndex == 2, "Output ownership.");
+        Check(image.ReadRecoveredState(OriginalRoster.Catalog).WorldIndex == 2, "Output ownership.");
         ExpectInvalid(() => LegacySaveImage.Parse(new byte[288670]));
         ExpectInvalid(() => LegacySaveImage.Parse(new byte[288672]));
         var corrupt = image.Encode();

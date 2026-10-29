@@ -16,12 +16,12 @@ public static class Quest63RecoveryTests
         {
             byte[] blank = new byte[LegacySaveImage.Size];
             "ATRIA-II SAVE FILE (c)Jamie system development\0"u8.CopyTo(blank);
-            var loaded = LegacySaveImage.Parse(LegacySaveImage.Parse(blank).WithRecoveredState(value).Encode()).ReadRecoveredState();
+            var loaded = LegacySaveImage.Parse(LegacySaveImage.Parse(blank).WithRecoveredState(value).Encode()).ReadRecoveredState(OriginalRoster.Catalog);
             Check(loaded.Globals[901] == value.Globals[901] && new[] { 63, 161, 162 }.All(i => loaded.EventStatuses[i] == value.EventStatuses[i]), "checkpoint retains quest stage and allthree eventstates through recovered legacy layout");
             return loaded;
         }
 
-        var state = new GameState();
+        var state = new GameState(OriginalRoster.Catalog);
         var effects = new Outcomes(1, 1);
         var machine = new ScriptMachine(program, new ScriptStateHost(state, effects));
         machine.Invoke("sub_063");
@@ -58,14 +58,14 @@ public static class Quest63RecoveryTests
         }
         )
         {
-            var skipped = new GameState();
+            var skipped = new GameState(OriginalRoster.Catalog);
             skipped.Globals[901] = (short)stage;
             var fixture = new Outcomes();
             new ScriptMachine(program, new ScriptStateHost(skipped, fixture)).Invoke("suba_162");
             Check(fixture.Battles.Count == 0 && fixture.Dialogues == 0, "162 exact guard excludes unrelated stage");
         }
 
-        var lost = new GameState();
+        var lost = new GameState(OriginalRoster.Catalog);
         lost.Globals[901] = 1;
         lost.EventStatuses[63] = lost.EventStatuses[161] = lost.EventStatuses[162] = 1;
         var losses = new Outcomes(0, 0);
@@ -74,7 +74,7 @@ public static class Quest63RecoveryTests
         Check(lost.Globals[901] == 2 && lost.EventStatuses[63] == 1, "authentic patch advances stage before loss154; no rollback invented");
         loseMachine.Invoke("suba_162");
         Check(lost.Globals[901] == 3 && lost.EventStatuses[63] == 1 && lost.EventStatuses[161] == 1 && lost.EventStatuses[162] == 1, "loss155 does not complete quest; prebattle stage3 remains native behavior");
-        var declined = new GameState();
+        var declined = new GameState(OriginalRoster.Catalog);
         var decline = new Outcomes()
         {
             Accept = false
@@ -93,7 +93,7 @@ public static class Quest63RecoveryTests
         )
         {
             var scene = CombatSceneDefinition.Load(root, new(FixedEncounterKind.Forced, id));
-            Check(scene.Source.Count == 16 && scene.Actors.Count == 15 && scene.PartySpawns.Count == 6, "supplied quest battle has real15 enemies and party marker");
+            Check(scene.Source.Count == 16 && scene.Actors.Count == 15 && scene.PartySpawns.Count == scene.HeroCatalog.Count, "supplied quest battle has real15 enemies and party marker");
             Check(backgrounds.FindResource(scene.Source.BackgroundReference.Span) >= 0, "supplied quest battle background exists");
             int[] types = scene.Actors.Select(a => a.Type).ToArray();
             Check(id == 154 ? types.SequenceEqual(new[] { 26, 31, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 30, 30 }) : types.SequenceEqual(Enumerable.Repeat(18, 14).Append(38)), "recovered encounter matches original actor declarations");

@@ -59,16 +59,31 @@ public sealed class QuestMapIndex
                     {
                         exits.Add(new(point, next - 1));
                     }
-                    if (!member.EndsWith(".sod", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!member.EndsWith(".sod", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     int index = scenes.FindResource(Encoding.ASCII.GetBytes(member));
-                    if (index < 0) continue;
+                    if (index < 0)
+                    {
+                        continue;
+                    }
+
                     byte[] bytes = scenes.ReadMember(index);
-                    if (!SodV2.HasV2Signature(bytes)) continue;
+                    if (!SodV2.HasV2Signature(bytes))
+                    {
+                        continue;
+                    }
+
                     var sod = SodV2.Parse(bytes);
                     for (int i = 0; i < sod.Count; i++)
                     {
                         var item = sod.GetObject(i);
-                        if (item.GetInteger(OfferEnabledField) != 0) offers.Add(new(point, item.GetInteger(OfferVariantField), item.GetInteger(OfferFirstField), item.GetInteger(OfferLastField)));
+                        if (item.GetInteger(OfferEnabledField) != 0)
+                        {
+                            offers.Add(new(point, item.GetInteger(OfferVariantField), item.GetInteger(OfferFirstField), item.GetInteger(OfferLastField)));
+                        }
                     }
                 }
             }
@@ -77,7 +92,11 @@ public sealed class QuestMapIndex
 
     public QuestMapPoint? Objective(GameState state)
     {
-        if (state.Journal.ActiveQuest(state) is not { } id) return null;
+        if (state.Journal.ActiveQuest(state) is not { } id)
+        {
+            return null;
+        }
+
         var progress = state.Journal.Progress(state, id);
         if (id < QuestJournal.OriginalEntryCount && progress.HasFlag(QuestMilestones.ObjectiveReached))
         {
@@ -85,19 +104,44 @@ public sealed class QuestMapIndex
         }
         foreach (var target in targets)
         {
-            if (target.Quest != id || !progress.HasFlag(target.Phase)) continue;
-            if (target.Event is { } eventId) return EventTarget(state, eventId, target.At);
+            if (target.Quest != id || !progress.HasFlag(target.Phase))
+            {
+                continue;
+            }
+
+            if (target.Event is { } eventId)
+            {
+                return EventTarget(state, eventId, target.At);
+            }
+
+            if (target.At is { } at)
+            {
+                return at;
+            }
+
             string name = (target.Scene ?? target.AreaFunction)!.ToUpperInvariant();
             return Unique(tiles.Where(tile => tile.Scene == name).Select(tile => tile.Point));
         }
-        if (!nativeObjectives.Contains(id)) return null;
+        if (!nativeObjectives.Contains(id))
+        {
+            return null;
+        }
+
         return EventTarget(state, id) ?? Unique(offers.Where(offer => offer.Variant == 2 && id >= offer.First && id <= offer.Last).Select(offer => offer.Point));
     }
 
     public QuestMapPoint? Marker(GameState state, int currentArea)
     {
-        if (Objective(state) is not { } target) return null;
-        if (target.Area == currentArea) return target;
+        if (Objective(state) is not { } target)
+        {
+            return null;
+        }
+
+        if (target.Area == currentArea)
+        {
+            return target;
+        }
+
         var visited = new HashSet<int> { currentArea };
         var queue = new Queue<(int Area, QuestMapPoint? FirstExit)>();
         queue.Enqueue((currentArea, null));
@@ -105,9 +149,17 @@ public sealed class QuestMapIndex
         {
             foreach (var exit in exits.Where(exit => exit.Point.Area == step.Area))
             {
-                if (!visited.Add(exit.Destination)) continue;
+                if (!visited.Add(exit.Destination))
+                {
+                    continue;
+                }
+
                 var first = step.FirstExit ?? exit.Point;
-                if (exit.Destination == target.Area) return first;
+                if (exit.Destination == target.Area)
+                {
+                    return first;
+                }
+
                 queue.Enqueue((exit.Destination, first));
             }
         }

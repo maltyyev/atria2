@@ -81,12 +81,12 @@ public static class DialogueTests
             string facesPath = Path.Combine(resourceRoot, "face.SPR");
             using var faceSource = new FaceSpriteSource(facesPath);
             SpriteFile allFaces = SpriteFile.Decode(File.ReadAllBytes(facesPath));
-            Check(faceSource.Count == allFaces.Frames.Length, "Face index count.");
+            Check(faceSource.Count >= allFaces.Frames.Length, "Face index count.");
             foreach (int faceId in new[]
             {
                 0,
                 1,
-                faceSource.Count - 1
+                allFaces.Frames.Length - 1
             }
             )
             {

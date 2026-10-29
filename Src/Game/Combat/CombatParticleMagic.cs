@@ -16,7 +16,7 @@ public static class CombatParticleMagic
         foreach (var actor in actors)
         {
             CombatActorState fields = actor.State;
-            if (fields.Health >= 1 || actor.Binding is not { } binding || fields.Team != team)
+            if (actor.IsSummon || fields.Health >= 1 || actor.Binding is not { } binding || fields.Team != team)
             {
                 continue;
             }

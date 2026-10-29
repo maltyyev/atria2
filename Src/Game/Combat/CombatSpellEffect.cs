@@ -12,5 +12,5 @@ internal enum CombatSpellEffect
     CurePoison = 143, Exorcism = 144, PartyHeal = 145, Judgment = 146,
     SelfHeal = 148, Guard = 149, Energy = 150, Attack = 152,
     EnergyCharge = 153, Berserk = 154, HolyMissile = 155, PartyDefense = 156,
-    FullHeal = 157, ChargedEnergy = 158
+    FullHeal = 157, ChargedEnergy = 158, RaiseUndead = 165, RaiseAllies = 166
 }

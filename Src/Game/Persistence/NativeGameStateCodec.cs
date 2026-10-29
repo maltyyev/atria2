@@ -10,6 +10,8 @@ public static class NativeGameStateCodec
     private const int JournalVersion = 2;
     private const uint HeroesExtension = 0x4f524548; // HERO: stable identities, separate from legacy escort records.
     private const int HeroesVersion = 1;
+    private const uint NarrativeExtension = 0x4e454353; // SCEN: completed authored scenes, independent of original event slots.
+    private const int NarrativeVersion = 1;
     public const int MaxBytes = 300000;
     public static byte[] Encode(GameState s)
     {
@@ -89,6 +91,21 @@ public static class NativeGameStateCodec
                 writer.Write(PartyCodec.EncodeMember(s.Heroes[index]));
             }
         }
+        if (s.NarrativeHistory.Count != 0)
+        {
+            writer.Write(NarrativeExtension);
+            writer.Write(NarrativeVersion);
+            writer.Write(s.NarrativeHistory.Count);
+            foreach (string id in s.NarrativeHistory.Order(StringComparer.Ordinal))
+            {
+                if (!NarrativeScenes.All.Any(scene => scene.Id == id))
+                {
+                    throw new InvalidDataException($"Unknown completed scene: {id}");
+                }
+
+                WriteBytes(writer, System.Text.Encoding.ASCII.GetBytes(id), 8);
+            }
+        }
         writer.Flush();
         if (stream.Length > MaxBytes)
         {
@@ -154,20 +171,52 @@ public static class NativeGameStateCodec
             {
                 uint signature = reader.ReadUInt32();
                 int version = reader.ReadInt32();
-                if (!extensions.Add(signature)) throw new InvalidDataException("Duplicate native state extension.");
+                if (!extensions.Add(signature))
+                {
+                    throw new InvalidDataException("Duplicate native state extension.");
+                }
+
+                if (signature == NarrativeExtension)
+                {
+                    int sceneCount = reader.ReadInt32();
+                    if (version != NarrativeVersion || sceneCount < 0 || sceneCount > NarrativeScenes.All.Count)
+                    {
+                        throw new InvalidDataException("Invalid narrative history header.");
+                    }
+
+                    for (int i = 0; i < sceneCount; i++)
+                    {
+                        string id = System.Text.Encoding.ASCII.GetString(ReadBytes(reader, 8));
+                        if (!NarrativeScenes.All.Any(scene => scene.Id == id) || !s.NarrativeHistory.Add(id))
+                        {
+                            throw new InvalidDataException("Unknown or duplicate completed scene.");
+                        }
+                    }
+                    continue;
+                }
                 if (signature == HeroesExtension)
                 {
-                    if (version != HeroesVersion) throw new InvalidDataException("Unknown hero save version.");
+                    if (version != HeroesVersion)
+                    {
+                        throw new InvalidDataException("Unknown hero save version.");
+                    }
+
                     int countHeroes = reader.ReadInt32();
                     if (countHeroes < 0 || countHeroes > (stream.Length - stream.Position) / PartyCodec.RecordSize)
+                    {
                         throw new InvalidDataException("Truncated hero records.");
+                    }
+
                     var ids = new HashSet<string>(StringComparer.Ordinal);
                     for (int i = 0; i < countHeroes; i++)
                     {
                         string id = System.Text.Encoding.UTF8.GetString(ReadBytes(reader, 128));
                         int index = s.HeroCatalog.Find(id);
                         if (!ids.Add(id) || index < 0 || s.HeroCatalog[index].StorageIndex < GameState.LegacyPartyRecordCount)
+                        {
                             throw new InvalidDataException($"Unknown or duplicate saved hero: {id}");
+                        }
+
                         PartyCodec.DecodeMember(ReadExact(reader, PartyCodec.RecordSize), s.Heroes[index]);
                     }
                     continue;
@@ -177,9 +226,20 @@ public static class NativeGameStateCodec
                     throw new InvalidDataException("Unknown native journal extension.");
                 }
                 int entries = reader.ReadInt32();
-                if ((uint)entries > QuestJournal.MaximumEntries) throw new InvalidDataException("Saved journal entry count exceeds capacity.");
-                for (int i = 0; i < entries; i++) s.Journal.Restore(reader.ReadInt32(), (QuestMilestones)reader.ReadByte());
-                if (version >= 2) s.Journal.RestoreTracking(reader.ReadInt32());
+                if ((uint)entries > QuestJournal.MaximumEntries)
+                {
+                    throw new InvalidDataException("Saved journal entry count exceeds capacity.");
+                }
+
+                for (int i = 0; i < entries; i++)
+                {
+                    s.Journal.Restore(reader.ReadInt32(), (QuestMilestones)reader.ReadByte());
+                }
+
+                if (version >= 2)
+                {
+                    s.Journal.RestoreTracking(reader.ReadInt32());
+                }
             }
             if (stream.Position != stream.Length)
             {

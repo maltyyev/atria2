@@ -1,10 +1,10 @@
-using Atria.Localization;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using Atria.Game.Interiors;
 using Atria.Game.Persistence;
 using Atria.Game.State;
 using Atria.Game.World;
+using Atria.Localization;
 using Atria.Render.Codecs;
 using Atria.Resources;
 
@@ -83,7 +83,7 @@ public static class PersistenceRuntimeTests
         var shops = LegacyShopProjection.DecodeAll(changedBytes);
         var overlay = LegacyShopProjection.Overlay(LegacyShopProjection.EncodePrefix(shops), baseline);
         Check(overlay[12].Item(1, 1) == 333 && overlay[12].Item(1, 2) == 222 && overlay[29].Quantity(0, 0) == 7, "7560-byte boundary includes secondID ofshop12group1 but not thirdID orshop29");
-        var state = new GameState
+        var state = new GameState(OriginalRoster.Catalog)
         {
             Mode = 220,
             ModeStackDepth = 5,
@@ -124,7 +124,8 @@ public static class PersistenceRuntimeTests
         // Independently add a real People record to the version1 binary schema, not through an inaccessible test-only setter.
         using (var peopleStream = new MemoryStream())
         {
-            peopleStream.Write(rawState.AsSpan(0, rawState.Length - 4));
+            int peopleOffset = rawState.Length - 4;
+            peopleStream.Write(rawState.AsSpan(0, peopleOffset));
             using (var writer = new BinaryWriter(peopleStream, System.Text.Encoding.UTF8, true))
             {
                 writer.Write(1);
@@ -141,7 +142,8 @@ public static class PersistenceRuntimeTests
                 }
             }
 
-            state = NativeGameStateCodec.Decode(peopleStream.ToArray());
+            peopleStream.Write(rawState.AsSpan(peopleOffset + 4));
+            state = NativeGameStateCodec.Decode(peopleStream.ToArray(), OriginalRoster.Catalog);
         }
 
         var areas = new WorldAreaStore();
@@ -171,7 +173,7 @@ public static class PersistenceRuntimeTests
         var context = new NativeRuntimeContext("fixture-session", 1, new byte[] { 1, 2, 3 });
         var image = NativeSaveImage.Capture(state, 300, areas, shops, metadata, context, legacy);
         byte[] encoded = image.Encode();
-        var decoded = NativeSaveImage.Parse(encoded);
+        var decoded = NativeSaveImage.Parse(encoded, OriginalRoster.Catalog);
         Check(decoded.State.Mode == 300 && decoded.Shops[29].Quantity(0, 0) == 42 && decoded.Shops[12].Item(1, 2) == 444, "native envelope retains all30shops beyond legacy prefix");
         Check(decoded.State.PendingExperience == 17 && decoded.State.PendingBattle == 2 && decoded.State.DungeonFogDirty == 1
 && decoded.State.PendingDungeonMap.AsSpan().SequenceEqual("dungeon.amf"u8) && decoded.State.People.Count == 1 && decoded.State.People[0].Handler.Span.SequenceEqual("talk"u8), "native pending flags/resource refs/People retained");

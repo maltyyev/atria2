@@ -1,8 +1,8 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
-using Atria.Resources;
 using Atria.Game.State;
+using Atria.Resources;
 
 namespace Atria.Game.Combat;
 
@@ -69,9 +69,13 @@ public sealed class CombatSceneDefinition
     {
         get;
     }
-    public int RuntimeActorCount => checked(Source.Count + HeroCatalog.Count);
-    public int PartyStartIndex => Source.Count;
-    public HeroCatalog HeroCatalog { get; }
+    public int SummonSlotCount => Enumerable.Range(0, HeroCatalog.Count).Sum(index => HeroCatalog[index].SummonSlots);
+    public int RuntimeActorCount => checked(PartyStartIndex + HeroCatalog.Count);
+    public int PartyStartIndex => Source.Count + SummonSlotCount;
+    public HeroCatalog HeroCatalog
+    {
+        get;
+    }
     public int Header73
     {
         get;
@@ -142,6 +146,11 @@ public sealed class CombatSceneDefinition
 
     public static CombatSceneDefinition Load(string resourceRoot, CombatEntryRequest request, HeroCatalog? heroCatalog = null)
     {
+        if (AuthoredEncounters.Read(resourceRoot, request.ResourceName) is { } authored)
+        {
+            return new(request, authored, heroCatalog);
+        }
+
         using var archive = BinderArchive.Open(Path.Combine(resourceRoot, "SOD.000"));
         int index = archive.FindResource(Encoding.ASCII.GetBytes(request.ResourceName));
         if (index < 0)

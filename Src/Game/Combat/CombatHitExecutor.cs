@@ -107,7 +107,7 @@ public sealed class CombatHitExecutor
         {
             CombatActorImage image = runtime.Actors[i];
             CombatActorState fields = image.State;
-            if (fields.Rank <= 0 || fields.Health <= 0 || fields.HasDeathEffect != 0)
+            if (image.IsSummon || fields.Rank <= 0 || fields.Health <= 0 || fields.HasDeathEffect != 0)
             {
                 continue;
             }

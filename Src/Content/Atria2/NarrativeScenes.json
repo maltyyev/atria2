@@ -1,0 +1,210 @@
+[
+  {
+    "id": "NAR0001",
+    "afterMember": "43SALIN",
+    "afterFunction": "enter",
+    "conditions": {
+      "events": [
+        [
+          441,
+          1
+        ]
+      ],
+      "all": [
+        "roland"
+      ],
+      "quests": [
+        [
+          1020,
+          0
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.missing.text\");\n  dialogue_text(0,1,\"eiren.promise.text\");\n  journal_mark(1020,1);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0002",
+    "afterMember": "WORLD",
+    "afterFunction": "arrival",
+    "conditions": {
+      "world": [
+        6,
+        4,
+        7
+      ],
+      "quests": [
+        [
+          1020,
+          1
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.storehouse.text\");\n  dialogue_text(1,157,\"eiren.threat.text\");\n  dialogue_text(0,1,\"eiren.refuse.text\");\n  battle_start3(900);\n  dialogue_text(-1,-1,\"eiren.rescue.text\");\n  journal_mark(1020,2);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0003",
+    "afterMember": "43SALIN",
+    "afterFunction": "enter",
+    "conditions": {
+      "quests": [
+        [
+          1020,
+          3
+        ],
+        [
+          1021,
+          0
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.scholar.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.investigate.text\");}\n  journal_mark(1020,4);\n  journal_mark(1021,1);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0004",
+    "afterMember": "44CORE",
+    "afterFunction": "pre_enter",
+    "conditions": {
+      "quests": [
+        [
+          1021,
+          1
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.archive.text\");\n  battle_start3(901);\n  dialogue_text(-1,-1,\"eiren.diary.text\");\n  journal_mark(1021,16);\n  battle_start3(902);\n  dialogue_text(-1,-1,\"eiren.oath.text\");\n  journal_mark(1021,2);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0005",
+    "afterMember": "43SALIN",
+    "afterFunction": "enter",
+    "conditions": {
+      "quests": [
+        [
+          1021,
+          19
+        ],
+        [
+          1022,
+          0
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.assessment.text\");\n  journal_mark(1021,4);\n  journal_mark(1022,1);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0006",
+    "afterMember": "45ROOST",
+    "afterFunction": "pre_enter",
+    "conditions": {
+      "quests": [
+        [
+          1022,
+          1
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.thread.text\");\n  journal_mark(1022,16);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0007",
+    "afterMember": "46SAGE",
+    "afterFunction": "pre_enter",
+    "conditions": {
+      "all": [
+        "mist"
+      ],
+      "quests": [
+        [
+          1022,
+          17
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.hermit.text\");\n  battle_start3(903);\n  dialogue_text(0,3,\"eiren.preparation.text\");\n  dialogue_text(-1,-1,\"eiren.ossuaryRoute.text\");\n  journal_mark(1022,2);\n  journal_mark(1022,4);\n  journal_mark(1023,1);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0008",
+    "afterMember": "44CORE",
+    "afterFunction": "pre_enter",
+    "conditions": {
+      "all": [
+        "roland",
+        "mist"
+      ],
+      "none": [
+        "eiren_wald"
+      ],
+      "quests": [
+        [
+          1023,
+          1
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.anchors.text\");\n  dialogue_text(1,157,\"eiren.command.text\");\n  battle_start3(904);\n  journal_mark(1023,2);\n  dialogue_text(0,3,\"eiren.broken.text\");\n  battle_start3(905);\n  dialogue_text(0,3,\"eiren.unbind1.text\");\n  dialogue_text(1,157,\"eiren.unbind2.text\");\n  dialogue_text(0,3,\"eiren.unbind3.text\");\n  dialogue_text(-1,-1,\"eiren.unbind4.text\");\n  dialogue_text(1,158,\"eiren.free1.text\");\n  dialogue_text(0,1,\"eiren.free2.text\");\n  dialogue_text(1,158,\"eiren.free3.text\");\n  dialogue_text(0,3,\"eiren.free4.text\");\n  dialogue_text(1,158,\"eiren.free5.text\");\n  dialogue_text(0,1,\"eiren.free6.text\");\n  dialogue_text(1,158,\"eiren.free7.text\");\n  recruit_hero(\"eiren_wald\");\n  journal_mark(1023,4);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0009",
+    "afterMember": "43_ACADE",
+    "afterFunction": "aaron_talk",
+    "conditions": {
+      "all": [
+        "eiren_wald"
+      ],
+      "quests": [
+        [
+          1023,
+          7
+        ]
+      ]
+    },
+    "source": "run(){\n dialogue_text(1,158,\"eiren.apology.text\");\n dialogue_text(-1,-1,\"eiren.colleague.text\");\n script_end();\n}"
+  },
+  {
+    "id": "NAR0010",
+    "afterMember": "46_ENOX",
+    "afterFunction": "enox_talk",
+    "conditions": {
+      "all": [
+        "eiren_wald"
+      ],
+      "quests": [
+        [
+          1023,
+          7
+        ]
+      ],
+      "globals": [
+        [
+          637,
+          2
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(0,158,\"eiren.knowledge.text\");\n  if(hero_present(\"emerald\")){dialogue_text(0,158,\"eiren.emerald.text\");}\n  dialogue_text(0,158,\"eiren.ahura.text\");\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0011",
+    "afterMember": "GROUND7",
+    "afterFunction": "gnd_chg12",
+    "conditions": {
+      "all": [
+        "roland",
+        "eiren_wald"
+      ],
+      "quests": [
+        [
+          1023,
+          7
+        ]
+      ],
+      "globals": [
+        [
+          937,
+          1
+        ]
+      ]
+    },
+    "source": "run(){\n dialogue_text(0,1,\"eiren.islandQuestion.text\");\n dialogue_text(1,158,\"eiren.islandAnswer.text\");\n script_end();\n}"
+  }
+]

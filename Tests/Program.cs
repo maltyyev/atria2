@@ -1,5 +1,11 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--necromancer")
+{
+    Console.WriteLine(Atria.Tests.Combat.NecromancerTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--hero-roster")
 {
     Console.WriteLine(Atria.Tests.State.HeroRosterTests.Run(args[0]));
@@ -10,7 +16,7 @@ if (args.Length == 2 && args[1] == "--hero-roster")
 if (args.Length == 2 && args[1] == "--combat-balance")
 {
     Console.WriteLine(Atria.Tests.Combat.CombatBalanceTests.Run(args[0]));
-Console.WriteLine(Atria.Tests.State.HeroRosterTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.State.HeroRosterTests.Run(args[0]));
     Console.WriteLine(Atria.Tests.Combat.PartySpellTests.Run(args[0]));
     return;
 }
@@ -372,3 +378,5 @@ Console.WriteLine(Atria.Tests.Combat.CombatOutcomeTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.ProjectileReactionTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatParticleTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Dungeon.DungeonTests.Run(args[0]));
+
+Console.WriteLine(Atria.Tests.Combat.NecromancerTests.Run(args[0]));

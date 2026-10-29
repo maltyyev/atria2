@@ -40,9 +40,9 @@ public static class SpriteRaster
             throw new ArgumentException("Clip is outside destination.");
         }
 
-        if (mirrored && blend == SpriteBlend.AlphaPercent)
+        if (mirrored && blend == SpriteBlend.AlphaPercent && preserveLegacyClipping)
         {
-            throw new NotSupportedException("A mirrored alpha-pair raster contract has not been recovered.");
+            throw new NotSupportedException("Legacy mirrored alpha clipping has no recovered contract.");
         }
 
         foreach (var run in frame.Runs)

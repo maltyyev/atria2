@@ -8,6 +8,11 @@ public sealed record CombatAnimationAssets(AnimationFile Animation, SpriteFile S
 {
     public static CombatAnimationAssets Load(string resourceRoot, ReadOnlySpan<byte> animationName)
     {
+        if (animationName.SequenceEqual("EIREN.ANI"u8))
+        {
+            return NecromancerCombatAssets.Animation(resourceRoot);
+        }
+
         using var animations = BinderArchive.Open(Path.Combine(resourceRoot, "ANI.000"));
         int animationIndex = animations.FindResource(animationName);
         if (animationIndex < 0)

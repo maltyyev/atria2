@@ -61,6 +61,12 @@ public static class CombatManualControl
         }
 
         var command = info.Commands[index];
+        if (image.Binding.Assets.Animation.Sequences[command.Animation].Frames.Any(frame => CombatSummons.IsEffect(frame.Effect))
+            && !runtime.Summons.CanSummon(image))
+        {
+            return;
+        }
+
         int cost = command.ManaCost, mp = actor.Mana;
         if (mp < cost)
         {

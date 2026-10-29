@@ -234,6 +234,69 @@
       "quest": 111,
       "phase": "started",
       "scene": "38yungbi"
+    },
+    {
+      "quest": 1020,
+      "phase": "objectiveReached",
+      "at": [
+        6,
+        3,
+        8
+      ]
+    },
+    {
+      "quest": 1020,
+      "phase": "started",
+      "at": [
+        6,
+        4,
+        7
+      ]
+    },
+    {
+      "quest": 1021,
+      "phase": "objectiveReached",
+      "at": [
+        6,
+        3,
+        8
+      ]
+    },
+    {
+      "quest": 1021,
+      "phase": "started",
+      "at": [
+        6,
+        4,
+        5
+      ]
+    },
+    {
+      "quest": 1022,
+      "phase": "leadFound",
+      "at": [
+        6,
+        8,
+        4
+      ]
+    },
+    {
+      "quest": 1022,
+      "phase": "started",
+      "at": [
+        6,
+        6,
+        6
+      ]
+    },
+    {
+      "quest": 1023,
+      "phase": "started",
+      "at": [
+        6,
+        4,
+        5
+      ]
     }
   ]
 }

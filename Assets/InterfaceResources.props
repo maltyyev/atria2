@@ -1,5 +1,6 @@
 <Project>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)Interface/**/*.bmp" Link="assets/interface/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)Interface/**/*.spr" Link="assets/interface/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
