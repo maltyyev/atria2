@@ -79,7 +79,7 @@ public sealed class CombatFrameRuntime
     public CombatFrameResult Step(uint milliseconds, bool returnOnNoFriendly)
     {
         this.milliseconds = milliseconds;
-        runtime.Summons.Update(milliseconds);
+        runtime.Summons.RemoveDead();
         int friendly = 0, enemies = 0, pending = 0, allied = 0;
         bool spawned = false;
         bool waveManaRestored = false;

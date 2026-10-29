@@ -123,7 +123,8 @@ public static class TownTests
             }
         }
 
-        return "Town traces passed (real scene load, ordered inputs, entry guard, pre-enter/out gates, cursor/effects, encounter, three object destinations).";
+        _ = TigerLibraryTests.Run(root);
+        return "Town traces passed (real scene load, ordered inputs, entry guard, pre-enter/out gates, cursor/effects, encounter, three object destinations, Tiger library entry).";
     }
 
     private static void Check(bool condition, string message)

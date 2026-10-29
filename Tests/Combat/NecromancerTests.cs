@@ -166,7 +166,7 @@ public static class NecromancerTests
             for (int count = 1; count <= 3; count++)
             {
                 uint now = (uint)(count * 40_000);
-                runtime.Summons.Update(now);
+                runtime.Summons.RemoveDead();
                 runtime.Summons.Cast(caster, CombatSummons.FirstEffect + count - 1, now);
                 var servants = runtime.Actors.Where(actor => actor.IsSummon && actor.State.Active != 0).ToArray();
                 Check(servants.Length == count && servants.All(actor => actor.State.MaximumHealth == 288 / count), "summon choice and 1.5x HP budget");
@@ -177,11 +177,17 @@ public static class NecromancerTests
                 caster.State.CommandScroll = 0;
                 CombatManualControl.ExecuteCommand(runtime, caster, state, now, false, _ => { }, _ => { }, _ => { });
                 Check(caster.State.Mana == mana, "occupied summon group does not consume mana");
-                runtime.Summons.Update(now + 29_999);
-                Check(servants.All(actor => actor.State.Active != 0), "lifetime has not elapsed early");
-                runtime.Summons.Update(now + 30_000);
-                Check(servants.All(actor => actor.State.Active == 0), "logical-time expiry");
-                Check(CombatParticleMagic.Resurrect(runtime.Actors, caster, 0) == 0, "expired servants cannot be resurrected");
+                servants[0].State.Health = 0;
+                runtime.Summons.RemoveDead();
+                Check(servants[0].State.Active == 0 && servants.Skip(1).All(actor => actor.State.Active != 0), "only killed servants disappear");
+                Check(runtime.Summons.CanSummon(caster) == (count == 1), "surviving servants still prevent another group");
+                foreach (var servant in servants)
+                {
+                    servant.State.Health = 0;
+                }
+                runtime.Summons.RemoveDead();
+                Check(runtime.Summons.CanSummon(caster), "all servants dead frees the group");
+                Check(CombatParticleMagic.Resurrect(runtime.Actors, caster, 0) == 0, "dead servants cannot be resurrected");
             }
             for (uint now = 200_000; now < 205_000; now += 10)
             {
@@ -200,7 +206,7 @@ public static class NecromancerTests
         }
         NecromancerPresentationTests.Run(root, state);
         NecromancerExecutionTests.Run(root);
-        return "Necromancer PASS: four staged quests/reload, generic membership, recruitment, RU/BE, portraits, six encounters, three summon choices and expiry.";
+        return "Necromancer PASS: four staged quests/reload, generic membership, recruitment, RU/BE, portraits, six encounters, three summon choices and death-only cleanup.";
     }
     private static void Check(bool value, string message)
     {

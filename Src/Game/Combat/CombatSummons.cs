@@ -3,18 +3,12 @@ using Atria.Resources;
 
 namespace Atria.Game.Combat;
 
-/// <summary>One finite group per summoner; reserved actors keep all combat index banks stable.</summary>
+/// <summary>One living group per summoner; reserved actors keep all combat index banks stable.</summary>
 public sealed class CombatSummons(CombatSceneRuntime runtime)
 {
     public const int FirstEffect = 1001;
     public const int LastEffect = 1003;
-    private sealed record Group(int Owner, int[] Slots)
-    {
-        public uint Expires
-        {
-            get; set;
-        }
-    }
+    private sealed record Group(int Owner, int[] Slots);
     private readonly List<Group> groups = [];
     private double medianLevel;
     private static readonly byte[] emptyActor = new byte[CombatActorCodec.ImageSize];
@@ -78,7 +72,6 @@ public sealed class CombatSummons(CombatSceneRuntime runtime)
         }
 
         var config = NecromancerCombatAssets.SummonDefinition;
-        group.Expires = unchecked(now + config.GetProperty("durationMilliseconds").GetUInt32());
         for (int i = 0; i < count; i++)
         {
             int slot = group.Slots[i];
@@ -108,16 +101,14 @@ public sealed class CombatSummons(CombatSceneRuntime runtime)
         }
     }
 
-    public void Update(uint now)
+    public void RemoveDead()
     {
         foreach (var group in groups)
         {
-            var owner = runtime.Actors[group.Owner].State;
-            bool expired = unchecked((int)(now - group.Expires)) >= 0 || owner.Active == 0 || owner.Health <= 0;
             foreach (int slot in group.Slots)
             {
                 var actor = runtime.Actors[slot].State;
-                if (!expired && actor.Health > 0)
+                if (actor.Health > 0)
                 {
                     continue;
                 }

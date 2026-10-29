@@ -79,12 +79,24 @@ internal static class NecromancerExecutionTests
             string capture = Path.GetFullPath(Path.Combine(root, "..", "audit", "necromancer-0150"));
             Directory.CreateDirectory(capture);
             UnicodeTextTests.SaveBitmap(Path.Combine(capture, $"servants-{count}.bmp"), execution.CachedFrame.ToArray());
+            for (uint now = 15_010; now <= 65_000; now += 10)
+            {
+                Step(execution, now);
+            }
+            Check(servants.All(image => image.State.Active != 0 && image.State.Health > 0), "real combat keeps servants alive beyond the former thirty-second lifetime");
             caster.State.Health = 0;
-            runtime.Summons.Update(15_001);
-            Check(servants.All(image => image.State.Active == 0), "owner death dismisses the whole group");
+            runtime.Summons.RemoveDead();
+            Check(servants.All(image => image.State.Active != 0), "owner death does not dismiss living servants");
             caster.State.Health = caster.State.MaximumHealth;
-            runtime.Summons.Cast(caster, CombatSummons.FirstEffect, 16_000);
-            Check(runtime.Actors.Count(image => image.IsSummon && image.State.Active != 0) == 1, "a fresh group reuses slots after owner revival");
+            runtime.Summons.Cast(caster, CombatSummons.FirstEffect, 66_000);
+            Check(runtime.Actors.Count(image => image.IsSummon && image.State.Active != 0) == count, "owner revival cannot replace surviving servants");
+            foreach (var servant in servants)
+            {
+                servant.State.Health = 0;
+            }
+            runtime.Summons.RemoveDead();
+            runtime.Summons.Cast(caster, CombatSummons.FirstEffect, 67_000);
+            Check(runtime.Actors.Count(image => image.IsSummon && image.State.Active != 0) == 1, "a fresh group reuses slots after the previous group dies");
         }
 
         CheckAiAndWaves(root);

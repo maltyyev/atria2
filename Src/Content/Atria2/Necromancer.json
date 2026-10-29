@@ -8,7 +8,6 @@
   "castSequence": 22,
   "jumpTemplate": "MIST1",
   "summons": {
-    "durationMilliseconds": 30000,
     "healthPerLevel": 36,
     "attackPerLevel": 4,
     "defensePerLevel": 1,

@@ -1,5 +1,22 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--tiger-library")
+{
+    Console.WriteLine(Atria.Tests.Town.TigerLibraryTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Interiors.GeographerTests.Run(args[0]));
+    foreach (string result in Atria.Tests.Script.ScriptTests.Run(args[0]))
+    {
+        Console.WriteLine(result);
+    }
+    return;
+}
+
+if (args.Length is 2 or 3 && args[1] == "--selection-assets")
+{
+    Console.WriteLine(Atria.Tests.Combat.CombatSelectionAssetsTests.Run(args[0], args.Length == 3 ? args[2] : null));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--necromancer")
 {
     Console.WriteLine(Atria.Tests.Combat.NecromancerTests.Run(args[0]));
@@ -358,6 +375,7 @@ Atria.Tests.Status.StatusRendererTests.Run(args[0]);
 Console.WriteLine(Atria.Tests.Combat.PartyAirCombatTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.PartySpellTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.Combat.CombatSelectionAssetsTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatBalanceTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.State.HeroRosterTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatSlowDurationTests.Run(args[0]));

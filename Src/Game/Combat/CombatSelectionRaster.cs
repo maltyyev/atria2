@@ -22,9 +22,16 @@ public sealed record CombatSelectionAssets(SpriteFile Etc, SpriteFile Player, Bi
             return SpriteFile.Decode(archive.ReadMember(index));
         }
 
+        const int FreedCompanionPortrait = 3;
+        var portraits = Read("PLAYER"u8);
+        var companion = SpriteFile.Decode(File.ReadAllBytes(Path.Combine(root, "..", "interface", "EirenFaces.spr")));
+        portraits = portraits with
+        {
+            Frames = [.. portraits.Frames, companion.Frames[FreedCompanionPortrait]]
+        };
         return new(
             Read("ETC"u8),
-            Read("PLAYER"u8),
+            portraits,
             BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG1.FNT")), true),
             GameText.Messages(LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(root, "BATTLE.DAT"))), "battle")
         );
@@ -45,7 +52,7 @@ public sealed class CombatSelectionRaster(CombatSelectionAssets assets)
     public void Draw(CombatPartySelection selection, Span<ushort> target)
     {
         if (target.Length != 640 * 480 || assets.Font.Width != 8 || assets.Font.Height != 16 || assets.Labels.Count < 42
-|| Enumerable.Range(0, selection.HeroCatalog.Count).Any(i => selection.HeroCatalog[i].Portrait >= assets.Player.Frames.Length))
+            || Enumerable.Range(0, selection.HeroCatalog.Count).Any(i => selection.HeroCatalog[i].Portrait >= assets.Player.Frames.Length))
         {
             throw new ArgumentException("Incomplete native prebattle UI state/assets.");
         }
@@ -76,14 +83,15 @@ public sealed class CombatSelectionRaster(CombatSelectionAssets assets)
 
         if (selection.Party.Count > CombatPartySelection.VisibleRows)
         {
-            string range = $"{selection.FirstVisible + 1}–{Math.Min(selection.Party.Count, selection.FirstVisible + CombatPartySelection.VisibleRows)} / {selection.Party.Count}";
+            string range = $"{selection.FirstVisible + 1}â€“{Math.Min(selection.Party.Count, selection.FirstVisible + CombatPartySelection.VisibleRows)} / {selection.Party.Count}";
             assets.Font.DrawText(range, target, 640, 480, 640, 129, 254, NativeUiPalette.Normal[23]);
         }
 
         for (int player = 0; player < selection.PlayerCount; player++)
         {
             SpriteFrame portrait = assets.Player.Frames[selection.HeroCatalog[selection.Leaders[player]].Portrait];
-            SpriteRaster.Draw565(portrait, target, 640, 480, 640, 356 + player * 128 - (portrait.Width >> 1), 255 - portrait.Height, SpriteBlend.Copy);
+            SpriteRaster.Draw565(portrait, target, 640, 480, 640, 356 + player * 128 - (portrait.Width >> 1), 255 - portrait.Height,
+                portrait.Runs.Any(run => run.Alpha.Length != 0) ? SpriteBlend.AlphaPercent : SpriteBlend.Copy);
         }
 
         Panel(100, 270, 12, 0, target);

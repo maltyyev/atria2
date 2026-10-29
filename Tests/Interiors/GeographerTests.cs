@@ -37,7 +37,7 @@ public static class GeographerTests
         Check(ReferenceEquals(TownSceneRepairs.Normalize("03_EVE1", truncated), truncated), "length gate");
         foreach (var entry in scenes.Entries)
         {
-            if (entry.Name == "03_EVE1")
+            if (entry.Name is "03_EVE1" or "32TIGER")
             {
                 continue;
             }
