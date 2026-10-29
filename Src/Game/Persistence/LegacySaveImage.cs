@@ -38,9 +38,9 @@ public sealed class LegacySaveImage
     private void Put32(int offset, int value) => BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(offset, 4), value);
     /// <summary>Creates a detached storage projection, not an activated playable context.
     /// Unserialized transient fields remain zero; resource/context reconstruction is still required.</summary>
-    public GameState ReadRecoveredState()
+    public GameState ReadRecoveredState(HeroCatalog? heroCatalog = null)
     {
-        var state = new GameState
+        var state = new GameState(heroCatalog)
         {
             Mode = I32(233),
             WorldIndex = I32(237),
@@ -57,7 +57,8 @@ public sealed class LegacySaveImage
             Day = I32(288663),
             DayCounterStorage = I32(288667)
         };
-        PartyCodec.Decode(bytes.AsSpan(361, 2800), state.Party);
+        state.HeroCatalog.InitializeAdditionalHeroes(state);
+        PartyCodec.Decode(bytes.AsSpan(361, 2800), state.Party.Take(GameState.LegacyPartyRecordCount).ToArray());
         bytes.AsSpan(4761, 3774).CopyTo(state.QuestItemRecords);
         ReadInts(3161, state.OwnedItems);
         ReadInts(3961, state.AvailableItems);
@@ -76,6 +77,8 @@ public sealed class LegacySaveImage
     public LegacySaveImage WithRecoveredState(GameState state)
     {
         ArgumentNullException.ThrowIfNull(state);
+        if (state.Party.Length > GameState.LegacyPartyRecordCount)
+            throw new InvalidOperationException("Additional heroes require the native save format; legacy export would lose them.");
         var image = new LegacySaveImage(Encode());
         image.Put32(233, state.Mode);
         image.Put32(237, state.WorldIndex);

@@ -1,4 +1,5 @@
 using Atria.Resources;
+using Atria.Game.State;
 
 namespace Atria.Game.Controls;
 
@@ -67,7 +68,13 @@ public sealed class PlayerControls
     public string Preset { get; set; } = "Modern";
     public InputBinding[][] Bindings { get; } = Enumerable.Range(0, (int)GameAction.Count).Select(_ => new InputBinding[3]).ToArray();
     public Dictionary<string, InputBinding[]> Direct { get; } = new(StringComparer.Ordinal);
-    public string[][] Quick { get; } = Enumerable.Range(0, 6).Select(_ => new[] { "v:4", "v:8", "v:6", "v:2" }).ToArray();
+    public string[][] Quick { get; private set; } = Enumerable.Range(0, HeroCatalog.Default.Count).Select(_ => new[] { "v:4", "v:8", "v:6", "v:2" }).ToArray();
+
+    public void EnsureHeroCount(int count)
+    {
+        if (count <= Quick.Length) return;
+        Quick = Quick.Concat(Enumerable.Range(Quick.Length, count - Quick.Length).Select(_ => new[] { "v:4", "v:8", "v:6", "v:2" })).ToArray();
+    }
 
     public void Set(GameAction action, InputBinding primary, InputBinding secondary = default, InputBinding pad = default) => Bindings[(int)action] = [primary, secondary, pad];
 }

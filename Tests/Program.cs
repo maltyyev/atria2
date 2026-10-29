@@ -1,8 +1,16 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--hero-roster")
+{
+    Console.WriteLine(Atria.Tests.State.HeroRosterTests.Run(args[0]));
+    return;
+}
+
+
 if (args.Length == 2 && args[1] == "--combat-balance")
 {
     Console.WriteLine(Atria.Tests.Combat.CombatBalanceTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.State.HeroRosterTests.Run(args[0]));
     Console.WriteLine(Atria.Tests.Combat.PartySpellTests.Run(args[0]));
     return;
 }
@@ -345,6 +353,7 @@ Console.WriteLine(Atria.Tests.Combat.PartyAirCombatTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.PartySpellTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatBalanceTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.State.HeroRosterTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatSlowDurationTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatEntryTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Combat.CombatSpecialRasterTests.Run(args[0]));

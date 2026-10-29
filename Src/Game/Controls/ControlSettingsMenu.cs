@@ -283,7 +283,7 @@ public sealed class ControlSettingsMenu
             notice = GameText.Get("ui.settings.profileReset");
         });
         Add(GameText.Get("ui.settings.bindings"), GameText.Get("ui.common.open"), () => Go(Page.Bindings));
-        Add(GameText.Get("ui.settings.moveHero"), MoveCatalog.Name(party), adjust: d => party = (party + d + 6) % 6);
+        Add(GameText.Get("ui.settings.moveHero"), catalog.Heroes[party].Name, adjust: d => party = (party + d + catalog.Heroes.Count) % catalog.Heroes.Count);
         Add(GameText.Get("ui.settings.moveBindings"), GameText.Get("ui.common.open"), () => Go(Page.Moves));
         Add(GameText.Get("ui.controls.back"), "", () => Go(Page.Root));
     }
@@ -312,7 +312,7 @@ public sealed class ControlSettingsMenu
     {
         var p = Draft.Players[player];
 
-        title = GameText.Format("ui.settings.moveBindingTitle", ("character", MoveCatalog.Name(party)), ("column", column == 0 ? GameText.Get("ui.settings.primary") : column == 1 ? GameText.Get("ui.settings.secondary") : GameText.Get("ui.settings.xbox")));
+        title = GameText.Format("ui.settings.moveBindingTitle", ("character", catalog.Heroes[party].Name), ("column", column == 0 ? GameText.Get("ui.settings.primary") : column == 1 ? GameText.Get("ui.settings.secondary") : GameText.Get("ui.settings.xbox")));
         foreach (var move in catalog.All(party))
         {
             string key = party + "/" + move.Id;

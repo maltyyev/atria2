@@ -28,7 +28,7 @@ public sealed class StatusMenuRuntime
             return;
 
         if (Menu.Page == 2)
-            LoadDescription(GameText.Get($"characters.{Menu.SelectedActor}.introduction"), StatusMenuLayout.BiographyWidth);
+            LoadDescription(GameText.Get(state.HeroCatalog[Menu.SelectedActor].IntroductionKey), StatusMenuLayout.BiographyWidth);
         else if (TextList?.DescriptionOpen == true)
         {
             int id = TextList.SelectedId;
@@ -70,7 +70,7 @@ public sealed class StatusMenuRuntime
                 DescriptionOffset = 0;
                 if (Menu.Page == 2)
                 {
-                    LoadDescription(GameText.Get($"characters.{Menu.SelectedActor}.introduction"), StatusMenuLayout.BiographyWidth);
+                    LoadDescription(GameText.Get(state.HeroCatalog[Menu.SelectedActor].IntroductionKey), StatusMenuLayout.BiographyWidth);
                 }
                 if (Menu.Page == 0)
                 {
@@ -167,7 +167,7 @@ public sealed class StatusMenuRuntime
             {
                 for (int i = current - 1; i >= 0; i--)
                 {
-                    if (state.GetMemberStatus(i) != 0)
+                    if (state.Heroes[i].MemberStatus != 0)
                     {
                         next = i;
                         break;
@@ -176,9 +176,9 @@ public sealed class StatusMenuRuntime
             }
             else if (action == 2)
             {
-                for (int i = current + 1; i < 6; i++)
+                for (int i = current + 1; i < state.Heroes.Length; i++)
                 {
-                    if (state.GetMemberStatus(i) != 0)
+                    if (state.Heroes[i].MemberStatus != 0)
                     {
                         next = i;
                         break;
@@ -188,10 +188,10 @@ public sealed class StatusMenuRuntime
             else if (value.CycleActor)
             {
                 bool found = false;
-                for (int step = 1; step <= 6; step++)
+                for (int step = 1; step <= state.Heroes.Length; step++)
                 {
-                    int i = (current + step) % 6;
-                    if (state.GetMemberStatus(i) != 0)
+                    int i = (current + step) % state.Heroes.Length;
+                    if (state.Heroes[i].MemberStatus != 0)
                     {
                         next = i;
                         found = true;
@@ -201,7 +201,7 @@ public sealed class StatusMenuRuntime
 
                 if (!found)
                 {
-                    throw new InvalidDataException("Status cycle requires an active first-six actor.");
+                    throw new InvalidDataException("Status cycle requires an active playable actor.");
                 }
             }
 
@@ -212,7 +212,7 @@ public sealed class StatusMenuRuntime
                 Sound(1);
                 if (Menu.Page == 2)
                 {
-                    LoadDescription(GameText.Get($"characters.{next}.introduction"), StatusMenuLayout.BiographyWidth);
+                    LoadDescription(GameText.Get(state.HeroCatalog[next].IntroductionKey), StatusMenuLayout.BiographyWidth);
                 }
                 if (Menu.Page == 0)
                 {

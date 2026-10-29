@@ -424,7 +424,7 @@ public static class SessionRuntimeCodec
             throw new InvalidDataException("Session mode bank is invalid.");
         }
 
-        if ((uint)value.SelectedEquipmentActor >= Atria.Game.State.GameState.PartyCount || value.Town is null)
+        if (value.SelectedEquipmentActor < 0 || value.Town is null)
         {
             throw new InvalidDataException("Session actor/town state is invalid.");
         }

@@ -50,7 +50,7 @@ public sealed partial class GameSession
                 () => encounterSeed,
                 entered,
                 audio.LoadEffect,
-                PlayBattleExclusiveBytes
+                PlayBattleExclusiveBytes, state.HeroCatalog
             ) : new(
     root,
     new((FixedEncounterKind)state.BattleVariant, state.PendingBattle),
@@ -58,7 +58,7 @@ public sealed partial class GameSession
     () => encounterSeed,
     entered,
     audio.LoadEffect,
-    PlayBattleExclusiveBytes
+    PlayBattleExclusiveBytes, state.HeroCatalog
 );
             awardMusicTrack = entry.MusicTrack;
             var backdrop = new CombatSelectionBackdrop(entry.Runtime, entry.Assets, retainedBattleVisualDetail);

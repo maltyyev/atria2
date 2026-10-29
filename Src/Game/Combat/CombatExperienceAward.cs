@@ -21,7 +21,7 @@ public sealed class CombatExperienceAward(IExperienceModalEffects effects)
         }
 
         byte[] originalParty = PartyCodec.Encode(state.Party).ToArray();
-        var session = new ExperienceAllocationSession(originalParty, signedAward);
+        var session = new ExperienceAllocationSession(originalParty, signedAward, state.HeroCatalog);
         active = true;
         try
         {
@@ -32,14 +32,14 @@ public sealed class CombatExperienceAward(IExperienceModalEffects effects)
             }
 
             ProgressionRules.ApplyAward(session);
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < session.Party.Count; i++)
             {
-                if (session.Working.GetMemberStatus(i) == 0 || session.Working.Party[i].PendingAction != 1)
+                if (session.Working.Heroes[i].MemberStatus == 0 || session.Working.Heroes[i].PendingAction != 1)
                 {
                     continue;
                 }
 
-                var notice = new LevelUpNotice(i, session.Working.Party[i].Level, effects.Milliseconds);
+                var notice = new LevelUpNotice(i, session.Working.Heroes[i].Level, effects.Milliseconds);
                 effects.ShowLevelUp(notice, session.Party);
                 if (!notice.Completed)
                 {

@@ -12,10 +12,11 @@ public static class CombatTargetSelection
         int first,
         int end,
         uint milliseconds,
-        Func<int> nextNativeRandom
+        Func<int> nextNativeRandom,
+        int partyStart = 0
     )
     {
-        if (actors.Count < 6 || currentTargets.Count != actors.Count || (uint)attackerIndex >= (uint)actors.Count || first < 0 || end < first
+        if (partyStart < 0 || partyStart > actors.Count || currentTargets.Count != actors.Count || (uint)attackerIndex >= (uint)actors.Count || first < 0 || end < first
 || end > actors.Count)
         {
             throw new ArgumentException("Incomplete native target-selection domain.");
@@ -36,7 +37,7 @@ public static class CombatTargetSelection
 
         if (unchecked((sbyte)attacker.Team) < 100)
         {
-            for (int i = actors.Count - 6; i < actors.Count; i++)
+            for (int i = partyStart; i < actors.Count; i++)
             {
                 if (actors[i].Health > 0 && HasItem(actors[i], 56) && (Next() & 1) != 0)
                 {

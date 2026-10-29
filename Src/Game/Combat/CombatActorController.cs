@@ -39,7 +39,7 @@ public sealed class CombatActorController : ICombatActorActions
         get; private set;
     }
     public int ControlRank { get; private set; } = 3;
-    public string[][] SelectedMoves { get; } = [new string[6], new string[6]];
+    public string[][] SelectedMoves { get; }
     public bool[] SelectorOpen { get; } = new bool[2];
 
     public void SetAutomation(bool enabled)
@@ -53,7 +53,7 @@ public sealed class CombatActorController : ICombatActorActions
     private readonly CombatScanInput[] semanticWalk = new CombatScanInput[2];
     private static readonly byte[] semanticDirections = [0, 1, 2, 3, 4, 5, 6, 7];
     private static readonly int[] branchDirections = [1, 2, 3, 4, 6, 7, 8, 9];
-    private static readonly string[] partyPrefixes = ["0/", "1/", "2/", "3/", "4/", "5/"];
+    private readonly string[] partyPrefixes;
     public bool ExecuteMove(int actorIndex, string id, uint milliseconds) => CombatSemanticControl.Execute(id, runtime, runtime.Actors[actorIndex], state, milliseconds, effects.GlobalEffectBusy, sound, rankNotice, itemNotice);
     public CombatActorController(
         CombatSceneRuntime runtime,
@@ -66,6 +66,8 @@ public sealed class CombatActorController : ICombatActorActions
     {
         this.runtime = runtime;
         this.state = state;
+        SelectedMoves = [new string[state.Heroes.Length], new string[state.Heroes.Length]];
+        partyPrefixes = Enumerable.Range(0, state.Heroes.Length).Select(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture) + "/").ToArray();
         this.input = input;
         this.effects = effects;
         nextRandom = nextNativeRandom;
@@ -187,6 +189,7 @@ public sealed class CombatActorController : ICombatActorActions
         }
 
         string? request = null;
+        p.EnsureHeroCount(state.Heroes.Length);
         for (int q = 0; q < 4; q++)
         {
             if (modern.PressQuick(player, q))
@@ -353,7 +356,7 @@ public sealed class CombatActorController : ICombatActorActions
         int type = image.Binding!.Info.Type;
         if (flags == 0)
         {
-            int target = CombatTargetSelection.Select(bank, runtime.TargetIndices, index, 0, bank.Length, milliseconds, nextRandom);
+            int target = CombatTargetSelection.Select(bank, runtime.TargetIndices, index, 0, bank.Length, milliseconds, nextRandom, runtime.Scene.PartyStartIndex);
             runtime.TargetIndices[index] = target;
             if (type == 9)
             {

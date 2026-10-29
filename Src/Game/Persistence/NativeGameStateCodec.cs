@@ -8,6 +8,8 @@ public static class NativeGameStateCodec
 {
     private const uint JournalExtension = 0x4c4e524a; // JRNL, optional tail for pre-0.7.1 saves.
     private const int JournalVersion = 2;
+    private const uint HeroesExtension = 0x4f524548; // HERO: stable identities, separate from legacy escort records.
+    private const int HeroesVersion = 1;
     public const int MaxBytes = 300000;
     public static byte[] Encode(GameState s)
     {
@@ -25,7 +27,7 @@ public static class NativeGameStateCodec
             writer.Write(value);
         }
 
-        writer.Write(PartyCodec.Encode(s.Party));
+        writer.Write(PartyCodec.Encode(s.Party.Take(GameState.LegacyPartyRecordCount).ToArray()));
         foreach (int value in s.OwnedItems)
         {
             writer.Write(value);
@@ -74,6 +76,19 @@ public static class NativeGameStateCodec
             }
             writer.Write(s.Journal.ActiveQuest(s) ?? -1);
         }
+        var additional = Enumerable.Range(0, s.HeroCatalog.Count)
+            .Where(i => s.HeroCatalog[i].StorageIndex >= GameState.LegacyPartyRecordCount).ToArray();
+        if (additional.Length != 0)
+        {
+            writer.Write(HeroesExtension);
+            writer.Write(HeroesVersion);
+            writer.Write(additional.Length);
+            foreach (int index in additional)
+            {
+                WriteBytes(writer, System.Text.Encoding.UTF8.GetBytes(s.HeroCatalog[index].Id), 128);
+                writer.Write(PartyCodec.EncodeMember(s.Heroes[index]));
+            }
+        }
         writer.Flush();
         if (stream.Length > MaxBytes)
         {
@@ -83,7 +98,7 @@ public static class NativeGameStateCodec
         return stream.ToArray();
     }
 
-    public static GameState Decode(ReadOnlySpan<byte> bytes)
+    public static GameState Decode(ReadOnlySpan<byte> bytes, HeroCatalog? heroCatalog = null)
     {
         if (bytes.Length > MaxBytes)
         {
@@ -105,9 +120,10 @@ public static class NativeGameStateCodec
                 v[i] = reader.ReadInt32();
             }
 
-            var s = new GameState();
+            var s = new GameState(heroCatalog);
+            s.HeroCatalog.InitializeAdditionalHeroes(s);
             ApplyScalars(v, s);
-            PartyCodec.Decode(ReadExact(reader, 2800), s.Party);
+            PartyCodec.Decode(ReadExact(reader, GameState.LegacyPartyRecordCount * PartyCodec.RecordSize), s.Party.Take(GameState.LegacyPartyRecordCount).ToArray());
             ReadInts(reader, s.OwnedItems);
             ReadInts(reader, s.AvailableItems);
             ReadExact(reader, 3774).CopyTo(s.QuestItemRecords, 0);
@@ -133,10 +149,29 @@ public static class NativeGameStateCodec
             }
 
             s.People = people;
-            if (stream.Position < stream.Length)
+            var extensions = new HashSet<uint>();
+            while (stream.Position < stream.Length)
             {
                 uint signature = reader.ReadUInt32();
                 int version = reader.ReadInt32();
+                if (!extensions.Add(signature)) throw new InvalidDataException("Duplicate native state extension.");
+                if (signature == HeroesExtension)
+                {
+                    if (version != HeroesVersion) throw new InvalidDataException("Unknown hero save version.");
+                    int countHeroes = reader.ReadInt32();
+                    if (countHeroes < 0 || countHeroes > (stream.Length - stream.Position) / PartyCodec.RecordSize)
+                        throw new InvalidDataException("Truncated hero records.");
+                    var ids = new HashSet<string>(StringComparer.Ordinal);
+                    for (int i = 0; i < countHeroes; i++)
+                    {
+                        string id = System.Text.Encoding.UTF8.GetString(ReadBytes(reader, 128));
+                        int index = s.HeroCatalog.Find(id);
+                        if (!ids.Add(id) || index < 0 || s.HeroCatalog[index].StorageIndex < GameState.LegacyPartyRecordCount)
+                            throw new InvalidDataException($"Unknown or duplicate saved hero: {id}");
+                        PartyCodec.DecodeMember(ReadExact(reader, PartyCodec.RecordSize), s.Heroes[index]);
+                    }
+                    continue;
+                }
                 if (signature != JournalExtension || version is < 1 or > JournalVersion)
                 {
                     throw new InvalidDataException("Unknown native journal extension.");
@@ -162,7 +197,7 @@ public static class NativeGameStateCodec
     public static void Apply(GameState source, GameState target)
     {
         // Validate and detach before copying anything into the live state.
-        var s = Decode(Encode(source));
+        var s = Decode(Encode(source), target.HeroCatalog);
         LegacySnapshotBridge.CopyRecoveredState(s, target);
         target.ModeStackDepth = s.ModeStackDepth;
         target.EnterPermission = s.EnterPermission;

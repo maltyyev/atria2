@@ -98,7 +98,7 @@ public sealed class NativeSaveImage
             throw new InvalidDataException("Native snapshot requires populated slot metadata.");
         }
 
-        var copy = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(state));
+        var copy = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(state), state.HeroCatalog);
         copy.Mode = savedMode;
         var ownedAreas = new WorldAreaStore();
         for (int i = 0; i < 8; i++)
@@ -151,7 +151,7 @@ public sealed class NativeSaveImage
         return result;
     }
 
-    public static NativeSaveImage Parse(ReadOnlySpan<byte> bytes)
+    public static NativeSaveImage Parse(ReadOnlySpan<byte> bytes, HeroCatalog? heroCatalog = null)
     {
         if (bytes.Length is < HeaderSize or > MaximumSize || !bytes.StartsWith(Magic))
         {
@@ -187,7 +187,7 @@ public sealed class NativeSaveImage
                 throw new InvalidDataException("Native save slot metadata must be populated.");
             }
 
-            var state = NativeGameStateCodec.Decode(NativeGameStateCodec.ReadBytes(reader, NativeGameStateCodec.MaxBytes));
+            var state = NativeGameStateCodec.Decode(NativeGameStateCodec.ReadBytes(reader, NativeGameStateCodec.MaxBytes), heroCatalog);
             var areas = new WorldAreaStore();
             for (int i = 0; i < 8; i++)
             {

@@ -153,12 +153,13 @@ public static class ControlProfileStore
             }
 
             var quick = e.GetProperty("quick");
-            if (quick.GetArrayLength() != 6)
+            if (quick.GetArrayLength() == 0)
             {
                 throw new InvalidDataException("Invalid party quick slots.");
             }
 
-            for (int c = 0; c < 6; c++)
+            v.EnsureHeroCount(quick.GetArrayLength());
+            for (int c = 0; c < quick.GetArrayLength(); c++)
             {
                 if (quick[c].GetArrayLength() != 4)
                 {

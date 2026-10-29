@@ -14,11 +14,15 @@ public enum CombatSelectionInput
 /// <summary>424100 participation/leader state. Only actual finish input can complete selection.</summary>
 public sealed class CombatPartySelection
 {
-    private readonly GameState working = new();
-    private readonly bool[] eligible = new bool[6];
-    private readonly byte[] selected = new byte[6];
+    private readonly GameState working;
+    private readonly bool[] eligible = Array.Empty<bool>();
+    private readonly byte[] selected = Array.Empty<byte>();
     private readonly int[] leaders = new int[2];
-    public IReadOnlyList<PartyMember> Party => working.Party;
+    public IReadOnlyList<PartyMember> Party => working.Heroes;
+    public HeroCatalog HeroCatalog => working.HeroCatalog;
+    public int FirstVisible { get; private set; }
+    public const int VisibleRows = 6;
+    private void Reveal(int actor) => FirstVisible = Math.Clamp(FirstVisible, Math.Max(0, actor - VisibleRows + 1), actor);
     public ReadOnlySpan<byte> Selected => selected;
     public ReadOnlySpan<int> Leaders => leaders.AsSpan(0, PlayerCount);
     public int PlayerCount
@@ -45,7 +49,7 @@ public sealed class CombatPartySelection
     public void ClearDisplayedError() => ErrorCode = 0;
     public bool PointerSelect(int player, int actor)
     {
-        if ((uint)player >= (uint)PlayerCount || (uint)actor >= 6 || !eligible[actor])
+        if ((uint)player >= (uint)PlayerCount || (uint)actor >= (uint)eligible.Length || !eligible[actor])
         {
             return false;
         }
@@ -53,6 +57,7 @@ public sealed class CombatPartySelection
         if (leaders[player] != actor)
         {
             leaders[player] = actor;
+            Reveal(actor);
             InputRevision++;
         }
 
@@ -66,22 +71,25 @@ public sealed class CombatPartySelection
             throw new NotSupportedException("Native battle selection supports one or two players.");
         }
 
+        working = new GameState(state.HeroCatalog);
+        eligible = new bool[state.Heroes.Length];
+        selected = new byte[state.Heroes.Length];
         PartyCodec.Copy(state.Party, working.Party);
         int count = 0;
-        for (int actor = 0; actor < 6; actor++)
+        for (int actor = 0; actor < eligible.Length; actor++)
         {
-            eligible[actor] = working.GetMemberStatus(actor) != 0;
-            working.Party[actor].PendingAction = eligible[actor] ? 1 : 0;
+            eligible[actor] = working.Heroes[actor].MemberStatus != 0;
+            working.Heroes[actor].PendingAction = eligible[actor] ? 1 : 0;
             if (!eligible[actor])
             {
                 continue;
             }
 
-            selected[actor] = unchecked((byte)working.Party[actor].SelectedForBattle);
+            selected[actor] = unchecked((byte)working.Heroes[actor].SelectedForBattle);
             count++;
-            if (working.Party[actor].Health == 0)
+            if (working.Heroes[actor].Health == 0)
             {
-                working.Party[actor].Health = 1;
+                working.Heroes[actor].Health = 1;
             }
 
             leaders[count == 1 ? 0 : 1] = actor;
@@ -112,9 +120,10 @@ public sealed class CombatPartySelection
                 InputRevision = unchecked(InputRevision + 1);
                 do
                 {
-                    leaders[player] = (leaders[player] + direction + 6) % 6;
+                    leaders[player] = (leaders[player] + direction + eligible.Length) % eligible.Length;
                 }
                 while (!eligible[leaders[player]]);
+                Reveal(leaders[player]);
             }
 
             if (query(player, CombatSelectionInput.Toggle))
@@ -173,7 +182,7 @@ public sealed class CombatPartySelection
         }
 
         playExclusiveSound("start.wav");
-        for (int actor = 0; actor < 6; actor++)
+        for (int actor = 0; actor < eligible.Length; actor++)
         {
             if (!eligible[actor])
             {
@@ -181,8 +190,8 @@ public sealed class CombatPartySelection
             }
 
             int flag = unchecked((sbyte)selected[actor]);
-            working.Party[actor].PendingAction = flag;
-            working.Party[actor].SelectedForBattle = flag;
+            working.Heroes[actor].PendingAction = flag;
+            working.Heroes[actor].SelectedForBattle = flag;
         }
 
         Completed = true;

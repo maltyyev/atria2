@@ -1,5 +1,6 @@
 using System.Text;
 using Atria.Game.Combat;
+using Atria.Game.State;
 
 namespace Atria.Game.Controls;
 
@@ -12,20 +13,21 @@ public sealed record MoveDefinition(string Id, string Name, int Direction, int R
 
 public sealed class MoveCatalog
 {
-    public static readonly string[] Prefixes = ["ROLAND", "MIST", "SWALLOW", "BRAIUN", "EMERALD", "TIGER"];
-    private static readonly string[] characterKeys = ["ui.characters.roland", "ui.characters.mist", "ui.characters.swallow", "ui.characters.brian", "ui.characters.emerald", "ui.characters.tiger"];
-    public static string Name(int character) => GameText.Get(characterKeys[character]);
-    private readonly CombatInfoCharacter[,] infos = new CombatInfoCharacter[6, 5];
-    private readonly IReadOnlyList<MoveDefinition>[] all = new IReadOnlyList<MoveDefinition>[6];
+    public HeroCatalog Heroes { get; }
+    private readonly CombatInfoCharacter[,] infos;
+    private readonly IReadOnlyList<MoveDefinition>[] all;
     private LocalizationCatalog language = GameText.Current;
-    public MoveCatalog(string root)
+    public MoveCatalog(string root, HeroCatalog? heroCatalog = null)
     {
-        for (int party = 0; party < 6; party++)
+        Heroes = heroCatalog ?? HeroCatalog.Default;
+        infos = new CombatInfoCharacter[Heroes.Count, 5];
+        all = new IReadOnlyList<MoveDefinition>[Heroes.Count];
+        for (int party = 0; party < Heroes.Count; party++)
         {
             var found = new Dictionary<string, MoveDefinition>(StringComparer.Ordinal);
             for (int form = 1; form <= 5; form++)
             {
-                var info = CombatInfoDefinition.Load(root, Encoding.ASCII.GetBytes(Prefixes[party] + form)).Characters[^1];
+                var info = CombatInfoDefinition.Load(root, Encoding.ASCII.GetBytes(Heroes[party].BattleResource(form))).Characters[^1];
                 infos[party, form - 1] = info;
                 foreach (var m in FromInfo(info, form))
                 {

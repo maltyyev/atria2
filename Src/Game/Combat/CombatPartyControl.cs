@@ -8,9 +8,9 @@ public static class CombatPartyControl
     //42e3b0 initializes native4cc3b0 to RGB565ffff.
     public static int Cycle(IReadOnlyList<CombatActorImage> actors, int partyStart, int currentIndex, ushort flashColor = 0xffff)
     {
-        if (actors.Count - partyStart != 6 || currentIndex < partyStart || currentIndex >= actors.Count)
+        if (partyStart < 0 || partyStart >= actors.Count || currentIndex < partyStart || currentIndex >= actors.Count)
         {
-            throw new ArgumentException("Combat control requires the actual six-slot party tail.");
+            throw new ArgumentException("Combat control requires the actual playable party tail.");
         }
 
         CombatActorImage current = actors[currentIndex];

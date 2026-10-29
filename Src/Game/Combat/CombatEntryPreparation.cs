@@ -1,4 +1,5 @@
 using Atria.Audio;
+using Atria.Game.State;
 using Atria.Game.Exploration;
 
 namespace Atria.Game.Combat;
@@ -41,8 +42,9 @@ public sealed class CombatEntryPreparation : IDisposable
         Func<uint> readUnixSeconds,
         uint milliseconds,
         Func<ReadOnlyMemory<byte>, IBufferedSoundEffect> loadSound,
-        Action<ReadOnlyMemory<byte>> playExclusive
-    ) : this(resourceRoot, request, null, random, readUnixSeconds, milliseconds, loadSound, playExclusive)
+        Action<ReadOnlyMemory<byte>> playExclusive,
+        HeroCatalog? heroCatalog = null
+    ) : this(resourceRoot, request, null, random, readUnixSeconds, milliseconds, loadSound, playExclusive, heroCatalog)
     {
     }
 
@@ -53,8 +55,9 @@ public sealed class CombatEntryPreparation : IDisposable
         Func<uint> readUnixSeconds,
         uint milliseconds,
         Func<ReadOnlyMemory<byte>, IBufferedSoundEffect> loadSound,
-        Action<ReadOnlyMemory<byte>> playExclusive
-    ) => new(resourceRoot, default, randomInputs, random, readUnixSeconds, milliseconds, loadSound, playExclusive);
+        Action<ReadOnlyMemory<byte>> playExclusive,
+        HeroCatalog? heroCatalog = null
+    ) => new(resourceRoot, default, randomInputs, random, readUnixSeconds, milliseconds, loadSound, playExclusive, heroCatalog);
     private CombatEntryPreparation(
         string resourceRoot,
         CombatEntryRequest request,
@@ -63,7 +66,8 @@ public sealed class CombatEntryPreparation : IDisposable
         Func<uint> readUnixSeconds,
         uint milliseconds,
         Func<ReadOnlyMemory<byte>, IBufferedSoundEffect> loadSound,
-        Action<ReadOnlyMemory<byte>> playExclusive
+        Action<ReadOnlyMemory<byte>> playExclusive,
+        HeroCatalog? heroCatalog = null
     )
     {
         ArgumentNullException.ThrowIfNull(random);
@@ -87,7 +91,7 @@ public sealed class CombatEntryPreparation : IDisposable
             random.Seed(Seed);
             Request = randomInputs is { } inputs ? CombatEntryRequest.FromRandom(CombatRandomEncounterResolution.Resolve(inputs, random)) : request;
             MusicTrack = Request.SelectMusic(random.Next);
-            var scene = CombatSceneDefinition.Load(resourceRoot, Request);
+            var scene = CombatSceneDefinition.Load(resourceRoot, Request, heroCatalog);
             Runtime = new(resourceRoot, scene, milliseconds, id => Sounds.Load(id));
             Assets = CombatBattleAssets.Load(resourceRoot, scene);
             Runtime.BindDeclaredAnimations(milliseconds);

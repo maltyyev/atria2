@@ -248,7 +248,7 @@ public static class ProgressionTests
         var raster = new ExperienceAllocationRaster(tiles, font, labels, X87Precision.Bits53);
         var state = Party(1, 500);
         ushort[] pixels = Enumerable.Repeat((ushort)0xffff, 640 * 480).ToArray();
-        raster.Draw(state.Party, new[] { 250, 0, 0, 0, 0, 0 }, 0, 0, 0, pixels);
+        raster.Draw(state.Heroes, new[] { 250, 0, 0, 0, 0, 0 }, 0, 0, 0, pixels);
         Check(pixels[115 * 640 + 125] == 0x7bef && pixels[127 * 640 + 136] == 0x000f, "XP panelhalf-shade and selected actor rectangle.");
         Check(pixels[131 * 640 + 272] == 0x739f && pixels[131 * 640 + 338] == 0x739f, "Earned XP bar exactgradient/span.");
         Check(pixels[131 * 640 + 339] == 0xffee && pixels[131 * 640 + 371] == 0xffee, "Allocated XP bar exactgradient/span.");

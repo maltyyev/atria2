@@ -60,6 +60,8 @@ internal sealed class SessionSnapshotLoader(
     public PreparedSession Prepare(NativeRuntimeContext context, GameState savedState)
     {
         var saved = SessionRuntimeCodec.Decode(context);
+        if ((uint)saved.SelectedEquipmentActor >= (uint)savedState.Heroes.Length)
+            throw new InvalidDataException("Saved equipment actor is absent from the hero catalog.");
         if ((uint)savedState.WorldX >= 10 || (uint)savedState.WorldY >= 10)
         {
             throw new InvalidDataException("Saved world coordinates exceed the recovered10x10 map.");

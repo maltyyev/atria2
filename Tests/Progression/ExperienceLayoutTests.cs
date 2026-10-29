@@ -38,7 +38,7 @@ public static class ExperienceLayoutTests
                 }
 
                 Array.Clear(pixels);
-                raster.Draw(state.Party, awards, 3, 2, 1110, pixels);
+                raster.Draw(state.Heroes, awards, 3, 2, 1110, pixels);
                 for (int actor = 0; actor < 6; actor++)
                 {
                     int top = 129 + actor * 22;
@@ -64,7 +64,7 @@ public static class ExperienceLayoutTests
                     state.Party[0].Experience = xp;
                     awards[0] = award;
                     Array.Clear(pixels);
-                    raster.Draw(state.Party, awards, 0, 0, 0, pixels);
+                    raster.Draw(state.Heroes, awards, 0, 0, 0, pixels);
                     CheckBar(0, xp, award);
                 }
                 awards[0] = 0;

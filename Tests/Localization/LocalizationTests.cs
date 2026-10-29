@@ -114,7 +114,7 @@ public static class LocalizationTests
 
             var font = BitmapFont.DecodeEng(Read("eng1.fnt"), true);
             ushort[] beforePixels = new ushort[640 * 480];
-            ControlPanel.Text(font, beforePixels, MoveCatalog.Name(0), 20, 20, 0xffff);
+            ControlPanel.Text(font, beforePixels, Atria.Game.State.HeroCatalog.Default[0].Name, 20, 20, 0xffff);
             Edit("ui.json", "ui.characters.roland", "Проверка");
             Edit("ui.json", "ui.combat.playerCharacter", "{character}: игрок {player}");
             Edit("dialogue.json", "dialogue.0000.text", "Исправленная реплика");
@@ -129,10 +129,10 @@ public static class LocalizationTests
             Check(edited.Issues.Count == 0, "valid edits accepted");
             Edit("validation.json", "ui.validation.unknownKey", "Unknown translation key.");
             GameText.Use(edited);
-            Check(MoveCatalog.Name(0) == "Проверка", "same assembly reads edited character name");
+            Check(Atria.Game.State.HeroCatalog.Default[0].Name == "Проверка", "same assembly reads edited character name");
             Check(GameText.Format("ui.combat.playerCharacter", ("player", 2), ("character", "Роланд")) == "Роланд: игрок 2", "placeholder reorder reaches UI");
             ushort[] afterPixels = new ushort[beforePixels.Length];
-            ControlPanel.Text(font, afterPixels, MoveCatalog.Name(0), 20, 20, 0xffff);
+            ControlPanel.Text(font, afterPixels, Atria.Game.State.HeroCatalog.Default[0].Name, 20, 20, 0xffff);
             Check(!beforePixels.SequenceEqual(afterPixels), "edited label changes rendered pixels");
             var after = DialogueRequest.Create(indexed, dialogue);
             Check(after.Paragraph == "Исправленная реплика" && before.Lines.Count == after.Lines.Count, "indexed dialogue changes text without changing line/choice count");

@@ -16,14 +16,14 @@ public static class CombatDebugInput
         }
 
         int changed = 0;
-        for (int actor = 0; actor < 6; actor++)
+        for (int actor = 0; actor < state.Heroes.Length; actor++)
         {
-            if (state.GetMemberStatus(actor) != 1)
+            if (state.Heroes[actor].MemberStatus != 1)
             {
                 continue;
             }
 
-            state.Party[actor].Experience = unchecked(state.Party[actor].Experience + 10);
+            state.Heroes[actor].Experience = unchecked(state.Heroes[actor].Experience + 10);
             changed++;
         }
 

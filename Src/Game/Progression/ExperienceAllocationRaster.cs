@@ -8,6 +8,7 @@ namespace Atria.Game.Progression;
 /// <summary>4247b0,426a50 and409a30. Input bytes remain CP1251 glyph IDs; no Unicode reflow.</summary>
 public sealed class ExperienceAllocationRaster(SpriteFile etc, BitmapFont smallFont, IReadOnlyList<ReadOnlyMemory<byte>> battleLabels, X87Precision precision)
 {
+    public const int VisibleRows = 6;
     private const int LevelLabelX = 207;
     private const int BarLeft = 272;
     private const int BarRight = 407;
@@ -22,10 +23,11 @@ public sealed class ExperienceAllocationRaster(SpriteFile etc, BitmapFont smallF
         Span<ushort> target,
         int width = 640,
         int height = 480,
-        int stride = 640
+        int stride = 640,
+        HeroCatalog? heroCatalog = null
     )
     {
-        if (party.Count < 6 || allocation.Length != 6 || battleLabels.Count < 50 || smallFont.Width != 8 || smallFont.Height != 16)
+        if (party.Count != allocation.Length || battleLabels.Count < 50 || smallFont.Width != 8 || smallFont.Height != 16)
         {
             throw new ArgumentException("Incomplete native XP UI assets/state.");
         }
@@ -38,7 +40,9 @@ public sealed class ExperienceAllocationRaster(SpriteFile etc, BitmapFont smallF
         UiRaster.TintHalf(target, width, height, stride, 124, 114, 452, 196, 0);
         UiRaster.DrawPanel(etc, 110, 100, 13, 5, target, width, height, stride);
         Span<byte> text = stackalloc byte[512];
-        for (int actor = 0; actor < 6; actor++)
+        int first = Math.Max(0, selectedActor - VisibleRows + 1);
+        heroCatalog ??= HeroCatalog.Default;
+        for (int actor = first; actor < Math.Min(party.Count, first + VisibleRows); actor++)
         {
             var member = party[actor];
             if (member.MemberStatus == 0)
@@ -46,13 +50,13 @@ public sealed class ExperienceAllocationRaster(SpriteFile etc, BitmapFont smallF
                 continue;
             }
 
-            int row = 141 + actor * 22;
+            int row = 141 + (actor - first) * 22;
             if (actor == selectedActor)
             {
                 Fill(target, width, height, stride, 136, row - 14, 204, row + 4, 0x000f);
             }
 
-            smallFont.DrawText(battleLabels[24 + actor].Span, target, width, height, stride, 139, row - 12, NativeUiPalette.Normal[4]);
+            smallFont.DrawText(heroCatalog[actor].Name, target, width, height, stride, 139, row - 12, NativeUiPalette.Normal[4]);
             int xp = member.Experience, next = member.NextExperience, level = member.Level, length = 0;
             Append(xp, text, ref length);
             text[length++] = (byte)'+';

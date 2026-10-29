@@ -67,7 +67,7 @@ public sealed class StatusEquipmentController
 
     public void ActorChanged(GameState state, int actor)
     {
-        int capacity = state.Party[actor].EquipmentCapacity;
+        int capacity = state.Heroes[actor].EquipmentCapacity;
         if ((uint)capacity > 6)
         {
             throw new InvalidDataException("Status capacity exceeds six slots.");
@@ -123,7 +123,7 @@ public sealed class StatusEquipmentController
 
                 if (!ListActive)
                 {
-                    if (action == 0 && Slot < state.Party[actor].EquipmentCapacity - 1)
+                    if (action == 0 && Slot < state.Heroes[actor].EquipmentCapacity - 1)
                     {
                         sound(1);
                         Slot++;

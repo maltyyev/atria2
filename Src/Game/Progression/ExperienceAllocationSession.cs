@@ -16,10 +16,10 @@ public enum ExperienceInput
 /// <summary>424d40 allocation phase. Finish is the configured cancel/X rising edge, not confirm/C.</summary>
 public sealed class ExperienceAllocationSession
 {
-    internal GameState Working { get; } = new();
+    internal GameState Working { get; }
 
-    private readonly int[] allocation = new int[6];
-    public IReadOnlyList<PartyMember> Party => Working.Party;
+    private readonly int[] allocation;
+    public IReadOnlyList<PartyMember> Party => Working.Heroes;
     public ReadOnlySpan<int> Allocation => allocation;
     public int Award
     {
@@ -69,18 +69,20 @@ public sealed class ExperienceAllocationSession
         return true;
     }
 
-    public ExperienceAllocationSession(ReadOnlySpan<byte> partyRecords, int award)
+    public ExperienceAllocationSession(ReadOnlySpan<byte> partyRecords, int award, HeroCatalog? heroCatalog = null)
     {
-        if (partyRecords.Length != GameState.PartyCount * GameState.PartyRecordSize)
+        Working = new GameState(heroCatalog);
+        allocation = new int[Working.Heroes.Length];
+        if (partyRecords.Length != Working.Party.Length * GameState.PartyRecordSize)
         {
-            throw new ArgumentException("Expected ten packed party records.");
+            throw new ArgumentException("Party records do not match the hero catalog.");
         }
 
         PartyCodec.Decode(partyRecords, Working.Party);
         Award = award;
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < allocation.Length; i++)
         {
-            if (Working.GetMemberStatus(i) == 0)
+            if (Working.Heroes[i].MemberStatus == 0)
             {
                 continue;
             }
@@ -94,12 +96,12 @@ public sealed class ExperienceAllocationSession
             throw new InvalidDataException("XP allocation has no active party; native navigation would not terminate.");
         }
 
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < allocation.Length; i++)
         {
-            if (Working.GetMemberStatus(i) == 1)
+            if (Working.Heroes[i].MemberStatus == 1)
             {
                 allocation[i] = Award / ActiveCount;
-                Working.Party[i].PendingAction = 0;
+                Working.Heroes[i].PendingAction = 0;
             }
         }
     }
@@ -116,7 +118,7 @@ public sealed class ExperienceAllocationSession
         if (query(ExperienceInput.CycleMode) && Award > 0)
         {
             int nextMode = (Mode + 1) % 3;
-            int[] next = new int[6];
+            int[] next = new int[Working.Heroes.Length];
             AllocateMode(nextMode, next);
             Mode = nextMode;
             next.CopyTo(allocation, 0);
@@ -151,10 +153,10 @@ public sealed class ExperienceAllocationSession
 
     private void Navigate(int direction)
     {
-        for (int n = 0; n < 6; n++)
+        for (int n = 0; n < allocation.Length; n++)
         {
-            SelectedMember = (SelectedMember + direction + 6) % 6;
-            if (Working.GetMemberStatus(SelectedMember) != 0)
+            SelectedMember = (SelectedMember + direction + allocation.Length) % allocation.Length;
+            if (Working.Heroes[SelectedMember].MemberStatus != 0)
             {
                 return;
             }
@@ -167,9 +169,9 @@ public sealed class ExperienceAllocationSession
     {
         if (mode == 0)
         {
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < allocation.Length; i++)
             {
-                if (Working.GetMemberStatus(i) == 1)
+                if (Working.Heroes[i].MemberStatus == 1)
                 {
                     result[i] = Award / ActiveCount;
                 }
@@ -185,19 +187,19 @@ public sealed class ExperienceAllocationSession
             // than looping Award times. Native sentinel999999999 is not an XP cap.
             long remaining = Award;
             int previousRecipient = -1;
-            Span<int> tied = stackalloc int[6];
+            int[] tied = new int[allocation.Length];
             while (remaining > 0)
             {
                 long minimum = 999999999, next = 999999999;
                 int count = 0;
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < allocation.Length; i++)
                 {
-                    if (Working.GetMemberStatus(i) == 0)
+                    if (Working.Heroes[i].MemberStatus == 0)
                     {
                         continue;
                     }
 
-                    long value = (long)Working.Party[i].Experience + result[i];
+                    long value = (long)Working.Heroes[i].Experience + result[i];
                     if (value >= 999999999)
                     {
                         continue;
@@ -256,9 +258,9 @@ public sealed class ExperienceAllocationSession
         allocation[SelectedMember] = unchecked(allocation[SelectedMember] - amount);
         while (amount > 0)
         {
-            for (int i = 0; i < 6 && amount > 0; i++)
+            for (int i = 0; i < allocation.Length && amount > 0; i++)
             {
-                if (i != SelectedMember && Working.GetMemberStatus(i) != 0)
+                if (i != SelectedMember && Working.Heroes[i].MemberStatus != 0)
                 {
                     allocation[i] = unchecked(allocation[i] + 1);
                     amount--;
@@ -270,9 +272,9 @@ public sealed class ExperienceAllocationSession
     private void TakeFromOthers()
     {
         int amount = 0;
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < allocation.Length; i++)
         {
-            if (i == SelectedMember || Working.GetMemberStatus(i) == 0)
+            if (i == SelectedMember || Working.Heroes[i].MemberStatus == 0)
             {
                 continue;
             }

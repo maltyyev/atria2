@@ -78,7 +78,7 @@ public sealed class StatusMenuController
     public void SetDetailActive(bool value) => DetailActive = value;
     public void SetSelectedActor(int actor)
     {
-        if ((uint)actor >= 6)
+        if (actor < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(actor));
         }
@@ -149,7 +149,7 @@ public sealed class StatusMenuController
         {
             for (int i = actor - 1; i >= 0; i--)
             {
-                if (state.Party[i].MemberStatus != 0)
+                if (state.Heroes[i].MemberStatus != 0)
                 {
                     actor = i;
                     break;
@@ -158,9 +158,9 @@ public sealed class StatusMenuController
         }
         else if (input.NextActor)
         {
-            for (int i = actor + 1; i < 6; i++)
+            for (int i = actor + 1; i < state.Heroes.Length; i++)
             {
-                if (state.Party[i].MemberStatus != 0)
+                if (state.Heroes[i].MemberStatus != 0)
                 {
                     actor = i;
                     break;
@@ -170,10 +170,10 @@ public sealed class StatusMenuController
         else if (input.CycleActor)
         {
             bool found = false;
-            for (int step = 1; step <= 6; step++)
+            for (int step = 1; step <= state.Heroes.Length; step++)
             {
-                int i = (actor + step) % 6;
-                if (state.Party[i].MemberStatus != 0)
+                int i = (actor + step) % state.Heroes.Length;
+                if (state.Heroes[i].MemberStatus != 0)
                 {
                     actor = i;
                     found = true;
@@ -183,7 +183,7 @@ public sealed class StatusMenuController
 
             if (!found)
             {
-                throw new InvalidDataException("Native status actor cycle requires an active party member among slots0..5.");
+                throw new InvalidDataException("Native status actor cycle requires an active party member in the roster.");
             }
         }
 

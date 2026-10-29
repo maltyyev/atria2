@@ -87,12 +87,12 @@ public static class CombatOutcomeRewards
 
     public static void CopyEquipmentBack(GameState state, IReadOnlyList<CombatActorImage> actors, int partyStart)
     {
-        if (partyStart < 0 || partyStart > actors.Count - 6)
+        if (partyStart < 0 || partyStart > actors.Count - state.Heroes.Length)
         {
-            throw new InvalidDataException("Missing six native party actor records.");
+            throw new InvalidDataException("Combat actor records do not contain the playable roster.");
         }
 
-        for (int party = 0; party < 6; party++)
+        for (int party = 0; party < state.Heroes.Length; party++)
         {
             CombatActorState actor = actors[partyStart + party].State;
             if (actor.MemberStatus == 0 || actor.Active == 0)
@@ -100,7 +100,7 @@ public static class CombatOutcomeRewards
                 continue;
             }
 
-            int count = state.Party[party].EquipmentCapacity;
+            int count = state.Heroes[party].EquipmentCapacity;
             if ((uint)count > 6)
             {
                 throw new InvalidDataException("Equipment copy count exceeds six native slots.");
@@ -108,7 +108,7 @@ public static class CombatOutcomeRewards
 
             for (int slot = 0; slot < count; slot++)
             {
-                state.Party[party].Equipment[slot] = actor.Equipment[slot];
+                state.Heroes[party].Equipment[slot] = actor.Equipment[slot];
             }
             for (int slot = 0; slot < count; slot++)
             {
@@ -121,7 +121,7 @@ public static class CombatOutcomeRewards
                 // without a spare the slot clears, but ownership must still lose that last unit.
                 if (state.AvailableItems[item] < 1)
                 {
-                    state.Party[party].Equipment[slot] = -1;
+                    state.Heroes[party].Equipment[slot] = -1;
                 }
                 else
                 {

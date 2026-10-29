@@ -313,7 +313,7 @@ public sealed class NativeExperienceModalEffects : IExperienceModalEffects, IDis
             background(state, host.FrameBuffer);
         }
 
-        raster.Draw(party, session.Allocation, session.SelectedMember, session.Mode, state.Globals[80], host.FrameBuffer);
+        raster.Draw(party, session.Allocation, notice?.Actor ?? session.SelectedMember, session.Mode, state.Globals[80], host.FrameBuffer, heroCatalog: state.HeroCatalog);
         if (notice is LevelUpNoticeFrame frame)
         {
             ProgressionNoticeRaster.Draw(frame, font, host.FrameBuffer);

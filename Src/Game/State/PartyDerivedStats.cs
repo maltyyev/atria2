@@ -15,14 +15,14 @@ public static class PartyDerivedStats
     private const int LastArmorItem = 47;
     public static void Recalculate(GameState state, ItemCatalog items)
     {
-        for (int actor = 0; actor < 6; actor++)
+        for (int actor = 0; actor < state.Heroes.Length; actor++)
         {
-            if (state.GetMemberStatus(actor) == 0)
+            if (state.Heroes[actor].MemberStatus == 0)
             {
                 continue;
             }
 
-            var member = state.Party[actor];
+            var member = state.Heroes[actor];
             int classId = member.Class;
             var definition = ClassCatalog.Get(classId);
             int capacity = member.EquipmentCapacity;

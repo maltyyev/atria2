@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 using Atria.Resources;
+using Atria.Game.State;
 
 namespace Atria.Game.Combat;
 
@@ -58,6 +59,8 @@ public sealed record CombatSceneActor(int RuntimeIndex, SodObject Source)
 public sealed class CombatSceneDefinition
 {
     public const int RuntimeRecordSize = 0x379;
+    private const int PartyRowSpacing = 20;
+    private const int PartyEdgeInset = 10;
     public CombatEntryRequest Request
     {
         get;
@@ -66,8 +69,9 @@ public sealed class CombatSceneDefinition
     {
         get;
     }
-    public int RuntimeActorCount => checked(Source.Count + 6);
+    public int RuntimeActorCount => checked(Source.Count + HeroCatalog.Count);
     public int PartyStartIndex => Source.Count;
+    public HeroCatalog HeroCatalog { get; }
     public int Header73
     {
         get;
@@ -85,20 +89,16 @@ public sealed class CombatSceneDefinition
         get;
     }
 
-    public CombatSceneDefinition(CombatEntryRequest request, SodV2 source)
+    public CombatSceneDefinition(CombatEntryRequest request, SodV2 source, HeroCatalog? heroCatalog = null)
     {
+        HeroCatalog = heroCatalog ?? HeroCatalog.Default;
         Request = request;
         Source = source;
-        // Native allocates0xf316 bytes for actors: at most68 complete913-byte records.
-        if (source.Count > 62)
-        {
-            throw new InvalidDataException("Battle actors exceed native runtime record allocation.");
-        }
 
         Header73 = BinaryPrimitives.ReadInt32LittleEndian(source.Header.Span[73..]);
         Header77 = BinaryPrimitives.ReadInt32LittleEndian(source.Header.Span[77..]);
         var actors = new List<CombatSceneActor>(source.Count);
-        var spawns = new PartySpawn[6];
+        var spawns = new PartySpawn[HeroCatalog.Count];
         bool marker = false;
         for (int i = 0; i < source.Count; i++)
         {
@@ -123,9 +123,11 @@ public sealed class CombatSceneDefinition
                 facing = 1;
             }
 
-            for (int actor = 0; actor < 6; actor++)
+            for (int actor = 0; actor < HeroCatalog.Count; actor++)
             {
-                spawns[actor] = new PartySpawn(PartyStartIndex + actor, actor, obj.GetInteger(0), unchecked(Header73 + 10 + actor * 20), unchecked((sbyte)facing));
+                int rows = Math.Max(1, (Header77 - Header73 - PartyEdgeInset) / PartyRowSpacing + 1);
+                int y = Header73 + PartyEdgeInset + actor % rows * PartyRowSpacing;
+                spawns[actor] = new PartySpawn(PartyStartIndex + actor, actor, obj.GetInteger(0), y, unchecked((sbyte)facing));
             }
         }
 
@@ -138,7 +140,7 @@ public sealed class CombatSceneDefinition
         PartySpawns = Array.AsReadOnly(spawns);
     }
 
-    public static CombatSceneDefinition Load(string resourceRoot, CombatEntryRequest request)
+    public static CombatSceneDefinition Load(string resourceRoot, CombatEntryRequest request, HeroCatalog? heroCatalog = null)
     {
         using var archive = BinderArchive.Open(Path.Combine(resourceRoot, "SOD.000"));
         int index = archive.FindResource(Encoding.ASCII.GetBytes(request.ResourceName));
@@ -148,6 +150,6 @@ public sealed class CombatSceneDefinition
         }
 
         var source = SodV2.Parse(archive.ReadMember(index));
-        return new CombatSceneDefinition(request, CombatEncounterBalance.Apply(request.ResourceName, source));
+        return new CombatSceneDefinition(request, CombatEncounterBalance.Apply(request.ResourceName, source), heroCatalog);
     }
 }

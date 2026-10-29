@@ -127,10 +127,13 @@ public sealed class StatusMenuRenderer
     {
         var ops = new List<StatusDrawCommand>();
         var menu = runtime.Menu;
-        int actor = menu.SelectedActor, kind = state.Party[actor].Class;
-        if ((uint)kind >= 6)
+        int actor = menu.SelectedActor;
+        if ((uint)actor >= (uint)state.Heroes.Length)
+            throw new InvalidDataException("Selected status hero is absent from the roster.");
+        int kind = state.Heroes[actor].Class;
+        if ((uint)kind >= ClassCatalog.Count)
         {
-            throw new InvalidDataException("Status actor class exceeds six native records.");
+            throw new InvalidDataException("Unknown status actor class.");
         }
 
         void Text(string text, int x, int y, bool sm = true, int palette = 0, ushort color = 0, int w = 0, int h = 16, bool wrap = false) => ops.Add(new(StatusPrimitive.Text, x, y, w, h, Color: color, Small: sm, Palette: palette, Text: text, Wrap: wrap));
@@ -172,20 +175,13 @@ public sealed class StatusMenuRenderer
             Pair(Message(25 + i + (i == 8 ? 1 : 0)), 194, 38 + i * 17, 0x4cc228, w: 116);
         }
 
-        ops.Add(new(StatusPrimitive.Portrait, 21, 30, actor));
-        ReadOnlyMemory<byte> name = state.Party[actor].Name;
-        int end = name.Span.IndexOf((byte)0);
-        if (end >= 0)
-        {
-            name = name[..end];
-        }
-
-        Text(GameText.Decode(GameText.Legacy($"messages.{actor:D3}", name).Span), 68, 120, palette: 0x4cc228, w: 76);
+        ops.Add(new(StatusPrimitive.Portrait, 21, 30, state.HeroCatalog[actor].Portrait));
+        Text(state.HeroCatalog[actor].Name, 68, 120, palette: 0x4cc228, w: 76);
         Text(Message(6 + kind), 68, 156, palette: 0x4cc228, w: 76);
-        int level = state.Party[actor].Level;
+        int level = state.Heroes[actor].Level;
         if (level == 13)
         {
-            int stage = state.Party[actor].AchievementRank;
+            int stage = state.Heroes[actor].AchievementRank;
             if ((uint)stage < 3)
             {
                 Text(Message(76 + stage), 68, 138, palette: stage switch
@@ -201,15 +197,15 @@ public sealed class StatusMenuRenderer
             Text(Number(level), 68, 138, palette: 0x4cc228);
         }
 
-        Pair(Join(Number(state.Party[actor].Experience), " / ", Number(state.Party[actor].NextExperience)), 318, 38, 0x4cc228);
-        var member = state.Party[actor];
+        Pair(Join(Number(state.Heroes[actor].Experience), " / ", Number(state.Heroes[actor].NextExperience)), 318, 38, 0x4cc228);
+        var member = state.Heroes[actor];
         int[] values = [member.MaximumHealth, member.MaximumMana, member.Attack, member.Defense, member.MagicPower, member.Immunity, member.MagicDefense, member.CombatForm];
         for (int i = 0; i < values.Length; i++)
         {
             Pair(Number(values[i]), 318, 55 + i * 17, 0x4cc228);
         }
 
-        int capacity = state.Party[actor].EquipmentCapacity;
+        int capacity = state.Heroes[actor].EquipmentCapacity;
         if ((uint)capacity > 6)
         {
             throw new InvalidDataException("Status equipment capacity exceeds six slots.");
@@ -217,7 +213,7 @@ public sealed class StatusMenuRenderer
 
         for (int slot = 0; slot < Math.Max(3, capacity); slot++)
         {
-            int y = 24 + slot * 70, category = StatusEquipment.Category(kind, slot), id = state.Party[actor].Equipment[slot];
+            int y = 24 + slot * 70, category = StatusEquipment.Category(kind, slot), id = state.Heroes[actor].Equipment[slot];
             Pair(Message(35 + category), 556, y, 0x4cc228, w: 64, h: 32, wrap: true);
             if (id == -1)
             {
@@ -266,10 +262,10 @@ public sealed class StatusMenuRenderer
             {
                 Pair(Message(17 + i), 194, 225 + i * 17, 0x4cc26c, w: 84, h: 32, wrap: true);
                 Pair(Message(21 + i), 322, 225 + i * 17, 0x4cc26c, w: 84, h: 32, wrap: true);
-                Pair(Number(state.Party[actor].GetAttribute(i)), 286, 225 + i * 17, 0x4cc26c);
+                Pair(Number(state.Heroes[actor].GetAttribute(i)), 286, 225 + i * 17, 0x4cc26c);
             }
 
-            var member = state.Party[actor];
+            var member = state.Heroes[actor];
             int[] values = [member.Dexterity, member.Luck, member.Leadership, member.MagicRank];
             for (int i = 0; i < 4; i++)
             {

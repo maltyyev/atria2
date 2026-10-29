@@ -6,7 +6,7 @@ namespace Atria.Game.State;
 public sealed class GameState
 {
     public const int GlobalCount = 1000, EventCount = 1000, EventStatusCount = 200;
-    public const int PartyCount = 10, PartyRecordSize = 280, InventoryBankCount = 200;
+    public const int LegacyPartyRecordCount = 10, PartyRecordSize = 280, InventoryBankCount = 200;
     public const int QuestItemCount = 51, QuestItemRecordSize = 74;
     // 4cb910: signed 16-bit globals; 46c938: flat int[1000]; 46d8d8: int[200].
     public short[] Globals { get; } = new short[GlobalCount];
@@ -14,7 +14,18 @@ public sealed class GameState
     public int[] EventStatuses { get; } = new int[EventStatusCount];
     public QuestJournal Journal { get; } = new();
     // Preserve uninterpreted fields until actor/save recovery establishes their meaning.
-    public PartyMember[] Party { get; } = Enumerable.Range(0, PartyCount).Select(_ => new PartyMember()).ToArray();
+    public PartyMember[] Party { get; }
+    public PartyMember[] Heroes { get; }
+    public HeroCatalog HeroCatalog { get; }
+
+    public GameState(HeroCatalog? heroCatalog = null)
+    {
+        HeroCatalog = heroCatalog ?? HeroCatalog.Default;
+        Party = Enumerable.Range(0, HeroCatalog.StorageCount).Select(_ => new PartyMember()).ToArray();
+        Heroes = Enumerable.Range(0, HeroCatalog.Count).Select(index => Party[HeroCatalog[index].StorageIndex]).ToArray();
+    }
+
+    public bool HasHero(string id) => HeroCatalog.Find(id) is var index && index >= 0 && Heroes[index].MemberStatus != 0;
     public int[] OwnedItems { get; } = new int[InventoryBankCount];
     public int[] AvailableItems { get; } = new int[InventoryBankCount];
     public byte[] QuestItemRecords { get; } = new byte[QuestItemCount * QuestItemRecordSize];

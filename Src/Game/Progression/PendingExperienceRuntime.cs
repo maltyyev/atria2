@@ -29,14 +29,14 @@ public sealed class LevelUpNotice
 
     public LevelUpNotice(int actor, int level, uint milliseconds)
     {
-        if ((uint)actor >= 6 || level is < 1 or > 13)
+        if (actor < 0 || level is < 1 or > 13)
         {
             throw new ArgumentOutOfRangeException(nameof(actor));
         }
 
         Actor = actor;
         Level = level;
-        y = 129 + actor * 22;
+        y = 129 + Math.Min(actor, ExperienceAllocationRaster.VisibleRows - 1) * 22;
         Deadline = unchecked(milliseconds + 4000);
     }
 
@@ -109,7 +109,7 @@ public sealed class PendingExperienceRuntime(ItemCatalog items, IExperienceModal
 
         byte[] originalParty = (byte[])PartyCodec.Encode(state.Party).Clone();
         int award = state.PendingExperience, pendingFlag = state.ExperiencePending;
-        var session = new ExperienceAllocationSession(originalParty, award);
+        var session = new ExperienceAllocationSession(originalParty, award, state.HeroCatalog);
         active = true;
         try
         {
@@ -120,14 +120,14 @@ public sealed class PendingExperienceRuntime(ItemCatalog items, IExperienceModal
             }
 
             ProgressionRules.ApplyAward(session);
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < session.Party.Count; i++)
             {
-                if (session.Working.GetMemberStatus(i) == 0 || session.Working.Party[i].PendingAction != 1)
+                if (session.Working.Heroes[i].MemberStatus == 0 || session.Working.Heroes[i].PendingAction != 1)
                 {
                     continue;
                 }
 
-                var notice = new LevelUpNotice(i, session.Working.Party[i].Level, effects.Milliseconds);
+                var notice = new LevelUpNotice(i, session.Working.Heroes[i].Level, effects.Milliseconds);
                 effects.ShowLevelUp(notice, session.Party);
                 if (!notice.Completed)
                 {

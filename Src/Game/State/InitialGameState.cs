@@ -5,9 +5,9 @@ namespace Atria.Game.State;
 /// <summary>Recovered state-only reset subset, excluding world allocations/platform/scene loading.</summary>
 public static class InitialGameState
 {
-    public static GameState Create(ItemCatalog items, IReadOnlyList<ReadOnlyMemory<byte>> messages)
+    public static GameState Create(ItemCatalog items, IReadOnlyList<ReadOnlyMemory<byte>> messages, HeroCatalog? heroCatalog = null)
     {
-        var state = new GameState();
+        var state = new GameState(heroCatalog);
         ResetRecoveredCore(state, items, messages);
         return state;
     }
@@ -42,29 +42,30 @@ public static class InitialGameState
         }
 
         InitialPartyDefinition.Apply(state.Party);
-        state.InitializedPartyCount = 6;
-        for (int i = 0; i < 6; i++)
+        state.HeroCatalog.InitializeAdditionalHeroes(state);
+        state.InitializedPartyCount = state.Heroes.Length;
+        for (int i = 0; i < state.Heroes.Length; i++)
         {
-            state.Party[i].Name.AsSpan().Clear();
-            state.Party[i].LegacyName.AsSpan().Clear();
-            CopyName(messages[i].Span, state.Party[i].Name, false);
+            state.Heroes[i].Name.AsSpan().Clear();
+            state.Heroes[i].LegacyName.AsSpan().Clear();
+            CopyName(messages[state.HeroCatalog[i].Template].Span, state.Heroes[i].Name, false);
 
-            state.Party[i].EquipmentCapacity = EquipmentCapacity(state.Party[i].Class, state.Party[i].Level);
+            state.Heroes[i].EquipmentCapacity = EquipmentCapacity(state.Heroes[i].Class, state.Heroes[i].Level);
         }
 
         // 402c60 invokes equipment-effect routine415920 before derived recalculation.
         // All actual initial active items have zero modifiers. Reject an altered catalog
         // here until the unrelated general equip/unequip effect path is implemented.
-        for (int actor = 0; actor < 6; actor++)
+        for (int actor = 0; actor < state.Heroes.Length; actor++)
         {
-            if (state.GetMemberStatus(actor) == 0)
+            if (state.Heroes[actor].MemberStatus == 0)
             {
                 continue;
             }
 
-            for (int slot = 0; slot < state.Party[actor].EquipmentCapacity; slot++)
+            for (int slot = 0; slot < state.Heroes[actor].EquipmentCapacity; slot++)
             {
-                int id = state.Party[actor].Equipment[slot];
+                int id = state.Heroes[actor].Equipment[slot];
                 if (id != -1 && items.GetItem(id).ModifierCount != 0)
                 {
                     throw new NotSupportedException("Initial equipped-item effect path needs recovery for modified item catalogs.");

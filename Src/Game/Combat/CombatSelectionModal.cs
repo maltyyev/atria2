@@ -65,7 +65,7 @@ public sealed class CombatSelectionModal(
                         {
                             if (modern.MouseX is >= 126 and < 392 && modern.MouseY is >= 133 and < 253)
                             {
-                                pointerToggle = selection.PointerSelect(0, (modern.MouseY - 133) / 20);
+                                pointerToggle = selection.PointerSelect(0, selection.FirstVisible + (modern.MouseY - 133) / 20);
                             }
                             else if (modern.MouseX is >= 130 and < 510 && modern.MouseY is >= 370 and < 400)
                             {

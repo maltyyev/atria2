@@ -1,0 +1,8 @@
+[
+  { "id": "roland", "storageIndex": 0, "template": 0, "combatPrefix": "ROLAND", "portrait": 0, "nameKey": "ui.characters.roland", "introductionKey": "characters.0.introduction" },
+  { "id": "mist", "storageIndex": 1, "template": 1, "combatPrefix": "MIST", "portrait": 1, "nameKey": "ui.characters.mist", "introductionKey": "characters.1.introduction" },
+  { "id": "swallow", "storageIndex": 2, "template": 2, "combatPrefix": "SWALLOW", "portrait": 2, "nameKey": "ui.characters.swallow", "introductionKey": "characters.2.introduction" },
+  { "id": "brian", "storageIndex": 3, "template": 3, "combatPrefix": "BRAIUN", "portrait": 3, "nameKey": "ui.characters.brian", "introductionKey": "characters.3.introduction" },
+  { "id": "emerald", "storageIndex": 4, "template": 4, "combatPrefix": "EMERALD", "portrait": 4, "nameKey": "ui.characters.emerald", "introductionKey": "characters.4.introduction" },
+  { "id": "tiger", "storageIndex": 5, "template": 5, "combatPrefix": "TIGER", "portrait": 5, "nameKey": "ui.characters.tiger", "introductionKey": "characters.5.introduction" }
+]

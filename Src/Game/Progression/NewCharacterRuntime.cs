@@ -14,12 +14,12 @@ public static class NewCharacterRuntime
             return false;
         }
 
-        if ((uint)state.NewCharacterId >= GameState.PartyCount || (uint)selectedEquipmentActor >= 6)
+        if ((uint)state.NewCharacterId >= state.Party.Length || (uint)selectedEquipmentActor >= (uint)state.Heroes.Length)
         {
             throw new InvalidDataException("New-character index or equipment effect target exceeds native party storage.");
         }
 
-        var working = new GameState();
+        var working = new GameState(state.HeroCatalog);
         PartyCodec.Copy(state.Party, working.Party);
         state.OwnedItems.CopyTo(working.OwnedItems, 0);
         int joining = state.NewCharacterId;
@@ -40,23 +40,23 @@ public static class NewCharacterRuntime
             working.OwnedItems[id] = unchecked(working.OwnedItems[id] + 1);
         }
 
-        for (int actor = 0; actor < 6; actor++)
+        for (int actor = 0; actor < working.Heroes.Length; actor++)
         {
-            int kind = working.Party[actor].Class;
-            if ((uint)kind < 6)
+            int kind = working.Heroes[actor].Class;
+            if ((uint)kind < ClassCatalog.Count)
             {
-                working.Party[actor].EquipmentCapacity = InitialGameState.EquipmentCapacity(kind, working.Party[actor].Level);
+                working.Heroes[actor].EquipmentCapacity = InitialGameState.EquipmentCapacity(kind, working.Heroes[actor].Level);
             }
         }
 
-        for (int actor = 0; actor < 6; actor++)
+        for (int actor = 0; actor < working.Heroes.Length; actor++)
         {
-            if (working.GetMemberStatus(actor) != 1)
+            if (working.Heroes[actor].MemberStatus != 1)
             {
                 continue;
             }
 
-            int capacity = working.Party[actor].EquipmentCapacity;
+            int capacity = working.Heroes[actor].EquipmentCapacity;
             if ((uint)capacity > 6)
             {
                 throw new InvalidDataException("Joining equipment capacity exceeds six slots.");
@@ -64,7 +64,7 @@ public static class NewCharacterRuntime
 
             for (int slot = 0; slot < capacity; slot++)
             {
-                int id = working.Party[actor].Equipment[slot];
+                int id = working.Heroes[actor].Equipment[slot];
                 if (id == -1)
                 {
                     continue;
@@ -89,6 +89,6 @@ public static class NewCharacterRuntime
             throw new InvalidDataException("Joining equipment has no item definition.");
         }
 
-        EquipmentEffects.Apply(state.Party[actor], items.GetItem(id), removing: false);
+        EquipmentEffects.Apply(state.Heroes[actor], items.GetItem(id), removing: false);
     }
 }

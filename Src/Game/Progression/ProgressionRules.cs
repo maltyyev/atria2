@@ -11,7 +11,7 @@ public static class ProgressionRules
 
     public static void ValidateRecord(GameState state, int actor)
     {
-        int level = state.Party[actor].Level, threshold = state.Party[actor].NextExperience;
+        int level = state.Heroes[actor].Level, threshold = state.Heroes[actor].NextExperience;
         if (level is < 1 or > 13)
         {
             throw new InvalidDataException("Party level is outside recovered ranks1..13; no implicit legacy-save normalization.");
@@ -22,7 +22,7 @@ public static class ProgressionRules
             throw new InvalidDataException("Party next-XP threshold does not match the recovered level table.");
         }
 
-        if ((uint)state.Party[actor].Class >= 6)
+        if ((uint)state.Heroes[actor].Class >= ClassCatalog.Count)
         {
             throw new InvalidDataException("Unknown progression class.");
         }
@@ -36,49 +36,49 @@ public static class ProgressionRules
         }
 
         GameState party = session.Working;
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < party.Heroes.Length; i++)
         {
-            if (party.GetMemberStatus(i) == 0)
+            if (party.Heroes[i].MemberStatus == 0)
             {
                 continue;
             }
 
-            int xp = unchecked(party.Party[i].Experience + session.ConsumeAllocation(i));
-            int level = party.Party[i].Level;
-            party.Party[i].Experience = xp;
-            if (level < 13 && xp >= party.Party[i].NextExperience)
+            int xp = unchecked(party.Heroes[i].Experience + session.ConsumeAllocation(i));
+            int level = party.Heroes[i].Level;
+            party.Heroes[i].Experience = xp;
+            if (level < 13 && xp >= party.Heroes[i].NextExperience)
             {
-                party.Party[i].NextExperience = Thresholds[level];
-                party.Party[i].PendingAction = 1;
-                party.Party[i].Level = ++level;
+                party.Heroes[i].NextExperience = Thresholds[level];
+                party.Heroes[i].PendingAction = 1;
+                party.Heroes[i].Level = ++level;
             }
 
-            party.Party[i].MagicRank = (level - 1) / 2 + 1;
-            party.Party[i].CombatForm = level / 3 + 1;
+            party.Heroes[i].MagicRank = (level - 1) / 2 + 1;
+            party.Heroes[i].CombatForm = level / 3 + 1;
         }
     }
 
     // 403ec0: equipment capacity first, then per-pending actor403cc0 and full recalculation each time.
     internal static void FinalizeStats(GameState working, GameState rankEvidence, ItemCatalog items)
     {
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < working.Heroes.Length; i++)
         {
-            int level = working.Party[i].Level, type = working.Party[i].Class;
-            if ((uint)type < 6)
+            int level = working.Heroes[i].Level, type = working.Heroes[i].Class;
+            if ((uint)type < ClassCatalog.Count)
             {
-                working.Party[i].EquipmentCapacity = InitialGameState.EquipmentCapacity(type, level);
+                working.Heroes[i].EquipmentCapacity = InitialGameState.EquipmentCapacity(type, level);
             }
         }
 
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < working.Heroes.Length; i++)
         {
-            if (working.Party[i].PendingAction == 0)
+            if (working.Heroes[i].PendingAction == 0)
             {
                 continue;
             }
 
             ValidateRecord(working, i);
-            int level = working.Party[i].Level;
+            int level = working.Heroes[i].Level;
             if (level == 13)
             {
                 bool itemsComplete = true, questsComplete = true;
@@ -112,22 +112,22 @@ public static class ProgressionRules
             }
             else
             {
-                ProgressionCatalog.Apply(working.Party[i], level);
+                ProgressionCatalog.Apply(working.Heroes[i], level);
             }
 
             PartyDerivedStats.Recalculate(working, items);
-            working.Party[i].PendingAction = 0;
+            working.Heroes[i].PendingAction = 0;
         }
 
         void Bonus(int actor, int attribute, int extra, int rank)
         {
             for (int index = 0; index < PartyMember.AttributeCount; index++)
             {
-                working.Party[actor].AddAttribute(index, attribute);
+                working.Heroes[actor].AddAttribute(index, attribute);
             }
 
-            working.Party[actor].Leadership = unchecked(working.Party[actor].Leadership + extra);
-            working.Party[actor].AchievementRank = rank;
+            working.Heroes[actor].Leadership = unchecked(working.Heroes[actor].Leadership + extra);
+            working.Heroes[actor].AchievementRank = rank;
         }
     }
 }

@@ -97,12 +97,12 @@ public sealed class CombatSceneRuntime
                     markerFacing = 1;
                 }
 
-                for (int party = 0; party < 6; party++)
+                for (int party = 0; party < scene.HeroCatalog.Count; party++)
                 {
                     CombatActorState record = actors[scene.PartyStartIndex + party].State;
                     record.AnchorX = source.GetInteger(0);
                     record.SpriteX = source.GetInteger(0);
-                    record.Depth = unchecked(scene.Header73 + 10 + party * 20);
+                    record.Depth = scene.PartySpawns[party].Y;
                     record.Facing = unchecked((byte)markerFacing);
                     record.Team = 100;
                     record.CanTurn = 1;
@@ -204,8 +204,8 @@ public sealed class CombatSceneRuntime
             throw new InvalidOperationException("Combat party population is out of native setup order.");
         }
 
-        string[] names = ["ROLAND", "MIST", "SWALLOW", "BRAIUN", "EMERALD", "TIGER"];
-        for (int party = 0; party < 6; party++)
+        if (selection.Party.Count != Scene.HeroCatalog.Count) throw new InvalidDataException("Combat roster differs from selection.");
+        for (int party = 0; party < Scene.HeroCatalog.Count; party++)
         {
             var source = selection.Party[party];
             if (source.PendingAction == 0)
@@ -226,7 +226,7 @@ public sealed class CombatSceneRuntime
             }
 
             int form = source.CombatForm;
-            CombatInfoBinding binding = LoadInfo(Encoding.ASCII.GetBytes(names[party] + form.ToString(CultureInfo.InvariantCulture)));
+            CombatInfoBinding binding = LoadInfo(Encoding.ASCII.GetBytes(Scene.HeroCatalog[party].BattleResource(form)));
             actor.Binding = binding;
             actor.Animation = new(data, binding.Info, binding.Assets);
             data.JumpSequenceIndex = binding.NativeIndex;
@@ -327,21 +327,11 @@ public sealed class CombatSceneRuntime
         int firstAnimation = animations.Count;
         foreach (ReadOnlyMemory<byte> resource in file.AnimationResources)
         {
-            if (animations.Count >= 19)
-            {
-                throw new InvalidDataException("Combat exceeds native animation-slot limit.");
-            }
-
             animations.Add(CombatAnimationAssets.Load(root, resource.Span));
         }
 
         foreach (CombatInfoCharacter character in file.Characters)
         {
-            if (bindings.Count >= 20)
-            {
-                throw new InvalidDataException("Combat exceeds native character-info storage.");
-            }
-
             int animationIndex = firstAnimation + character.AnimationOrdinal;
             bindings.Add(new(bindings.Count, animationIndex, character, animations[animationIndex]));
         }

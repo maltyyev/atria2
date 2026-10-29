@@ -33,6 +33,7 @@ public sealed class CombatControlOverlay
         this.font = font;
         this.icons = icons;
         this.save = save;
+        foreach (var player in input.Profile.Players) player.EnsureHeroCount(runtime.Scene.HeroCatalog.Count);
         panel = new(tiles, font);
     }
 
@@ -155,7 +156,7 @@ public sealed class CombatControlOverlay
             string requirement = panel.Selection < moves.Count ? (moves[panel.Selection].Id.StartsWith("v:", StringComparison.Ordinal) ? GameText.Get("ui.combat.automaticChain") : moves[panel.Selection].Requirement) : "";
             panel.Draw(
                 pixels,
-                GameText.Format("ui.combat.playerCharacter", ("player", owner + 1), ("character", MoveCatalog.Name(party))),
+                GameText.Format("ui.combat.playerCharacter", ("player", owner + 1), ("character", runtime.Scene.HeroCatalog[party].Name)),
                 rows,
                 GameText.Get("ui.combat.bindHint"),
                 notice.Length > 0 ? notice : requirement,

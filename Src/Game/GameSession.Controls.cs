@@ -14,7 +14,7 @@ public sealed partial class GameSession
     private CombatExecutionHost? currentCombat;
     private CombatControlOverlay? combatControls;
     private bool blockingControls;
-    private MoveCatalog Moves => moveCatalog ??= new(root);
+    private MoveCatalog Moves => moveCatalog ??= new(root, state.HeroCatalog);
 
     private void InitializeModernControls(ControlBindings original)
     {
@@ -166,9 +166,9 @@ public sealed partial class GameSession
             {
                 var rows = new List<ControlRow>
                 {
-                    new(GameText.Get("ui.common.hero"), MoveCatalog.Name(party), Adjust: d =>
+                    new(GameText.Get("ui.common.hero"), state.HeroCatalog[party].Name, Adjust: d =>
                     {
-                        party = (party + d + 6) % 6;
+                        party = (party + d + state.HeroCatalog.Count) % state.HeroCatalog.Count;
                     }),
                     new(GameText.Get("ui.controls.form"), form + " / 5", Adjust: d => form = Math.Clamp(form + d, 1, 5)),
                     new(GameText.Get("ui.controls.basicAttacks"), controls.Hint(0, GameAction.Attack)),
@@ -184,7 +184,7 @@ public sealed partial class GameSession
                 background.CopyTo(host.FrameBuffer);
                 panel.Draw(
                     host.FrameBuffer,
-                    GameText.Format("ui.controls.movesFor", ("character", MoveCatalog.Name(party))),
+                    GameText.Format("ui.controls.movesFor", ("character", state.HeroCatalog[party].Name)),
                     rows,
                     GameText.Get("ui.controls.shortcutsHelp"),
                     GameText.Get("ui.controls.shortcutsExplanation")

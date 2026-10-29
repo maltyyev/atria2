@@ -8,9 +8,9 @@ public static class InventoryMaintenance
         for (int item = 58; item <= 60; item++)
         {
             int total = Math.Max(0, state.AvailableItems[item]);
-            for (int actor = 0; actor < 6; actor++)
+            for (int actor = 0; actor < state.Heroes.Length; actor++)
             {
-                int capacity = state.Party[actor].EquipmentCapacity;
+                int capacity = state.Heroes[actor].EquipmentCapacity;
                 if ((uint)capacity > 6)
                 {
                     throw new InvalidDataException("Equipment capacity exceeds six slots.");
@@ -18,7 +18,7 @@ public static class InventoryMaintenance
 
                 for (int slot = 0; slot < capacity; slot++)
                 {
-                    if (state.Party[actor].Equipment[slot] == item)
+                    if (state.Heroes[actor].Equipment[slot] == item)
                     {
                         total = checked(total + 1);
                     }

@@ -165,11 +165,11 @@ public sealed class ScriptStateHost(GameState state, IScriptEffects? effects = n
                 return state.GetQuestItemFlag(Index(0, GameState.QuestItemCount)) != 0 ? 1 : 0;
             case "member_inout":
                 Count(2);
-                state.SetMemberStatus(Index(0, GameState.PartyCount), Int(1));
+                state.SetMemberStatus(Index(0, state.Party.Length), Int(1));
                 return 0;
             case "member_check":
                 Count(1);
-                return state.GetMemberStatus(Index(0, GameState.PartyCount));
+                return state.GetMemberStatus(Index(0, state.Party.Length));
             case "get_xp":
                 Count(1);
                 state.PendingExperience = Int(0);

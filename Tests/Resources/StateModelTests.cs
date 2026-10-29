@@ -24,7 +24,7 @@ internal static class StateModelTests
             BinaryPrimitives.WriteInt32LittleEndian(actorImage.AsSpan(0x274), int.MaxValue);
             Check(CombatActorCodec.Encode(actor).AsSpan().SequenceEqual(actorImage), "Named actor writes must change only established fields.");
 
-            var partyImage = new byte[GameState.PartyCount * PartyCodec.RecordSize];
+            var partyImage = new byte[GameState.LegacyPartyRecordCount * PartyCodec.RecordSize];
             random.NextBytes(partyImage);
             var party = new GameState();
             PartyCodec.Decode(partyImage, party.Party);
