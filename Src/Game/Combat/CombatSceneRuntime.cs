@@ -43,13 +43,11 @@ public sealed class CombatActorImage
     public int ControlPlayer { get; internal set; } = -1;
     public int CurrentCommandIndex { get; internal set; } = -1; //native actor0 P-record pointer
     public int InitialHealth { get; internal set; }
-    public bool IsStrongEnemy { get; internal set; }
 }
 
 /// <summary>4128c0/412fa0 actual pointer-free actor and shared INF ownership, without claiming battle completion.</summary>
 public sealed class CombatSceneRuntime
 {
-    private const int StrongEnemyHealthPercent = 80;
     private const int WeakEncounterHealthPercent = 30;
     private readonly string root;
     private readonly Action<int>? loadNumericSound;
@@ -264,7 +262,7 @@ public sealed class CombatSceneRuntime
 
     internal void CaptureEncounterStrength()
     {
-        int strongestAlly = 0, weakestAlly = int.MaxValue, strongestEnemy = 0;
+        int weakestAlly = int.MaxValue, strongestEnemy = 0;
         foreach (var image in actors)
         {
             image.InitialHealth = image.Binding is not null && image.State.Active != 0 ? Math.Max(0, image.State.Health) : 0;
@@ -275,19 +273,12 @@ public sealed class CombatSceneRuntime
 
             if (image.State.Team >= 100)
             {
-                strongestAlly = Math.Max(strongestAlly, image.InitialHealth);
                 weakestAlly = Math.Min(weakestAlly, image.InitialHealth);
             }
             else
             {
                 strongestEnemy = Math.Max(strongestEnemy, image.InitialHealth);
             }
-        }
-
-        foreach (var image in actors)
-        {
-            image.IsStrongEnemy = image.State.Team < 100 && image.InitialHealth > 0 && strongestAlly > 0
-                && (long)image.InitialHealth * 100 >= (long)strongestAlly * StrongEnemyHealthPercent;
         }
 
         IsWeakEncounter = weakestAlly != int.MaxValue && strongestEnemy > 0

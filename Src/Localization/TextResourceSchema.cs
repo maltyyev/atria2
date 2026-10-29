@@ -78,6 +78,10 @@ public static class TextResourceSchema
         foreach (var entry in original.OrderBy(entry => UpgradeKey(entry.Key).Key, StringComparer.Ordinal)
             .ThenBy(entry => int.TryParse(entry.Key.AsSpan(entry.Key.LastIndexOf('.') + 1), out int index) ? index : -1))
         {
+            if (entry.Key == "battle.038")
+            {
+                continue;
+            }
             if ((entry.Key.StartsWith("credits.", StringComparison.Ordinal) || entry.Key.StartsWith("endings.", StringComparison.Ordinal))
                 && !entry.Key.EndsWith(".text", StringComparison.Ordinal) && string.IsNullOrWhiteSpace(entry.Value))
             {

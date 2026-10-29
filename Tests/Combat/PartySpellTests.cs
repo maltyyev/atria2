@@ -70,12 +70,6 @@ public static class PartySpellTests
         var policy = new PartySpellDecision(root, runtime, magic, hits, random);
         var healer = runtime.Actors[runtime.Scene.PartyStartIndex + 4];
         var enemy = runtime.Actors[0];
-        Check(!enemy.IsStrongEnemy, "79% is not strong");
-        enemy.State.Health = 80;
-        runtime.CaptureEncounterStrength();
-        Check(enemy.IsStrongEnemy, "80% is strong");
-        enemy.State.Health = 1;
-        Check(enemy.IsStrongEnemy && enemy.InitialHealth == 80, "strength never changes when wounded");
 
         int Score(CombatSpellEffect effect) => policy.EffectScore(healer, effect, 1000);
         Check(Score(CombatSpellEffect.PartyHeal) == 0 && Score(CombatSpellEffect.FullHeal) == 0, "healthy party does not heal");
@@ -111,14 +105,14 @@ public static class PartySpellTests
         {
             Spells = policy
         };
-        Check(policy.Select(runtime.Scene.PartyStartIndex + 4, 9000, out _) < 0, "old six-second interval no longer permits a cast");
-        Check(policy.Select(runtime.Scene.PartyStartIndex + 4, 32000, out _) < 0, "strict enemy-style cooldown boundary");
-        controller.Process(runtime.Scene.PartyStartIndex + 4, 32001);
+        Check(policy.Select(runtime.Scene.PartyStartIndex + 4, 9000, out _) < 0, "seven seconds still inside cooldown");
+        Check(policy.Select(runtime.Scene.PartyStartIndex + 4, 12000, out _) < 0, "strict ten-second cooldown boundary");
+        controller.Process(runtime.Scene.PartyStartIndex + 4, 12001);
         Check(healer.State.Mana == 900 && healer.State.ActionFlags == (int)CombatActionFlags.Command
             && healer.CurrentCommandIndex == healing, "automatic control starts real spell and charges mana once");
         healer.State.ActionFlags = 0;
 
-        // Actual fireball geometry: strong enemy in front, then behind, then outside its lane.
+        // Actual fireball geometry: enemy in front, then behind, then outside its lane.
         var caster = runtime.Actors[runtime.Scene.PartyStartIndex];
         var fireball = caster.Binding!.Info.Commands.First(c => caster.Binding.Assets.Animation.Sequences[c.Animation].Frames.Any(f => f.Effect == (int)CombatSpellEffect.Fireball));
         foreach (var t in runtime.Actors.Where(t => t.State.Team < 100)) t.State.Active = 0;
@@ -131,15 +125,15 @@ public static class PartySpellTests
         enemy.State.HurtTop = 230; enemy.State.HurtBottom = 350;
         enemy.State.Depth = 350;
         ulong calls = random.Calls;
-        Check(forecast.Score(caster, fireball, 1) == 1, "strong enemy on actual projectile path");
+        Check(forecast.Score(caster, fireball, 1) == 1, "enemy on actual projectile path");
         Check(forecast.Score(caster, fireball, 255) == 0, "enemy behind projectile is not counted");
         enemy.State.Depth = 450;
         Check(forecast.Score(caster, fireball, 1) == 0, "other depth lane is excluded");
         Check(random.Calls == calls && enemy.State.Health == 100 && magic.ActiveMagic is null, "forecast cannot damage, consume RNG, or activate real magic");
         enemy.State.Depth = 350;
-        enemy.State.Health = 79;
+        enemy.State.Health = 1;
         runtime.CaptureEncounterStrength();
-        Check(forecast.Score(caster, fireball, 1) == 0, "one weak target does not justify projectile");
+        Check(forecast.Score(caster, fireball, 1) == 1, "one living target permits a projectile irrespective of HP");
         for (int i = 1; i < 3; i++)
         {
             var t = runtime.Actors[i];
@@ -155,7 +149,7 @@ public static class PartySpellTests
             t.State.HurtTop = 230;
             t.State.HurtBottom = 350;
             runtime.CaptureEncounterStrength();
-            Check(forecast.Score(caster, fireball, 1) == (i == 1 ? 0 : 3), "three weak targets required for piercing projectile");
+            Check(forecast.Score(caster, fireball, 1) == i + 1, "each target on a piercing projectile path increases its score");
         }
 
         // Every original form/command must be recognized and safe to inspect.
@@ -174,9 +168,10 @@ public static class PartySpellTests
             }
         }
         CheckAlliedCastCadence(root);
+        CheckConcurrentCommandGuard(root);
         PartyManaSupplyTests.Run(root);
         WaveManaTests.Run(root);
-        return $"Party spells PASS: strength snapshots, healing/cure/resurrection, weak-fight costs, active buffs, enemy mage cadence, real trajectories, {count} commands across 30 forms.";
+        return $"Party spells PASS: healing/cure/resurrection, weak-fight costs, active buffs, ten-second cadence, command exclusion, real trajectories, {count} commands across 30 forms.";
     }
 
     private static void CheckAlliedCastCadence(string root)
@@ -225,19 +220,44 @@ public static class PartySpellTests
                 "automatic cast succeeds for every party class");
             member.State.ActionFlags = 0;
             int manaAfter = member.State.Mana;
-            uint deadline = 1601u + (uint)mage.SpecialActionInterval;
+            uint deadline = 11_601;
             foreach (uint time in new[] { 1602u, 7602u, deadline - 1, deadline })
             {
                 Check(policy.Select(index, time, out _) < 0 && member.State.Mana == manaAfter,
-                    "no automatic repeat or mana charge before the enemy mage deadline");
+                    "no automatic repeat or mana charge before ten seconds");
             }
             int command = policy.Select(index, deadline + 1, out _);
-            Check(command >= 0, "every class may cast again after the enemy mage deadline");
+            Check(command >= 0, "every class may cast again after ten seconds");
 
             policy.Cast(index, deadline + 1);
             Check(controller.ExecuteMove(index, $"p:{member.Binding!.Info.Commands[command].Icon}", deadline + 2),
                 "manual spell execution is independent of the automatic cooldown");
             member.State.ActionFlags = 0;
+        }
+    }
+
+    private static void CheckConcurrentCommandGuard(string root)
+    {
+        var (runtime, state) = Fixture(root);
+        var random = new LegacyRandom(123);
+        var hits = new CombatHitExecutor(runtime, state, random.Next, _ => { }, _ => { });
+        var magic = new CombatParticleMagicRuntime(root, runtime, CombatParticleSystem.Load(root), hits,
+            () => 1000, random.Next, _ => { }, _ => { });
+        var policy = new PartySpellDecision(root, runtime, magic, hits, random);
+        int healerIndex = runtime.Scene.PartyStartIndex + 4;
+        runtime.Actors[healerIndex].State.Health = 40;
+        uint now = 1000;
+        foreach (int index in new[] { 0, runtime.Scene.PartyStartIndex })
+        {
+            var other = runtime.Actors[index].State;
+            other.ActionFlags = (int)CombatActionFlags.Command;
+            Check(policy.Select(healerIndex, now, out _) < 0, "living enemy or ally command prevents a concurrent cast");
+            now += 1000;
+            other.Health = 0;
+            Check(policy.Select(healerIndex, now, out _) >= 0, "dead participant does not block healing");
+            now += 1000;
+            other.Health = 100;
+            other.ActionFlags = 0;
         }
     }
 }

@@ -145,10 +145,6 @@ public sealed class CombatPartySelection
         {
             ErrorCode = 1;
         }
-        else if (count >= 4)
-        {
-            ErrorCode = 2;
-        }
         else if (count < 2 && PlayerCount > 1)
         {
             ErrorCode = 3;

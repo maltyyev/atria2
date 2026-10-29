@@ -67,6 +67,18 @@ public static class LocalizationTests
             Check(Directory.GetFiles(Path.GetDirectoryName(legacyMessages)!, "messages.json.*.bak")
                 .Any(path => File.ReadAllText(path) == beforeUpgrade), "migration retains exact pre-update bytes");
             Check(TextResourceSchema.UpgradeFiles(temporary) == 0, "translation migration is idempotent");
+            var obsoleteBattleText = new Dictionary<string, string>(LocalizationCatalog.Defaults["battle.json"])
+            {
+                ["battle.038"] = "obsolete entry",
+                ["battle.036"] = "Custom selection prompt"
+            };
+            Write("battle.json", obsoleteBattleText);
+            Check(TextResourceSchema.UpgradeFiles(temporary) == 1, "unused battle message is removed from an existing installation");
+            var upgradedBattle = new LocalizationCatalog(temporary);
+            Check(!upgradedBattle.TryGet("battle.038", out _) && upgradedBattle.Get("battle.036") == "Custom selection prompt",
+                "obsolete entry removed without losing other user edits");
+            Check(TextResourceSchema.UpgradeFiles(temporary) == 0, "battle message cleanup is idempotent");
+            Write("battle.json", LocalizationCatalog.Defaults["battle.json"]);
             Write("messages.json", LocalizationCatalog.Defaults["messages.json"]);
             Write("dialogue.json", new Dictionary<string, string>(LocalizationCatalog.Defaults["dialogue.json"])
             {

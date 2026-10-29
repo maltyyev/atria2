@@ -6,13 +6,13 @@ namespace Atria.Game.Combat;
 /// <summary>40a820 actor/particle depth queue and actual world/menu raster; HUD is a separate stage.</summary>
 public sealed class CombatSceneRenderer(CombatSceneRuntime runtime, CombatBattleAssets assets, CombatCameraBounds camera, CombatCameraShake shake)
 {
-    private readonly DrawItem[] queue = new DrawItem[80];
+    private readonly List<DrawItem> queue = new(runtime.Actors.Count);
     private readonly CombatBackgroundLayer primaryBackground = new(assets.BackgroundWidth, assets.BackgroundHeight, assets.Background);
-    private int count, detail, shakeX;
+    private int detail, shakeX;
     private readonly record struct DrawItem(int X, int Y, int Depth, int Code, SpriteFrame? Sprite, int Divisor, ushort Color);
     public void PrepareActors(int visualDetail, bool advanceActors = true)
     {
-        count = 0;
+        queue.Clear();
         detail = visualDetail;
         shakeX = shake.AdvanceVisual();
         for (int actorIndex = 0; actorIndex < runtime.Actors.Count; actorIndex++)
@@ -102,7 +102,7 @@ public sealed class CombatSceneRenderer(CombatSceneRuntime runtime, CombatBattle
                 code *= 5;
             }
 
-            Add(new(a.SpriteX, a.SpriteY, a.Depth, code, image.Animation.CurrentSprite, divisor, color));
+            queue.Add(new(a.SpriteX, a.SpriteY, a.Depth, code, image.Animation.CurrentSprite, divisor, color));
         }
     }
 
@@ -110,12 +110,12 @@ public sealed class CombatSceneRenderer(CombatSceneRuntime runtime, CombatBattle
     {
         foreach (var p in particles)
         {
-            Add(new(p.X, p.Y, p.Depth, p.Code, p.Sprite, 0, 0));
+            queue.Add(new(p.X, p.Y, p.Depth, p.Code, p.Sprite, 0, 0));
         }
 
-        for (int i = 0; i < count - 1; i++)
+        for (int i = 0; i < queue.Count - 1; i++)
         {
-            for (int j = i + 1; j < count; j++)
+            for (int j = i + 1; j < queue.Count; j++)
             {
                 if (queue[j].Depth < queue[i].Depth)
                 {
@@ -140,7 +140,7 @@ public sealed class CombatSceneRenderer(CombatSceneRuntime runtime, CombatBattle
 
         assets.Menu.CopyTo(target, 400 * 640);
         RasterClip clip = new(0, 0, 639, 400);
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < queue.Count; i++)
         {
             DrawItem item = queue[i];
             if (item.Y < 0)
@@ -209,16 +209,6 @@ public sealed class CombatSceneRenderer(CombatSceneRuntime runtime, CombatBattle
                     SpriteRaster.Draw565(sprite, target, 640, 480, 640, item.X, item.Y, detail == 0 ? SpriteBlend.HalfType3 : SpriteBlend.Copy, mirrored, clip);
                     break;
             }
-        }
-    }
-
-    private void Add(DrawItem item)
-    {
-        queue[count] = item;
-        count++;
-        if (count > 79)
-        {
-            count = 0;
         }
     }
 

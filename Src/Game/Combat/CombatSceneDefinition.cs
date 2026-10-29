@@ -147,6 +147,7 @@ public sealed class CombatSceneDefinition
             throw new FileNotFoundException("Required battle scene is missing.", request.ResourceName);
         }
 
-        return new CombatSceneDefinition(request, SodV2.Parse(archive.ReadMember(index)));
+        var source = SodV2.Parse(archive.ReadMember(index));
+        return new CombatSceneDefinition(request, CombatEncounterBalance.Apply(request.ResourceName, source));
     }
 }

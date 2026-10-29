@@ -71,16 +71,14 @@ internal sealed class CombatProjectileForecast
         }
 
         int count = 0;
-        bool strong = false;
         for (int i = 0; i < struck.Length; i++)
         {
             if (struck[i])
             {
                 count++;
-                strong |= runtime.Actors[i].IsStrongEnemy;
             }
         }
-        return count >= 3 || strong ? count : 0;
+        return count;
     }
 
     private void Trace()
