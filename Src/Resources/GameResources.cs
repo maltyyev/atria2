@@ -2,9 +2,9 @@ namespace Atria.Resources;
 
 internal static class GameResources
 {
-    public static byte[] Read(string root, string archiveName, ReadOnlySpan<byte> member)
+    public static byte[] Read(string root, string archiveName, ReadOnlySpan<byte> member, string? sourceHash = null)
     {
-        if (archiveName == "SCRIPT.000" && Atria.Game.State.NarrativeScenes.Read(member) is { } authored)
+        if (archiveName == "SCRIPT.000" && Atria.Game.State.NarrativeScenes.Read(member, sourceHash) is { } authored)
         {
             return authored;
         }

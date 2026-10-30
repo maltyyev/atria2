@@ -95,13 +95,6 @@ internal sealed class SessionSnapshotLoader(
             Map = current.Map,
             Town = saved.Town
         };
-        var validatedStack = new ModeStack();
-        validatedStack.RestoreRuntime(saved.Modes);
-        if (!saved.ExactResume && validatedStack.LegacySaveMode() != saved.SavedMode)
-        {
-            throw new InvalidDataException("Underlying save mode disagrees with retained mode slots.");
-        }
-
         var retainedTown = new TownController();
         TownSceneAssets? retainedTownAssets = saved.Town.SceneName.Length == 0 ? null : TownSceneAssets.Load(root, saved.Town.SceneName);
         retainedTown.RestoreRuntime(saved.Town, retainedTownAssets?.Scene, retainedTownAssets?.Objects);
@@ -111,6 +104,16 @@ internal sealed class SessionSnapshotLoader(
         ValidateMapAliases(saved, result);
         PrepareEntry(saved, savedState, result, retainedTown);
         PrepareInterior(saved, result, retainedTown);
+        if (saved.AdmissionTarget is { } target)
+        {
+            var selected = result.Map.SelectScene(savedState.WorldX, savedState.WorldY);
+            if (selected.SceneIndex != target.SceneIndex || selected.AreaIndex != target.AreaIndex
+                || !selected.SceneMember.Span.SequenceEqual(target.SceneMember)
+                || !selected.ScriptMember.Span.SequenceEqual(target.ScriptMember))
+                throw new InvalidDataException("Saved town admission differs from its world destination.");
+
+            _ = TownSceneAssets.Load(root, target.SceneMember);
+        }
         ValidateScripts(saved, result);
         return result;
     }
@@ -236,16 +239,16 @@ internal sealed class SessionSnapshotLoader(
             var location = saved.Location!;
             var assets = TownSceneAssets.Load(root, location.SceneMember);
             // Dry-run native entry on a detached controller, collecting host commands without executing them.
-            retainedTown.Enter(
+            retainedTown.Initialize(
                 assets.Scene,
                 assets.Objects,
                 location.SceneIndex,
-                0,
                 location.SceneMember,
                 TownCatalog.Name(messages, location.SceneIndex),
                 TownCatalog.Get(location.SceneIndex).MusicTrack,
                 result.TownEntryCommands.Add
             );
+            retainedTown.QueueArrival(result.TownEntryCommands.Add);
             result.TownAssets = assets;
             result.Town = retainedTown.CaptureRuntime();
         }
@@ -293,7 +296,7 @@ internal sealed class SessionSnapshotLoader(
     {
         if (saved.Script is { } replay)
         {
-            byte[] source = Read("SCRIPT.000", Encoding.ASCII.GetBytes(replay.Member));
+            byte[] source = GameResources.Read(root, "SCRIPT.000", Encoding.ASCII.GetBytes(replay.Member), replay.SourceHash);
             if (Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source)) != replay.SourceHash)
             {
                 throw new InvalidDataException("Saved scenario source changed.");

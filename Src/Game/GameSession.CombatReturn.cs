@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using Atria.Game.Combat;
 using Atria.Game.Exploration;
 using Atria.Render.Codecs;
@@ -76,9 +77,7 @@ public sealed partial class GameSession
                 dungeon?.Motion.ClearMovementAfterBattle();
                 break;
             case CombatOutcomeReturnEffectKind.ResetStackAndPushGameOver:
-                modes.ResetDepth();
-                modes.Push(GameMode.Defeat);
-                EnterMode(GameMode.Defeat);
+                ShowTermination(GameMode.Defeat);
                 break;
             default:
                 throw new InvalidDataException("Unknown battle return effect.");

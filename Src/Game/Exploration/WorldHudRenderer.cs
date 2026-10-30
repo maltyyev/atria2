@@ -40,10 +40,9 @@ public sealed class WorldHudRenderer
     }
 
     public static int? OriginY(int worldY, bool modal) => worldY > 4 ? 0 : modal ? null : 421;
-    public static int? OriginY(int mode, int worldY, bool modal, int townAnchorY = 400, int previousMode = 0, bool dungeonHudEnabled = false)
+    public static int? OriginY(int mode, int worldY, bool modal, int townAnchorY = 400, bool dungeonHudEnabled = false)
     {
-        int effective = mode == 320 ? previousMode : mode;
-        if (mode is not (300 or 310 or 320 or 330 or 400 or 410 or 420 or 430))
+        if (mode is not (300 or 310 or 330 or 400 or 410 or 420 or 430))
         {
             return null;
         }
@@ -53,17 +52,12 @@ public sealed class WorldHudRenderer
             return null;
         }
 
-        bool top = effective switch
+        bool top = mode switch
         {
             300 or 310 or 330 => worldY > 4,
             400 => townAnchorY >= 80,
             _ => false
         };
-        if (mode == 320 && previousMode == 330 && !modal)
-        {
-            top = false; //429420 differs from modal4295e0 here.
-        }
-
         return top ? 0 : modal ? null : 421;
     }
 
@@ -74,7 +68,6 @@ public sealed class WorldHudRenderer
         Span<ushort> target,
         bool modal = false,
         int townAnchorY = 400,
-        int previousMode = 0,
         bool dungeonHudEnabled = false
     )
     {
@@ -83,7 +76,7 @@ public sealed class WorldHudRenderer
             throw new ArgumentException("HUD requires640x480 surface.");
         }
 
-        int? origin = OriginY(state.Mode, state.WorldY, modal, townAnchorY, previousMode, dungeonHudEnabled);
+        int? origin = OriginY(state.Mode, state.WorldY, modal, townAnchorY, dungeonHudEnabled);
         if (origin is not { } y)
         {
             return;
@@ -94,13 +87,9 @@ public sealed class WorldHudRenderer
             panel.AsSpan(row * 640, 640).CopyTo(target.Slice((y + row) * 640, 640));
         }
 
-        bool title = state.Mode != 320 || previousMode is 300 or 310 or 330 or 400;
-        if (title)
-        {
-            string name = areaName.Trim().ToUpperInvariant();
-            TextBoxRaster.Draw(font, name, target, 640, 480, 640, new(182, y + 8, 462, y + 24), 0, centered: true);
-            TextBoxRaster.Draw(font, name, target, 640, 480, 640, new(180, y + 7, 460, y + 23), 0xffff, NativeUiPalette.Normal, centered: true);
-        }
+        string name = areaName.Trim().ToUpperInvariant();
+        TextBoxRaster.Draw(font, name, target, 640, 480, 640, new(182, y + 8, 462, y + 24), 0, centered: true);
+        TextBoxRaster.Draw(font, name, target, 640, 480, 640, new(180, y + 7, 460, y + 23), 0xffff, NativeUiPalette.Normal, centered: true);
 
         Icon(1, 40, y + 8, target);
         Number(state.ResourceCounterDc88, 90, y + 9, 92, y + 10, target);

@@ -1,5 +1,36 @@
 using Atria.Render;
 
+if (args.Length == 3 && args[1] == "--location-ui")
+{
+    Console.WriteLine(Atria.Tests.World.LocationNavigationTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Persistence.SessionMigrationTests.Run(args[0], args[2]));
+    Atria.Tests.Persistence.RuntimeSnapshotTests.Run(args[0]);
+    Console.WriteLine(Atria.Tests.Town.TownTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Menu.Feedback011Tests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Combat.NarrativeReturnTests.Run(args[0]));
+    return;
+}
+
+if (args.Length is 2 or 3 && args[1] == "--narrative-return")
+{
+    Console.WriteLine(Atria.Tests.Combat.NarrativeReturnTests.Run(args[0], args.Length == 3 ? args[2] : null));
+    return;
+}
+
+if (args.Length == 4 && args[3] == "--narrative-arrival")
+{
+    Console.WriteLine(Atria.Game.GameSession.VerifyNarrativeArrival(args[0], args[1], args[2]));
+    return;
+}
+
+if (args.Length is 2 or 3 && args[1] == "--narrative-revision")
+{
+    Console.WriteLine(Atria.Tests.Combat.NarrativeRevisionTests.Run(args[0], args.Length == 3 ? args[2] : null));
+    Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));
+    Atria.Tests.Persistence.RuntimeSnapshotTests.Run(args[0]);
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--resource-labels")
 {
     Console.WriteLine(Atria.Tests.Localization.ResourceLabelTests.Run(args[0]));

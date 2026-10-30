@@ -1,3 +1,5 @@
+using Atria.Script;
+using Atria.Game.Navigation;
 using Atria.Game.Interiors;
 using Atria.Game.State;
 using Atria.Game.Town;
@@ -16,7 +18,7 @@ public sealed partial class GameSession
     private ShopRenderer? shopRenderer;
     private SpriteFile? itemSprites;
     private ShopStock[]? shopStocks;
-    private InteriorActionMenuAdapter InteriorActions => interiorActions ??= new(actions, interior, state, displayMessages, () => scriptMember, choice => RunScript(choice.ScriptMember.Span, choice.Function.Span, 3), LeaveInterior, BeginTrade, () =>
+    private InteriorActionMenuAdapter InteriorActions => interiorActions ??= new(actions, interior, state, displayMessages, () => scriptMember, choice => RunScript(choice.ScriptMember.Span, choice.Function.Span, ScenarioContinuation.InteriorInteraction), LeaveInterior, BeginTrade, () =>
     {
         itemSprites = null;
         shopRenderer = null;
@@ -28,10 +30,10 @@ public sealed partial class GameSession
         shopStocks = Enumerable.Range(0, ShopCatalog.Count).Select(i => ShopStock.FromCatalog(catalog, i)).ToArray();
     }
 
-    private void EnterInterior(int mode)
+    private void EnterInterior(int mode, TownSceneAssets prepared)
     {
         var outer = town.Scene.GetObject(town.Selection);
-        interiorAssets = TownSceneAssets.Load(root, outer.GetString(0).Span, loadObjects: mode != GameMode.Inn);
+        interiorAssets = prepared;
         trade = null;
         shopClock.Reset();
         interior.Enter(mode, outer, interiorAssets.Scene, HandleInterior);
@@ -180,13 +182,13 @@ public sealed partial class GameSession
         int leavingMode = state.Mode;
         actions.CloseAll();
         //428100 deliberately retains existing68104 for interiors. The actual script determines permission.
-        RunScript(scriptMember, "pre_out"u8, 4, leavingMode);
+        RunScript(scriptMember, "pre_out"u8, ScenarioContinuation.LeaveBuilding, leavingMode);
         CompleteLeaveInterior(leavingMode);
     }
 
     private void CompleteLeaveInterior(int leavingMode)
     {
-        if (state.Mode == GameMode.Defeat || state.EnterPermission == 0)
+        if (state.Mode is GameMode.Defeat or GameMode.Ending || state.EnterPermission == 0)
         {
             return;
         }
@@ -196,14 +198,12 @@ public sealed partial class GameSession
             Sound(4);
         }
 
-        modes.ResetDepth();
         state.ModeStackDepth = -1;
         saveDisabled = false;
         actions.SetRenderEnabled(false);
         state.People = Array.Empty<ScriptPerson>();
         trade = null;
-        modes.Push(GameMode.Town);
-        EnterMode(GameMode.Town);
+        CommitLocation(LocationKind.Town, townArrival: false);
     }
 
     private void ComposeInterior(Span<ushort> target)

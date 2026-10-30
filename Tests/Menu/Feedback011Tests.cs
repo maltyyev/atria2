@@ -47,7 +47,6 @@ public static class Feedback011Tests
         var state = InitialGameState.Create(items, messages);
         var assets = TownSceneAssets.Load(root, "01mercen.sod"u8);
         var town = new TownController();
-        int previousTown = 1;
         using var scripts = BinderArchive.Open(Path.Combine(root, "SCRIPT.000"));
         var program = ScriptProgram.Parse("01MERCEN", scripts.ReadMember(scripts.FindResource("01MERCEN"u8)));
         for (int attempt = 0; attempt < 3; attempt++)
@@ -58,12 +57,12 @@ public static class Feedback011Tests
             actions.CloseAll();
             actions.OpenTown(true, messages);
             actions.SetRenderEnabled(false);
-            previousTown = 1;
             InitialGameState.ResetRecoveredCore(state, items, messages);
-            NewGameSceneReset.Apply(state, town, actions, ref previousTown);
-            Check(previousTown == 0 && town.SavedSelection == 0 && actions.Depth == -1, "new game clears same-town and hidden-menu guards");
+            NewGameSceneReset.Apply(state, town, actions);
+            Check(town.SavedSelection == 0 && actions.Depth == -1, "new game clears same-town and hidden-menu guards");
             var commands = new List<TownCommand>();
-            town.Enter(assets.Scene, assets.Objects, 1, previousTown, "01mercen.sod"u8.ToArray(), default, 10, commands.Add);
+            town.Initialize(assets.Scene, assets.Objects, 1, "01mercen.sod"u8.ToArray(), default, 10, commands.Add);
+            town.QueueArrival(commands.Add);
             Check(commands.Count(c => c.Kind == TownEffectKind.QueueEnterScript) == 1, "restarted town queues intro exactly once");
             var observer = new IntroObserver();
             state.Mode = 400;
@@ -73,8 +72,8 @@ public static class Feedback011Tests
             var frame = town.AdvanceLogicalFrame(new(ActionMenuDepth: actions.Depth, DialogueActive: 0, LabelDelay: 0));
             Check(frame.DrawObjects && frame.DrawLabel, "town marker/name eligible after restart and intro");
             commands.Clear();
-            town.Enter(assets.Scene, assets.Objects, 1, 1, "01mercen.sod"u8.ToArray(), default, 10, commands.Add);
-            Check(commands.All(c => c.Kind != TownEffectKind.QueueEnterScript), "ordinary same-town re-entry still skips intro");
+            town.Initialize(assets.Scene, assets.Objects, 1, "01mercen.sod"u8.ToArray(), default, 10, commands.Add);
+            Check(commands.All(c => c.Kind != TownEffectKind.QueueEnterScript), "view initialization never queues an arrival");
         }
 
         return "0.1.1 feedback regressions passed: vertical aliases; three new-game resets; original eleven-line intro; marker gates; same-town return.";

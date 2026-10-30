@@ -11,8 +11,8 @@ public static class TownTests
         var assets = TownSceneAssets.Load(root, "01mercen.sod"u8);
         var controller = new TownController();
         var commands = new List<TownCommand>();
-        controller.Enter(assets.Scene, assets.Objects, 1, 0, "01mercen.sod"u8.ToArray(), "town"u8.ToArray(), TownCatalog.Get(1).MusicTrack, commands.Add);
-        Check(commands.Any(c => c.Kind == TownEffectKind.QueueEnterScript), "first town queues enter");
+        controller.Initialize(assets.Scene, assets.Objects, 1, "01mercen.sod"u8.ToArray(), "town"u8.ToArray(), TownCatalog.Get(1).MusicTrack, commands.Add);
+        Check(commands.All(c => c.Kind != TownEffectKind.QueueEnterScript), "view initialization does not dispatch arrival");
         Check(commands[^2].Kind == TownEffectKind.LoadBackground && commands[^1].Kind == TownEffectKind.PlayMusic, "mode400 background then music");
         commands.Clear();
         controller.Input(new(Next: true), false, commands.Add);
@@ -48,10 +48,10 @@ public static class TownTests
         controller.Input(new(Accept: true), false, commands.Add);
         commands.Clear();
         controller.CompletePreOut(true, commands.Add);
-        Check(commands.Select(c => c.Kind).SequenceEqual([TownEffectKind.ReleaseTownSprite, TownEffectKind.CopyReturnMapReferences, TownEffectKind.LoadReturnMap, TownEffectKind.ResetModeStackAndEnableSave, TownEffectKind.ChangeMode]), "leave output order");
+        Check(commands.Select(c => c.Kind).SequenceEqual([TownEffectKind.ReleaseTownSprite, TownEffectKind.CopyReturnMapReferences, TownEffectKind.LoadReturnMap, TownEffectKind.EnableSave, TownEffectKind.ChangeMode]), "leave output order");
         Check(commands[^1].Value == 300, "return map mode");
         var animation = new TownController();
-        animation.Enter(assets.Scene, assets.Objects, 1, 1, "01mercen.sod"u8.ToArray(), default, 10, _ =>
+        animation.Initialize(assets.Scene, assets.Objects, 1, "01mercen.sod"u8.ToArray(), default, 10, _ =>
         {
         });
         Check(animation.AdvanceLogicalFrame(new()).MotionX == 0 && animation.AdvanceLogicalFrame(new()).MotionX == 0
@@ -67,7 +67,7 @@ public static class TownTests
         animation.Input(new(), false, commands.Add);
         animation.Input(new(), true, commands.Add);
         Check(commands[^1] == new TownCommand(TownEffectKind.ChangeMode, 330), "encounter mode330");
-        Check(commands.Any(c => c.Kind == TownEffectKind.SetPreviousTown && c.Value == 0), "encounter resets previous town");
+        Check(commands.Any(c => c.Kind == TownEffectKind.InitializeEncounter), "encounter prepares its dungeon before transition");
         foreach (int kind in new[]
         {
             0,
@@ -84,7 +84,7 @@ public static class TownTests
             var scene = Atria.Resources.SodV2.Parse(data);
             var sprite = new SpriteFile(false, [new(0, 0, 0, [], [], 32, 32, [])]);
             var entry = new TownController();
-            entry.Enter(scene, sprite, 0, 0, default, default, 1, _ =>
+            entry.Initialize(scene, sprite, 0, default, default, 1, _ =>
             {
             });
             commands.Clear();

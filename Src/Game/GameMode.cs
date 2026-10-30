@@ -11,7 +11,6 @@ internal static class GameMode
     public const int Settings = 250;
     public const int World = 300;
     public const int WorldEntry = 310;
-    public const int WorldOverlay = 320;
     public const int Dungeon = 330;
     public const int Town = 400;
     public const int Interior = 410;

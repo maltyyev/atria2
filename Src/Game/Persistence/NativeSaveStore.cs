@@ -210,6 +210,7 @@ public sealed class NativeSaveStore
                 throw new IOException("Redirected autosave file.");
             }
 
+            PreserveVersionOneSave(path);
             File.Delete(path);
         }
     }
@@ -259,6 +260,7 @@ public sealed class NativeSaveStore
 
             if (File.Exists(destination))
             {
+                PreserveVersionOneSave(destination);
                 File.Replace(temporary, destination, null);
             }
             else
@@ -282,6 +284,44 @@ public sealed class NativeSaveStore
             {
             }
         }
+    }
+
+    private void PreserveVersionOneSave(string path)
+    {
+        if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("Redirected save file.");
+
+        var info = new FileInfo(path);
+        if (info.Length > NativeSaveImage.MaximumSize)
+            throw new InvalidDataException("Save exceeds the supported size.");
+
+        byte[] bytes = File.ReadAllBytes(path);
+        if (!NativeSaveImage.HasNativeSignature(bytes))
+            return;
+
+        var context = NativeSaveImage.Parse(bytes).Context;
+        if (context.Schema != SessionRuntimeCodec.Schema || context.Version != 1)
+            return;
+
+        string backupDirectory = Path.Combine(directory, "migration-backups");
+        string expected = Path.Combine(ResolveDirectory(directory), "migration-backups");
+        if (!string.Equals(ResolveDirectory(backupDirectory), expected, StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Redirected migration backup directory.");
+
+        Directory.CreateDirectory(backupDirectory);
+        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
+        string backup = Path.Combine(backupDirectory, Path.GetFileNameWithoutExtension(path) + "-" + hash + ".sav");
+        if (File.Exists(backup))
+        {
+            if ((File.GetAttributes(backup) & FileAttributes.ReparsePoint) != 0
+                || !File.ReadAllBytes(backup).AsSpan().SequenceEqual(bytes))
+                throw new IOException("Existing migration backup differs from the source save.");
+            return;
+        }
+
+        using var file = new FileStream(backup, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536, FileOptions.WriteThrough);
+        file.Write(bytes);
+        file.Flush(true);
     }
 
     private void EnsureSafeDirectory()

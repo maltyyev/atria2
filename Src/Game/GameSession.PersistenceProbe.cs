@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using System.Text;
 using Atria.Audio;
 using Atria.Game.Dialogue;
@@ -117,8 +118,7 @@ public sealed partial class GameSession
 
         void Roundtrip(string reason)
         {
-            s.modes.ResetDepth();
-            s.modes.Push(s.state.Mode);
+            s.navigation.RestoreLocation((LocationKind)s.state.Mode);
             s.state.ModeStackDepth = 0;
             var before = s.CaptureSaveImage(s.state.Mode, true, reason);
             s.WriteAutosave(reason);
@@ -139,6 +139,7 @@ public sealed partial class GameSession
             s.host.Present();
             window.Pump();
             Console.WriteLine("Session checkpoint roundtrip: " + reason);
+            s.VerifyUiPreservesLocation();
         }
 
         try
@@ -157,8 +158,7 @@ public sealed partial class GameSession
             s.HandleMenu(new(MenuEffect.LoadGroundMap, Resource: "ground1.amf"));
             s.HandleMenu(new(MenuEffect.InitializeGroundMap, 0));
             s.HandleMenu(new(MenuEffect.CopyInitialGroundLocation));
-            s.modes.StartNewGame();
-            s.EnterMode(GameMode.Town);
+            s.CommitLocation(LocationKind.Town);
             // Exercise storage and resource activation independently of the modal opening dialogue.
             s.state.ScriptActive = 0;
             s.pendingHandler = [];
@@ -167,6 +167,7 @@ public sealed partial class GameSession
             Roundtrip("Town");
             var townSave = s.CaptureSaveImage(400, true, "");
             s.PersistenceStore.WriteNative(20, townSave);
+            s.VerifyScenarioCompletions(20);
             int checkedInteriors = 0;
             for (int i = 0; i < s.town.Scene.Count; i++)
             {
@@ -183,7 +184,7 @@ public sealed partial class GameSession
                     SavedSelection = i
                 };
                 s.town.RestoreRuntime(townState, s.townAssets!.Scene, s.townAssets.Objects);
-                s.EnterMode(GameMode.Interior + kind * 10);
+                s.CommitLocation((LocationKind)(GameMode.Interior + kind * 10));
                 s.state.ScriptActive = 0;
                 s.pendingHandler = [];
                 Roundtrip("Interior " + s.state.Mode);
@@ -193,7 +194,7 @@ public sealed partial class GameSession
             Check(checkedInteriors > 0, "interior checkpoints covered");
             s.LoadSessionSlot(20);
             s.LoadExplorationReturnMap("ground1.amf"u8.ToArray());
-            s.EnterMode(GameMode.World);
+            s.CommitLocation(LocationKind.World);
             s.state.ScriptActive = 0;
             Roundtrip("World");
             // Real dungeon resource, with the original town-script entry and return path.
@@ -203,7 +204,7 @@ public sealed partial class GameSession
             s.state.PendingDungeonScript = dungeonMap.EmbeddedScene!.ScriptReference.ToArray();
             s.state.DungeonEntryPending = 1;
             s.PrepareDungeon(false);
-            s.EnterMode(GameMode.Dungeon);
+            s.CommitLocation(LocationKind.Dungeon);
             Roundtrip("Dungeon");
             s.state.PendingBattle = 2;
             s.state.BattleVariant = 0;
@@ -237,12 +238,12 @@ public sealed partial class GameSession
             s.RequestAutosave(AutosaveReason.QuestComplete);
             s.FlushAutosave();
             Check(s.autosavePending.Length == 0, "quest flush committed");
-            s.EnterMode(GameMode.Save);
+            s.OpenScreen(UiScreen.Save);
             s.ComposeScene(s.state, s.host.FrameBuffer);
             s.host.Present();
             Directory.CreateDirectory(output);
             WriteProbeBitmap(Path.Combine(output, "save-menu.bmp"), s.host.FrameBuffer);
-            s.EnterMode(GameMode.Settings);
+            s.OpenScreen(UiScreen.Settings);
             s.ComposeScene(s.state, s.host.FrameBuffer);
             s.host.Present();
             WriteProbeBitmap(Path.Combine(output, "settings.bmp"), s.host.FrameBuffer);

@@ -100,6 +100,59 @@ internal static class NecromancerExecutionTests
         }
 
         CheckAiAndWaves(root);
+        CheckStorehouseWaves(root);
+    }
+
+    private static void CheckStorehouseWaves(string root)
+    {
+        foreach (int encounter in new[] { 906, 907 })
+        {
+            var state = Party(root, 10);
+            var random = new LegacyRandom(321);
+            using var entry = Entry(root, state, random, encounter);
+            var runtime = entry.Runtime;
+            var execution = Execution(root, entry, state, random);
+            var enemies = runtime.Actors.Take(runtime.Scene.Actors.Count).ToArray();
+            var seen = new HashSet<int>();
+            uint waveStarted = 0;
+            CombatFrameResult result = default;
+            for (uint now = 10; now <= 10_000; now += 10)
+            {
+                Step(execution, now);
+                var active = enemies.Where(image => image.State.Active != 0 && image.State.SpawnCondition == 0).ToArray();
+                if (active.Length > 0 && now - waveStarted < 500)
+                {
+                    continue;
+                }
+                if (encounter == 906 && seen.Count == 0)
+                {
+                    Check(active.Length == 5 && active.All(image => image.Binding!.Info.Type != 40), "opening wave has five guards and no Eiren");
+                }
+                if (active.Length > 0)
+                {
+                    execution.AdvanceLogicalVisual(now);
+                    string output = Path.GetFullPath(Path.Combine(root, "..", "audit", "eiren-staging-01512"));
+                    Directory.CreateDirectory(output);
+                    UnicodeTextTests.SaveBitmap(Path.Combine(output, $"battle-{encounter}-after-{seen.Count}.bmp"), execution.CachedFrame.ToArray());
+                }
+                foreach (var enemy in active)
+                {
+                    seen.Add(Array.IndexOf(enemies, enemy));
+                    enemy.State.Active = enemy.State.Health = 0;
+                }
+                if (active.Length > 0)
+                {
+                    waveStarted = now;
+                }
+                result = execution.AdvanceActors(now, true);
+                if (result.ReturnCode != 0)
+                {
+                    break;
+                }
+            }
+            Check(seen.Count == enemies.Length && result.ReturnCode == 1, "every storehouse wave spawns before victory: " + encounter);
+            Console.WriteLine($"Storehouse EBAT{encounter}: {seen.Count} actors activated; victory returns to the dialogue.");
+        }
     }
 
     private static void CheckAiAndWaves(string root)
@@ -161,9 +214,9 @@ internal static class NecromancerExecutionTests
         return state;
     }
 
-    private static CombatEntryPreparation Entry(string root, GameState state, LegacyRandom random)
+    private static CombatEntryPreparation Entry(string root, GameState state, LegacyRandom random, int encounter = 905)
     {
-        var entry = new CombatEntryPreparation(root, new(FixedEncounterKind.Forced, 905), random, () => 123, 0, _ => new SilentVoice(), _ => { });
+        var entry = new CombatEntryPreparation(root, new(FixedEncounterKind.Forced, encounter), random, () => 123, 0, _ => new SilentVoice(), _ => { });
         var selection = new CombatPartySelection(state, 1);
         selection.ApplyInput((_, key) => key == CombatSelectionInput.Finish, _ => { });
         selection.Commit(state);

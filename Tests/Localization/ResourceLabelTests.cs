@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Atria.Game.Interiors;
 using Atria.Game.Persistence;
 using Atria.Game.State;
@@ -21,7 +22,8 @@ internal static class ResourceLabelTests
         try
         {
             using var originalStream = typeof(ResourceLabelTests).Assembly.GetManifestResourceStream("Atria.Tests.OriginalNames.json")!;
-            var original = JsonSerializer.Deserialize<Dictionary<string, string>>(originalStream)!;
+            using var originalDocument = JsonDocument.Parse(originalStream);
+            var original = originalDocument.RootElement.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString()!);
             int sceneCount = 0, peopleCount = 0;
             using var scenes = BinderArchive.Open(Path.Combine(root, "AT2SOD.000"));
             foreach (var entry in scenes.Entries)
@@ -83,7 +85,9 @@ internal static class ResourceLabelTests
                     if (values.ContainsKey(sceneKey)) values[sceneKey] = language == "be-BY" ? "Праверачны будынак" : "Проверочное здание";
                     if (values.ContainsKey(personKey)) values[personKey] = language == "be-BY" ? "Праверачны суразмоўца" : "Проверочный собеседник";
                     if (values.ContainsKey("messages.361")) values["messages.361"] = language == "be-BY" ? "Вольнае месца" : "Свободное место";
-                    File.WriteAllText(Path.Combine(folder, file.Key), JsonSerializer.Serialize(values));
+                    var json = new JsonObject();
+                    foreach (var (key, value) in values) json[key] = value;
+                    File.WriteAllText(Path.Combine(folder, file.Key), json.ToJsonString());
                 }
             }
 

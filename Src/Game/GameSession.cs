@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using System.Diagnostics;
 using System.Text;
 using Atria.Audio;
@@ -57,9 +58,9 @@ public sealed partial class GameSession : IScriptEffects
         Mode = GameMode.MainMenu,
         ModeStackDepth = 0
     };
-    private readonly ModeStack modes = new();
+
     private readonly WorldAreaStore areas = new();
-    private readonly Dictionary<string, ScriptProgram> programs = new(StringComparer.Ordinal);
+    private readonly Dictionary<(string Member, string SourceHash), ScriptProgram> programs = new();
     private readonly Stopwatch lifetime = Stopwatch.StartNew();
     private readonly double maximumSeconds;
     private readonly bool muted;
@@ -67,7 +68,7 @@ public sealed partial class GameSession : IScriptEffects
     private WorldMapContext? map;
     private WorldSceneReference? location;
     private byte[] scriptMember = [], pendingHandler = [], townName = [], returnMap = [], townFile = [];
-    private int previousTown, musicId = 1, labelDelay, objectActionField, entryTextMode;
+    private int musicId = 1, labelDelay, objectActionField, entryTextMode;
     private int selectedEquipmentActor = 0; //45ce68 BSS zero; status500 owns later selections.
     private bool saveDisabled = true, dialogueActive, menuSpriteActive = true, moviePrepared, hasFrame;
     private long logicalFrames, presents, dialoguesCompleted;
@@ -214,7 +215,7 @@ public sealed partial class GameSession : IScriptEffects
                     HandleModeInput();
                 }
 
-                if (resumeScript is not null)
+                if (navigation.ScreenDepth == 0 && resumeScript is not null)
                 {
                     ResumeSavedScenario();
                 }
@@ -222,7 +223,7 @@ public sealed partial class GameSession : IScriptEffects
                 ComposeScene(state, host.FrameBuffer);
                 logicalFrames++;
                 hasFrame = true;
-                if (state.ScriptActive != 0)
+                if (navigation.ScreenDepth == 0 && state.ScriptActive != 0)
                 {
                     //404170 dispatches queued scenario after the scene has been presented.
                     host.Present();
@@ -230,8 +231,7 @@ public sealed partial class GameSession : IScriptEffects
                     RunScript(scriptMember, pendingHandler);
                 }
 
-                if (state.Mode == GameMode.World && exploration is { Moving: false } && state.ScriptActive == 0
-                    && !battleActive && actions.Depth < 0 && NarrativeScenes.After(state, "WORLD", "arrival") is { } authored)
+                if (PendingWorldNarrative() is { } authored)
                 {
                     RunScript(Encoding.ASCII.GetBytes(authored.Id), "run"u8);
                 }
@@ -257,6 +257,11 @@ public sealed partial class GameSession : IScriptEffects
     }
 
     private bool Query(byte scan) => host.QueryScan(scan);
+
+    private NarrativeScenes.Scene? PendingWorldNarrative() =>
+        state.Mode == GameMode.World && exploration is { Moving: false } && state.ScriptActive == 0
+        && !battleActive && state.EndingResetFlag == 0 && actions.Depth < 0
+            ? NarrativeScenes.After(state, "WORLD", "arrival", map?.AreaIndex) : null;
     private void UpdateMusic(GameState value)
     {
         if (value.Mode != 1)
@@ -283,13 +288,7 @@ public sealed partial class GameSession : IScriptEffects
         if (!battleActive && !dialogueActive && value.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town
 && controls.Press(0, GameAction.Status))
         {
-            if (value.Mode is GameMode.World or GameMode.WorldEntry)
-            {
-                modes.Push(GameMode.World);
-            }
-
-            modes.Push(GameMode.Status);
-            EnterMode(GameMode.Status);
+            OpenScreen(UiScreen.Status);
             return false;
         }
 
@@ -298,6 +297,9 @@ public sealed partial class GameSession : IScriptEffects
             ShowMoveReference(0);
             return false;
         }
+
+        if (navigation.ScreenDepth != 0)
+            return true;
 
         if (NewCharacterRuntime.ProcessPending(value, items, selectedEquipmentActor))
         {
@@ -656,17 +658,17 @@ public sealed partial class GameSession : IScriptEffects
                 autosaveFailure = "";
                 resumeScript = null;
                 nextBattleSeed = null;
-                scriptReturnLocation = null;
+                admissionTarget = null;
                 questCompletionBeforeCall = state.Journal.CompletionRevision;
                 InitialGameState.ResetRecoveredCore(state, items, messages);
-                NewGameSceneReset.Apply(state, town, actions, ref previousTown);
+                NewGameSceneReset.Apply(state, town, actions);
                 areas.ResetNames(messages);
                 ResetShopStocks();
                 ResetExplorationSession();
                 break;
             case MenuEffect.SetNewGameGlobals:
                 hasStartedGame = true;
-                modes.ResetDepth();
+                navigation.Reset();
                 state.ModeStackDepth = -1;
                 saveDisabled = false;
                 labelDelay = 0;
@@ -681,112 +683,16 @@ public sealed partial class GameSession : IScriptEffects
                 location = map!.SelectScene(state.WorldX, state.WorldY);
                 break;
             case MenuEffect.ChangeMode:
-                if (command.Value == 400)
-                {
-                    modes.StartNewGame();
-                }
+                if (command.Value == GameMode.Town)
+                    CommitLocation(LocationKind.Town);
                 else
-                {
-                    modes.Push(command.Value);
-                }
-
-                EnterMode(command.Value);
+                    OpenScreen((UiScreen)command.Value);
                 break;
             case MenuEffect.TryReturnToPreviousMode:
-                bool success = modes.TryPop(out var transition);
-                MainMenuController.CompleteReturnToPreviousMode(success, HandleMenu);
-                if (success)
-                {
-                    if (transition.RestoreFlag)
-                    {
-                        actions.SetRenderEnabled(true);
-                    }
-
-                    EnterMode(transition.Mode);
-                }
-
+                MainMenuController.CompleteReturnToPreviousMode(CloseScreen(), HandleMenu);
                 break;
             default:
                 throw new NotSupportedException($"Main-menu operation {command.Effect} is not integrated yet.");
-        }
-    }
-
-    private void EnterMode(int mode)
-    {
-        int oldMode = state.Mode;
-        controls.Clear();
-        state.ModeStackDepth = modes.Depth;
-        state.Mode = mode;
-        if (mode == GameMode.MainMenu)
-        {
-            menuSpriteActive = true;
-            menu.Enter();
-        }
-        else if (mode == GameMode.Town)
-        {
-            var selected = location ?? throw new InvalidOperationException("No current town reference.");
-            townAssets = TownSceneAssets.Load(root, selected.SceneMember.Span);
-            town.Enter(
-                townAssets.Scene,
-                townAssets.Objects,
-                selected.SceneIndex,
-                previousTown,
-                selected.SceneMember,
-                TownCatalog.Name(messages, selected.SceneIndex),
-                TownCatalog.Get(selected.SceneIndex).MusicTrack,
-                HandleTown
-            );
-        }
-        else if (mode is GameMode.Interior or GameMode.Inn or GameMode.Shop)
-        {
-            EnterInterior(mode);
-        }
-        else if (mode is GameMode.World or GameMode.WorldEntry)
-        {
-            EnterExploration(mode);
-        }
-        else if (mode == GameMode.Status)
-        {
-            EnterStatus();
-        }
-        else if (mode == GameMode.Dungeon)
-        {
-            EnterDungeon();
-        }
-        else if (mode == GameMode.Settings)
-        {
-            EnterSettings();
-        }
-        else if (mode == GameMode.Credits)
-        {
-            EnterCredits();
-        }
-        else if (mode is GameMode.Save or GameMode.Load)
-        {
-            EnterPersistence(mode);
-        }
-        else if (mode == GameMode.QuitConfirmation)
-        {
-            EnterQuitConfirmation();
-        }
-        else if (mode == GameMode.Defeat)
-        {
-            EnterDefeat();
-        }
-        else if (mode == GameMode.Ending)
-        {
-            EnterEnding();
-        }
-        else
-        {
-            throw new NotSupportedException($"Mode {mode} entry is not integrated yet.");
-        }
-
-        Console.WriteLine($"Session entered mode={mode}, town={town.TownId}.");
-        if (oldMode != mode && (oldMode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town)
-&& (mode is GameMode.World or GameMode.Dungeon or GameMode.Town))
-        {
-            RequestAutosave(AutosaveReason.Location);
         }
     }
 
@@ -820,9 +726,6 @@ public sealed partial class GameSession : IScriptEffects
             case TownEffectKind.PlayMusic:
                 music.Update(command.Value);
                 break;
-            case TownEffectKind.SetPreviousTown:
-                previousTown = command.Value;
-                break;
             case TownEffectKind.LoadBackground:
                 if (townAssets is null || !townAssets.Scene.BackgroundReference.Span.SequenceEqual(command.Bytes.Span))
                 {
@@ -843,16 +746,13 @@ public sealed partial class GameSession : IScriptEffects
                 actions.SetRenderEnabled(command.Value != 0);
                 break;
             case TownEffectKind.RunPreEnter:
-                RunScript(command.Bytes.Span, "pre_enter"u8, 1);
+                RunScript(command.Bytes.Span, "pre_enter"u8, ScenarioContinuation.EnterBuilding);
                 town.CompletePreEnter(state.EnterPermission != 0, state.Mode, HandleTown);
                 break;
             case TownEffectKind.RunPreOut:
-                if (command.Value != 0)
-                {
-                    state.EnterPermission = 0;
-                }
+                state.EnterPermission = 0;
 
-                RunScript(command.Bytes.Span, "pre_out"u8, 2);
+                RunScript(command.Bytes.Span, "pre_out"u8, ScenarioContinuation.LeaveTown);
                 town.CompletePreOut(state.EnterPermission != 0, HandleTown, state.Mode);
                 break;
             case TownEffectKind.ReleaseTownSprite:
@@ -866,12 +766,7 @@ public sealed partial class GameSession : IScriptEffects
                 }
 
                 break;
-            case TownEffectKind.PushMapReturnMarker:
-                modes.Push(command.Value);
-                break;
-            case TownEffectKind.ResetModeStackAndEnableSave:
-                modes.ResetDepth();
-                state.ModeStackDepth = -1;
+            case TownEffectKind.EnableSave:
                 saveDisabled = false;
                 break;
             case TownEffectKind.CopyReturnMapReferences:
@@ -887,8 +782,10 @@ public sealed partial class GameSession : IScriptEffects
                 StartDungeonFromTown();
                 break;
             case TownEffectKind.ChangeMode:
-                modes.Push(command.Value);
-                EnterMode(command.Value);
+                if (GameMode.CanSnapshot(command.Value))
+                    CommitLocation((LocationKind)command.Value);
+                else
+                    OpenScreen((UiScreen)command.Value);
                 break;
             default:
                 throw new NotSupportedException($"Town operation {command.Kind} is not integrated yet.");
@@ -925,18 +822,18 @@ public sealed partial class GameSession : IScriptEffects
         }
     }
 
-    private void RunScript(ReadOnlySpan<byte> member, ReadOnlySpan<byte> handler, int continuation = 0, int continuationMode = 0, ScriptCheckpoint? replay = null)
+    private void RunScript(ReadOnlySpan<byte> member, ReadOnlySpan<byte> handler, ScenarioContinuation continuation = ScenarioContinuation.None, int continuationMode = 0, ScriptCheckpoint? replay = null)
     {
-        byte[] source = GameResources.Read(root, "SCRIPT.000", member);
+        byte[] source = GameResources.Read(root, "SCRIPT.000", member, replay?.SourceHash);
         string name = Path.GetFileNameWithoutExtension(Encoding.ASCII.GetString(member)).ToUpperInvariant();
-        if (!programs.TryGetValue(name, out var program))
+        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source));
+        if (!programs.TryGetValue((name, hash), out var program))
         {
-            programs.Add(name, program = ScriptProgram.Parse(name, source));
+            programs.Add((name, hash), program = ScriptProgram.Parse(name, source));
         }
 
         string function = Encoding.ASCII.GetString(handler);
         Console.WriteLine($"Scenario started: {name}/{function}.");
-        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source));
         if (replay is not null && replay.SourceHash != hash)
         {
             throw new InvalidDataException("Scenario source differs from the saved continuation.");
@@ -965,13 +862,13 @@ public sealed partial class GameSession : IScriptEffects
             activeScriptIdentity = null;
         }
 
-        if (state.Mode != GameMode.Defeat && NarrativeScenes.All.Any(scene => scene.Id == name))
+        if (state.Mode is not (GameMode.Defeat or GameMode.Ending) && NarrativeScenes.All.Any(scene => scene.Id == name))
         {
             state.NarrativeHistory.Add(name);
         }
 
         Console.WriteLine($"Scenario returned: {name}/{function}; active={state.ScriptActive}, introFlag={state.Globals[501]}.");
-        if (state.Mode != GameMode.Defeat && NarrativeScenes.After(state, name, function) is { } scene)
+        if (state.Mode is not (GameMode.Defeat or GameMode.Ending) && NarrativeScenes.After(state, name, function) is { } scene)
         {
             RunScript(Encoding.ASCII.GetBytes(scene.Id), "run"u8, continuation, continuationMode);
         }
@@ -1001,9 +898,7 @@ public sealed partial class GameSession : IScriptEffects
                 throw new InvalidOperationException("Scenario termination requires the owning session state.");
             }
             //42ddf0 resets depth and calls429260; keep the actual stack in sync with its packed fields.
-            modes.ResetDepth();
-            modes.Push(value.Mode);
-            EnterMode(value.Mode);
+            ShowTermination(value.Mode);
             return;
         }
 

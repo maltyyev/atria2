@@ -43,7 +43,8 @@ public static class WorldRenderTests
         Check(WorldHudRenderer.OriginY(300, 4, false) == 421 && WorldHudRenderer.OriginY(300, 5, false) == 0, "normal world HUD avoids player half");
         Check(WorldHudRenderer.OriginY(400, 0, false, 79) == 421 && WorldHudRenderer.OriginY(400, 0, false, 80) == 0, "town anchor80 HUD boundary");
         Check(WorldHudRenderer.OriginY(410, 0, true) is null && WorldHudRenderer.OriginY(300, 4, true) is null, "modal suppresses lower HUD");
-        Check(WorldHudRenderer.OriginY(320, 5, false, previousMode: 330) == 421 && WorldHudRenderer.OriginY(320, 5, true, previousMode: 330) == 0, "normal/modal sentinel330 HUD distinction");
+        Check(WorldHudRenderer.OriginY(500, 5, false) is null, "UI screen does not draw the world HUD");
+        Check(WorldHudRenderer.OriginY(330, 5, false, dungeonHudEnabled: true) == 0, "enabled dungeon HUD uses its actual location");
         byte[] raw = (byte[])original.Clone();
         raw.AsSpan(313, 32800).Clear();
         raw[313 + 3] = 2;

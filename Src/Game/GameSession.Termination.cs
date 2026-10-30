@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using System.Runtime.InteropServices;
 using Atria.Game.Menu;
 using Atria.Game.State;
@@ -35,7 +36,7 @@ public sealed partial class GameSession
                 Sound(effect.Value);
                 break;
             case QuitEffectKind.ReturnMenuRetained:
-                state.Mode = GameMode.MainMenu;
+                CloseScreen();
                 break; //No stack pop/entry reset in42aaa0.
             case QuitEffectKind.RequestWindowClose:
                 musicTransport.Stop(); //435760/435740 stop and close native CD stream before WM_CLOSE.
@@ -83,7 +84,6 @@ public sealed partial class GameSession
         ResetShopStocks();
         ResetExplorationSession();
         actions.CloseAll();
-        previousTown = 0;
         saveDisabled = true;
         ReturnTerminationMenu();
     });
@@ -132,10 +132,8 @@ public sealed partial class GameSession
     {
         menuSpriteActive = true;
         menu.ReturnFromTermination();
-        modes.ResetDepth();
-        var transition = modes.Push(GameMode.MainMenu);
-        state.Mode = GameMode.MainMenu;
-        state.ModeStackDepth = transition.Depth;
+        navigation.Reset();
+        SetVisibleMode(navigation.Mode);
         //Native200 entry preserves musicId27; no invented restart of title track1.
         music.Update(musicId);
     }

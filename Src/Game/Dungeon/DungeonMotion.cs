@@ -83,6 +83,12 @@ public sealed partial class DungeonMotion
 
     //420bc0 increments the shared moving-frame cursor before41fdd0 on a visibility refresh pass.
     public void ApplyVisibilityRefreshFrameIncrement() => movingFrame++;
+    public void DelayMovement(uint pausedMilliseconds)
+    {
+        if (Moving)
+            deadline = unchecked(deadline + pausedMilliseconds);
+    }
+
     public DungeonMotionStep Advance(Func<uint> getTickCount)
     {
         int d = (int)Direction, tx = unchecked(tileWidth * state.WorldX), ty = unchecked(tileHeight * state.WorldY);

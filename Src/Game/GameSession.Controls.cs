@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using Atria.Game.Combat;
 using Atria.Game.Controls;
 using Atria.Game.Dialogue;
@@ -125,13 +126,7 @@ public sealed partial class GameSession
 
         if (openMenu)
         {
-            if (state.Mode is GameMode.World or GameMode.WorldEntry)
-            {
-                modes.Push(GameMode.World);
-            }
-
-            modes.Push(GameMode.MainMenu);
-            EnterMode(GameMode.MainMenu);
+            OpenScreen(UiScreen.MainMenu);
         }
     }
 

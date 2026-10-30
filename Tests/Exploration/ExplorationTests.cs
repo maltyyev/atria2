@@ -97,9 +97,17 @@ public static class ExplorationTests
             Money = 200
         };
         var controller = new ExplorationController(state, map, AnimationFixture(), new(1), _ => false);
+        var idleMotion = controller.CaptureRuntime();
+        controller.DelayMovement(1000);
+        Check(controller.CaptureRuntime() == idleMotion, "Pausing idle world animation leaves its pass counter unchanged.");
         Check(controller.BeginTravel(WorldDirection.Left) == TravelStartResult.Started, "Explored passable destination starts travel.");
         Check(state.Money == 200, "Starting a movement does not charge before arrival.");
         var retainedMotion = controller.CaptureRuntime();
+        controller.DelayMovement(1000);
+        Check(controller.CaptureRuntime() == (retainedMotion with { MovementDeadline = retainedMotion.MovementDeadline + 1000 }),
+            "UI pause shifts only the world movement deadline.");
+        Check(controller.AdvanceAnimation(() => 1000).Pose.Frame == 0, "UI elapsed time cannot consume a movement frame.");
+        controller.RestoreRuntime(retainedMotion);
         controller.ClearMovementAfterBattle();
         Check(controller.CaptureRuntime() == (retainedMotion with
         {

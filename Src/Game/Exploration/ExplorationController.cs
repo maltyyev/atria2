@@ -30,7 +30,7 @@ public enum ExplorationInputEffect
     EnterDungeon330,
     RefreshWorld,
     ActionDialogue,
-    Map500With300Sentinel
+    OpenStatus
 }
 
 public readonly record struct ExplorationPose(int Sequence, int Frame, int X, int Y);
@@ -77,6 +77,12 @@ public sealed partial class ExplorationController
 
     /// <summary>4043a0/404170 return1 writes only shared46027c=0.</summary>
     public void ClearMovementAfterBattle() => Moving = false;
+
+    public void DelayMovement(uint pausedMilliseconds)
+    {
+        if (Moving)
+            movementDeadline = unchecked(movementDeadline + pausedMilliseconds);
+    }
     public ExplorationController(
         GameState state,
         WorldMapContext map,
@@ -166,7 +172,7 @@ public sealed partial class ExplorationController
 
         if (input.Cancel)
         {
-            return ExplorationInputEffect.Map500With300Sentinel;
+            return ExplorationInputEffect.OpenStatus;
         }
 
         return ExplorationInputEffect.None;

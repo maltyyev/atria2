@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using System.Text;
 using Atria.Game.Dungeon;
 using Atria.Game.Exploration;
@@ -143,12 +144,12 @@ public sealed partial class GameSession
                     persistenceMenu.SetCount(persistenceSlots.Length);
                     break;
                 case SaveLoadMenuEffect.PopMode:
-                    if (!modes.TryPop(out var transition))
+                    if (!CloseScreen())
                     {
                         throw new InvalidDataException("Save/load return mode is absent.");
                     }
 
-                    EnterMode(transition.Mode);
+
                     break;
                 case SaveLoadMenuEffect.RestoreBackground:
                     hasFrame = false;
@@ -235,7 +236,6 @@ public sealed partial class GameSession
         return new SessionRuntimeSnapshot
         {
             SavedMode = savedMode,
-            Modes = modes.CaptureRuntime(),
             Random = random.CaptureRuntime(),
             CurrentMap = CaptureSessionMap(current, currentMember),
             CurrentMapKind = currentKind,
@@ -251,7 +251,6 @@ public sealed partial class GameSession
             TownName = townName.ToArray(),
             ReturnMap = returnMap.ToArray(),
             TownFile = townFile.ToArray(),
-            PreviousTown = previousTown,
             MusicId = musicId,
             LabelDelay = labelDelay,
             ObjectActionField = objectActionField,
@@ -274,13 +273,13 @@ public sealed partial class GameSession
             Script = CaptureScriptCheckpoint(),
             Interior = savedMode is GameMode.Interior or GameMode.Inn or GameMode.Shop ? interior.CaptureRuntime() : null,
             NextBattleSeed = nextBattleSeed,
-            ScriptReturnLocation = scriptReturnLocation is { } prior ? new(prior.SceneIndex, prior.SceneMember.ToArray(), prior.ScriptMember.ToArray(), prior.AreaIndex) : null
+            AdmissionTarget = admissionTarget is { } target ? new(target.SceneIndex, target.SceneMember.ToArray(), target.ScriptMember.ToArray(), target.AreaIndex) : null,
         };
     }
 
     private void SaveSessionSlot(int slot)
     {
-        int savedMode = modes.LegacySaveMode();
+        int savedMode = navigation.WorldMode;
         if (saveDisabled)
         {
             throw new NotSupportedException("Original save gate currently prevents saving.");
@@ -312,6 +311,7 @@ public sealed partial class GameSession
         var metadata = LegacySlotMetadata.Empty([]).WithCurrent(primary, secondary, savedMode, area, town.TownId, state.Party[0].Level, messages[309].Span);
         var stocks = shopStocks ?? throw new InvalidDataException("Full30-shop state has not been initialized.");
         var image = NativeSaveImage.Capture(state, savedMode, capturedAreas, stocks, metadata, SessionRuntimeCodec.Encode(context), persistenceLegacyTemplate);
+        image.State.ModeStackDepth = 0;
         return image;
     }
 
@@ -353,9 +353,7 @@ public sealed partial class GameSession
         RestoreSessionFields(next);
         gate.SetThresholdMilliseconds(saved.FrameThreshold);
         random.RestoreRuntime(saved.Random);
-        modes.RestoreRuntime(saved.Modes);
-        modes.ResetDepth();
-        modes.Push(saved.SavedMode);
+        navigation.RestoreLocation((LocationKind)saved.SavedMode);
         state.ModeStackDepth = 0;
         state.Mode = saved.SavedMode;
         actions.CloseAll();
@@ -409,7 +407,7 @@ public sealed partial class GameSession
         hasFrame = false;
         resumeScript = saved.Script;
         nextBattleSeed = saved.NextBattleSeed;
-        scriptReturnLocation = saved.ScriptReturnLocation is { } prior ? new(prior.SceneIndex, prior.SceneMember, prior.ScriptMember, prior.AreaIndex) : null;
+        admissionTarget = saved.AdmissionTarget is { } target ? new(target.SceneIndex, target.SceneMember, target.ScriptMember, target.AreaIndex) : null;
         autosavePending = "";
         controls.Clear();
         if (saved.Interior is not null && resumeScript is null && state.ScriptActive == 0)
@@ -428,7 +426,6 @@ public sealed partial class GameSession
         townName = saved.TownName;
         returnMap = saved.ReturnMap;
         townFile = saved.TownFile;
-        previousTown = saved.ExactResume ? saved.PreviousTown : 0;
         musicId = saved.MusicId;
         labelDelay = saved.LabelDelay;
         objectActionField = saved.ObjectActionField;

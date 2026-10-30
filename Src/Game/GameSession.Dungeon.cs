@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using System.Buffers.Binary;
 using Atria.Game.ActionMenu;
 using Atria.Game.Dungeon;
@@ -26,8 +27,7 @@ public sealed partial class GameSession
     private void StartDungeonFromWorld(bool scriptOverride = false)
     {
         PrepareDungeon(scriptOverride);
-        modes.Push(GameMode.Dungeon);
-        EnterMode(GameMode.Dungeon);
+        CommitLocation(LocationKind.Dungeon);
     }
 
     //Town InitializeEncounter calls this BEFORE its existing ChangeMode330 command.
@@ -36,14 +36,6 @@ public sealed partial class GameSession
     {
         var current = map ?? throw new InvalidOperationException("Dungeon entry requires source AMF context.");
         var plan = DungeonEntry.Prepare(state, current, scriptOverride);
-        if (plan.CaptureArea is { } area)
-        {
-            areas.Capture(area, current);
-        }
-
-        dungeonReturnMap = returnMap.ToArray();
-        dungeonReturnTown = townFile.ToArray();
-        dungeonReturnTownScript = scriptMember.ToArray();
         byte[] raw = Read("AT2AMF.000", plan.MapMember.Span);
         var decoded = AmfMap.Parse(raw);
         var loaded = WorldMapContext.Parse(raw);
@@ -55,6 +47,14 @@ public sealed partial class GameSession
             throw new InvalidDataException("Dungeon entry lacks an actual script member.");
         }
 
+        if (plan.CaptureArea is { } area)
+        {
+            areas.Capture(area, current);
+        }
+
+        dungeonReturnMap = returnMap.ToArray();
+        dungeonReturnTown = townFile.ToArray();
+        dungeonReturnTownScript = scriptMember.ToArray();
         int ring = dungeon?.Visibility.NextTorch ?? 0;
         int[] scratch = dungeon?.Visibility.GetScratchNeighbors() ?? new int[9];
         int cost = dungeon?.TorchCost ?? 0, adjust = dungeon?.AdjustmentCounter ?? 0;
@@ -72,7 +72,6 @@ public sealed partial class GameSession
         scriptMember = functionMember.ToArray();
         state.ScriptActive = 0;
         pendingHandler = [];
-        modes.ResetDepth();
         state.ModeStackDepth = -1;
         saveDisabled = false;
         dungeon = new(state, nextMap, assets.Base.CharacterAnimation, random, hudVisible, ring, scratch, cost, adjust, torchBank, dungeonTreasureKind);
@@ -98,7 +97,7 @@ public sealed partial class GameSession
         }
 
         town.SetSavedSelection(0);
-        //428f00->428ea0->41eae0 refreshes raw ground/SOD/fog on EVERY330 entry, including status return.
+        // A physical dungeon arrival refreshes its raster; UI resume retains it.
         dungeonComposer.ApplyRasterCommand(new(DungeonCommandKind.RebuildObjects));
         musicId = NativeModeEntry.MusicId(GameMode.Dungeon, musicId, 0, random.Next);
         music.Update(musicId);
@@ -192,6 +191,9 @@ public sealed partial class GameSession
 
     private void RecordDungeonHudContext(GameState value, bool modal, int townAnchor)
     {
+        if (navigation.ScreenDepth != 0)
+            return;
+
         int? origin = WorldHudRenderer.OriginY(value.Mode, value.WorldY, modal, townAnchor, dungeonHudEnabled: DungeonHudVisible);
         dungeonHudY = origin ?? 420;
         dungeonHudEnabled = origin.HasValue;
@@ -214,10 +216,8 @@ public sealed partial class GameSession
         }
         else if (command.Value == 1)
         {
-            modes.Push(GameMode.WorldOverlay);
             actions.SetRenderEnabled(false);
-            modes.Push(GameMode.Status);
-            EnterMode(GameMode.Status);
+            OpenScreen(UiScreen.Status);
         }
         else if (command.Value == 2)
         {
@@ -240,21 +240,18 @@ public sealed partial class GameSession
         state.WorldX = entry.ReturnX;
         state.WorldY = entry.ReturnY;
         saveDisabled = false;
-        modes.ResetDepth();
         state.ModeStackDepth = -1;
         if (entry.Source == DungeonEntrySource.TownScript)
         {
             state.DungeonEntryPending = 0;
             townFile = dungeonReturnTown.ToArray();
             scriptMember = dungeonReturnTownScript.ToArray();
-            modes.Push(GameMode.Town);
-            EnterMode(GameMode.Town);
+            CommitLocation(LocationKind.Town);
         }
         else
         {
             LoadExplorationReturnMap(dungeonReturnMap);
-            modes.Push(GameMode.World);
-            EnterMode(GameMode.World);
+            CommitLocation(LocationKind.World);
             exploration!.RefreshPending = true;
         }
     }

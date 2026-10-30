@@ -38,7 +38,7 @@ internal static class NecromancerPresentationTests
                 GameText.Use(new LocalizationCatalog(Path.Combine(root, "..", "Localization"), language));
                 for (int variant = 0; variant < 2; variant++)
                 {
-                    string key = variant == 0 ? "eiren.unbind2.text" : "eiren.free5.text";
+                    string key = variant == 0 ? "eiren.revised.unbind2.text" : "eiren.revised.free5.text";
                     var request = new DialogueRequest(1, 157 + variant, false, []) { TextKey = key, Paragraph = GameText.Get(key) };
                     var dialogue = new DialogueSession(request, false);
                     dialogue.PrepareLayout(small);

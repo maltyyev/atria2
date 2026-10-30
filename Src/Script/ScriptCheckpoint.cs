@@ -2,7 +2,7 @@ namespace Atria.Script;
 
 public sealed record ScriptArgumentSnapshot(bool IsString, int Integer, byte[] Bytes);
 public sealed record ScriptCallSnapshot(string Function, int Offset, ScriptArgumentSnapshot[] Arguments, int Result);
-public sealed record ScriptCheckpoint(string Member, string Function, string SourceHash, int Continuation, int ContinuationMode, ScriptCallSnapshot[] Calls);
+public sealed record ScriptCheckpoint(string Member, string Function, string SourceHash, ScenarioContinuation Continuation, int ContinuationMode, ScriptCallSnapshot[] Calls);
 /// <summary>Reconstruct interpreter locals/control stack by replaying recorded host results.
 /// Previously executed host calls NEVER run again. The game snapshot already contains their effects.</summary>
 public sealed class CheckpointScriptHost : IScriptHost, IScriptArgumentPolicy

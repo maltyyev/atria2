@@ -21,7 +21,7 @@ public static class TigerLibraryTests
         var town = new TownController();
         var commands = new List<TownCommand>();
         town.SetSavedSelection(4);
-        town.Enter(assets.Scene, assets.Objects, 32, 32, "32tiger.sod"u8.ToArray(), default,
+        town.Initialize(assets.Scene, assets.Objects, 32, "32tiger.sod"u8.ToArray(), default,
             TownCatalog.Get(32).MusicTrack, commands.Add);
         commands.Clear();
         town.ChooseAction(0, commands.Add);

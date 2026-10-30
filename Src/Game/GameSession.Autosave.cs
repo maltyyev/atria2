@@ -12,7 +12,6 @@ public sealed partial class GameSession
     private ScriptCheckpoint? activeScriptIdentity, resumeScript;
     private bool loadingSnapshot;
     private int questCompletionBeforeCall;
-    private Atria.Game.World.WorldSceneReference? scriptReturnLocation;
     private uint? nextBattleSeed;
     private void RequestAutosave(string reason)
     {
@@ -109,15 +108,15 @@ public sealed partial class GameSession
         RunScript(Encoding.ASCII.GetBytes(saved.Member), Encoding.ASCII.GetBytes(saved.Function), saved.Continuation, saved.ContinuationMode, saved);
         switch (saved.Continuation)
         {
-            case 0:
+            case ScenarioContinuation.None:
                 break;
-            case 1:
+            case ScenarioContinuation.EnterBuilding:
                 town.CompletePreEnter(state.EnterPermission != 0, state.Mode, HandleTown);
                 break;
-            case 2:
+            case ScenarioContinuation.LeaveTown:
                 town.CompletePreOut(state.EnterPermission != 0, HandleTown, state.Mode);
                 break;
-            case 3:
+            case ScenarioContinuation.InteriorInteraction:
                 actions.CloseAll();
                 if (state.Mode is GameMode.Interior or GameMode.Inn or GameMode.Shop)
                 {
@@ -125,11 +124,11 @@ public sealed partial class GameSession
                 }
 
                 break;
-            case 4:
+            case ScenarioContinuation.LeaveBuilding:
                 CompleteLeaveInterior(saved.ContinuationMode);
                 break;
-            case 5:
-                CompleteWorldPreEnter(saved.ContinuationMode != 0, scriptReturnLocation);
+            case ScenarioContinuation.EnterTown:
+                CompleteWorldPreEnter();
                 break;
             default:
                 throw new InvalidDataException("Unknown scenario return continuation.");

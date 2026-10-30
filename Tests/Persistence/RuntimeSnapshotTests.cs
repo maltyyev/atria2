@@ -38,18 +38,10 @@ internal static class RuntimeSnapshotTests
             throw new InvalidOperationException("Corrupt runtime snapshot accepted.");
         }
 
-        var stack = new ModeStack();
-        stack.StartNewGame();
-        stack.Push(320);
-        stack.Push(200);
-        stack.Push(220);
-        Check(stack.LegacySaveMode() == 400, "native46fd14+depth*4 selects slot depth-3");
-        var bank = stack.CaptureRuntime();
-        bank.Slots[10] = 12345;
-        var restored = new ModeStack();
-        restored.RestoreRuntime(bank);
-        Check(restored.CaptureRuntime().Slots[10] == 12345, "inactive mode slots retained");
-        Reject(() => restored.RestoreRuntime(bank with { Slots = new int[10] }));
+        var bank = new Atria.Game.Persistence.Compatibility.LegacyModeStackSnapshot(3, 220, [400, 320, 200, 220, 0, 0, 0, 0, 0, 0, 12345]);
+        Check(bank.UnderlyingSavedMode() == 400, "v1 save depth resolves its historical world slot");
+        Reject(() => (bank with { Slots = new int[10] }).Validate());
+        Reject(() => (bank with { Depth = 1 }).UnderlyingSavedMode());
         var random = new LegacyRandom(1);
         Check(random.Next() == 41, "native CRT seed1 first result");
         var rng = random.CaptureRuntime();
@@ -137,7 +129,6 @@ internal static class RuntimeSnapshotTests
         var snapshot = new SessionRuntimeSnapshot
         {
             SavedMode = 400,
-            Modes = stack.CaptureRuntime(),
             Random = rng,
             CurrentMap = new("ground1.amf"u8.ToArray(), map.GetHeader(), map.GetTiles()),
             CurrentMapKind = 0,
@@ -153,7 +144,6 @@ internal static class RuntimeSnapshotTests
             TownName = "retained town"u8.ToArray(),
             ReturnMap = "ground1.amf"u8.ToArray(),
             TownFile = "01mercen.sod"u8.ToArray(),
-            PreviousTown = 1,
             MusicId = 3,
             LabelDelay = -3,
             ObjectActionField = 17,
@@ -187,7 +177,7 @@ internal static class RuntimeSnapshotTests
         Reject(() => SessionRuntimeCodec.Encode(snapshot with { Music = new(false, -2) }));
         Check(decoded.RetainedBattleVisualDetail == 3 && decoded.RetainedBattleRenderPeriod == 205, "Nondefault native detail and render period survive session save context");
         Check(decoded.RetainedBattleCounter == 1 && decoded.MainMenu.Flash == 2 && decoded.Credits.SpeedCounter == 9 && decoded.Defeat.DrawCounter == 17
-&& decoded.EndingTextPrefix[4] == 99 && decoded.FrameThreshold == 17 && decoded.Dialogue.QuestionInput && decoded.Dialogue.PanelX == 80 && decoded.Dialogue.Selection == 3 && decoded.Random == rng && decoded.Town.EffectFrames[4] == 5 && decoded.ObjectActionField == 17 && decoded.Modes.Slots[3] == 220 && decoded.Settings[2] == 4, "NativeAOT typed context retains exact runtime bank values");
+&& decoded.EndingTextPrefix[4] == 99 && decoded.FrameThreshold == 17 && decoded.Dialogue.QuestionInput && decoded.Dialogue.PanelX == 80 && decoded.Dialogue.Selection == 3 && decoded.Random == rng && decoded.Town.EffectFrames[4] == 5 && decoded.ObjectActionField == 17 && decoded.Settings[2] == 4, "NativeAOT typed context retains exact runtime bank values");
         using (var json = System.Text.Json.JsonDocument.Parse(encoded.Payload))
         using (var missing = new MemoryStream())
         {
@@ -205,10 +195,10 @@ internal static class RuntimeSnapshotTests
                 writer.WriteEndObject();
             }
 
-            Reject(() => SessionRuntimeCodec.Decode(new NativeRuntimeContext("atria.session", 1, missing.ToArray())));
+            Reject(() => SessionRuntimeCodec.Decode(new NativeRuntimeContext("atria.session", SessionRuntimeCodec.Version, missing.ToArray())));
         }
 
-        Reject(() => SessionRuntimeCodec.Decode(new NativeRuntimeContext("atria.session", 2, encoded.Payload.Span)));
+        Reject(() => SessionRuntimeCodec.Decode(new NativeRuntimeContext("atria.session", 99, encoded.Payload.Span)));
         Reject(() => SessionRuntimeCodec.Encode(snapshot with { CurrentMap = snapshot.CurrentMap with { Tiles = new byte[32799] } }));
         Reject(() => SessionRuntimeCodec.Encode(snapshot with { Settings = [1, 5, 4, 1] }));
         Reject(() => SessionRuntimeCodec.Encode(snapshot with { FrameThreshold = 14 }));
@@ -216,18 +206,17 @@ internal static class RuntimeSnapshotTests
         Reject(() => SessionRuntimeCodec.Encode(snapshot with { RetainedBattleVisualDetail = 4 }));
         Reject(() => SessionRuntimeCodec.Encode(snapshot with { RetainedBattleRenderPeriod = 26 }));
         Reject(() => SessionRuntimeCodec.Encode(snapshot with { RetainedBattleRenderPeriod = 245 }));
-        var checkpoint = new Atria.Script.ScriptCheckpoint("fixture.scr", "run", new string('A', 64), 3, 410, [new("get_money", 17, [new(false, 25, [])], 0)]);
+        var checkpoint = new Atria.Script.ScriptCheckpoint("fixture.scr", "run", new string('A', 64), ScenarioContinuation.None, 410, [new("get_money", 17, [new(false, 25, [])], 0)]);
         var extended = snapshot with
         {
             ExactResume = true,
             SaveReason = "После боя",
             Script = checkpoint,
             NextBattleSeed = 12345,
-            ScriptReturnLocation = snapshot.Location
         };
         var resumed = SessionRuntimeCodec.Decode(SessionRuntimeCodec.Encode(extended));
         Check(resumed.ExactResume && resumed.SaveReason == "После боя" && resumed.NextBattleSeed == 12345
-&& resumed.Script!.Calls[0].Arguments[0].Integer == 25 && resumed.ScriptReturnLocation!.SceneIndex == 1, "AOT checkpoint source generation preserves extended context");
+&& resumed.Script!.Calls[0].Arguments[0].Integer == 25, "AOT checkpoint source generation preserves extended context");
         Reject(() => SessionRuntimeCodec.Encode(extended with { Script = checkpoint with { Calls = null! } }));
         Reject(() => SessionRuntimeCodec.Encode(extended with { Script = checkpoint with { Calls = [null!] } }));
         Reject(() => SessionRuntimeCodec.Encode(extended with { Script = checkpoint with { Member = null! } }));
@@ -248,7 +237,7 @@ internal static class RuntimeSnapshotTests
                 writer.WriteEndObject();
             }
 
-            Check(!SessionRuntimeCodec.Decode(new("atria.session", 1, old.ToArray())).ExactResume, "pre-autosave schema remains loadable");
+            Check(!SessionRuntimeCodec.Decode(new("atria.session", SessionRuntimeCodec.Version, old.ToArray())).ExactResume, "pre-autosave schema remains loadable");
         }
 
         VerifyLibrarySnapshot(root, snapshot);
@@ -260,27 +249,22 @@ internal static class RuntimeSnapshotTests
         var townAssets = TownSceneAssets.Load(root, "32tiger.sod"u8);
         var town = new TownController();
         town.SetSavedSelection(4);
-        town.Enter(townAssets.Scene, townAssets.Objects, 32, 32, "32tiger.sod"u8.ToArray(), default,
+        town.Initialize(townAssets.Scene, townAssets.Objects, 32, "32tiger.sod"u8.ToArray(), default,
             TownCatalog.Get(32).MusicTrack, _ => { });
         var doorway = townAssets.Scene.GetObject(town.Selection);
         var libraryAssets = TownSceneAssets.Load(root, doorway.GetString(0).Span);
         var interior = new InteriorController();
         interior.Enter(GameMode.Interior, doorway, libraryAssets.Scene, _ => { });
         interior.HandleInput(false, _ => { });
-        var stack = new ModeStack();
-        stack.StartNewGame();
-        stack.Push(GameMode.Interior);
         var snapshot = template with
         {
             SavedMode = GameMode.Interior,
             ExactResume = true,
-            Modes = stack.CaptureRuntime(),
             Location = new(32, "32tiger.sod"u8.ToArray(), "32tiger.scr"u8.ToArray(), 0),
             Town = town.CaptureRuntime(),
             Interior = interior.CaptureRuntime(),
             ScriptMember = libraryAssets.Scene.ScriptReference.ToArray(),
             TownFile = "32tiger.sod"u8.ToArray(),
-            PreviousTown = 32
         };
         var liveState = new GameState { Money = 12345, Mode = GameMode.MainMenu };
         byte[] liveStateBefore = NativeGameStateCodec.Encode(liveState);

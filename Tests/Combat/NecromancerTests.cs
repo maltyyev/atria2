@@ -7,6 +7,7 @@ using Atria.Game.Exploration;
 using Atria.Game.Persistence;
 using Atria.Game.Progression;
 using Atria.Game.State;
+using Atria.Game.World;
 using Atria.Localization;
 using Atria.Resources;
 using Atria.Script;
@@ -56,6 +57,8 @@ public static class NecromancerTests
 
     public static string Run(string root)
     {
+        Console.WriteLine(NarrativeRevisionTests.Run(root));
+        Console.WriteLine(NarrativeReturnTests.Run(root));
         var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
         var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
         var state = InitialGameState.Create(items, messages);
@@ -73,15 +76,32 @@ public static class NecromancerTests
             var original = ScriptProgram.Parse(scene.AfterMember, source);
             Check(original.Tokens.Any(token => token.Text == scene.AfterFunction), "hook exists in an original scenario: " + scene.AfterMember);
         }
+        var objectives = new QuestMapIndex(root);
         foreach (var scene in NarrativeScenes.All.Take(8))
         {
+            int? worldArea = null;
+            int? active = Enumerable.Range(1020, 4).Cast<int?>().FirstOrDefault(id => state.Journal.CanTrack(state, id!.Value));
+            if (active is { } quest)
+            {
+                state.Journal.RestoreTracking(quest);
+                var target = objectives.Objective(state) ?? throw new InvalidOperationException("Missing Eiren objective.");
+                var map = WorldMapContext.Parse(GameResources.Read(root, "AT2AMF.000", Encoding.ASCII.GetBytes($"ground{target.Area + 1}.amf")));
+                worldArea = map.AreaIndex;
+                if (scene.AfterMember != "WORLD")
+                {
+                    var destination = map.SelectScene(target.X, target.Y);
+                    string script = Path.GetFileNameWithoutExtension(Encoding.ASCII.GetString(destination.ScriptMember.Span)).ToUpperInvariant();
+                    Check(script == scene.AfterMember, "quest marker reaches actual scenario hook: " + scene.Id);
+                }
+                Console.WriteLine($"Narrative marker: {scene.Id}, quest={quest}, area={target.Area}, tile={target.X},{target.Y}, hook={scene.AfterMember}/{scene.AfterFunction}.");
+            }
             if (scene.Conditions.TryGetProperty("world", out var position))
             {
-                state.WorldIndex = position[0].GetInt32();
+                Check(worldArea == position[0].GetInt32(), "marker and trigger use loaded area");
                 state.WorldX = position[1].GetInt32();
                 state.WorldY = position[2].GetInt32();
             }
-            Check(NarrativeScenes.After(state, scene.AfterMember, scene.AfterFunction)?.Id == scene.Id, $"reachable stage {scene.Id}");
+            Check(NarrativeScenes.After(state, scene.AfterMember, scene.AfterFunction, worldArea)?.Id == scene.Id, $"reachable stage {scene.Id}");
             var program = ScriptProgram.Parse(scene.Id, scene.Source);
             var checkpoints = new List<(byte[] State, ScriptCallSnapshot[] Calls)>();
             var recording = new CheckpointScriptHost(new ScriptStateHost(state, effects));
@@ -103,14 +123,14 @@ public static class NecromancerTests
                 Check(expected.AsSpan().SequenceEqual(NativeGameStateCodec.Encode(resumed)), "battle/recruitment checkpoints resume exactly once");
             }
             state = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(state));
-            Check(NarrativeScenes.After(state, scene.AfterMember, scene.AfterFunction)?.Id != scene.Id, $"no repeated quest stage {scene.Id}");
+            Check(NarrativeScenes.After(state, scene.AfterMember, scene.AfterFunction, worldArea)?.Id != scene.Id, $"no repeated quest stage {scene.Id}");
         }
         var optional = NarrativeScenes.All[8];
         Check(NarrativeScenes.After(state, optional.AfterMember, optional.AfterFunction)?.Id == optional.Id, "optional recruited-party dialogue appears");
         state.NarrativeHistory.Add(optional.Id);
         state = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(state));
         Check(NarrativeScenes.After(state, optional.AfterMember, optional.AfterFunction) is null, "optional dialogue history survives reload without repeated apology");
-        Check(effects.Battles == 6 && state.HasHero("eiren_wald"), "six quest combats and recruitment");
+        Check(effects.Battles == 7 && state.HasHero("eiren_wald"), "seven quest combats and recruitment");
         Check(state.Journal.Progress(state, 1023).HasFlag(QuestMilestones.Completed), "quest chain completion persists");
         Check(NewCharacterRuntime.ProcessPending(state, items, 0), "joining finalizes stats and equipment");
         int eiren = state.HeroCatalog.Find("eiren_wald");
@@ -135,7 +155,8 @@ public static class NecromancerTests
             Check(catalog.Issues.Count == 0 && catalog.Get("ui.characters.eiren").Length > 0, "localized content validates: " + language);
         }
 
-        for (int encounter = 900; encounter <= 905; encounter++)
+        CheckStorehouseEncounters();
+        for (int encounter = 900; encounter <= 907; encounter++)
         {
             foreach (var hero in state.Heroes.Where(hero => hero.MemberStatus != 0))
             {
@@ -206,7 +227,38 @@ public static class NecromancerTests
         }
         NecromancerPresentationTests.Run(root, state);
         NecromancerExecutionTests.Run(root);
-        return "Necromancer PASS: four staged quests/reload, generic membership, recruitment, RU/BE, portraits, six encounters, three summon choices and death-only cleanup.";
+        return "Necromancer PASS: four staged quests/reload, generic membership, recruitment, RU/BE, portraits, seven current encounters plus legacy storehouse, three summon choices and death-only cleanup.";
+    }
+
+    private static void CheckStorehouseEncounters()
+    {
+        using var document = GameData.Open("AuthoredEncounters");
+        var first = document.RootElement.GetProperty("EBAT906").GetProperty("actors").EnumerateArray().ToArray();
+        var second = document.RootElement.GetProperty("EBAT907").GetProperty("actors").EnumerateArray().ToArray();
+        var openingWave = first.Where(actor => actor.GetProperty("wave").GetInt32() == 0).ToArray();
+        var eirenWave = first.Where(actor => actor.GetProperty("wave").GetInt32() == 1).ToArray();
+        const int necromancerSceneType = 42;
+        Check(first.Select(actor => actor.GetProperty("wave").GetInt32()).Distinct().Order().SequenceEqual([0, 1]), "first storehouse battle has exactly two waves");
+        Check(openingWave.All(actor => actor.GetProperty("type").GetInt32() != necromancerSceneType)
+            && eirenWave.Count(actor => actor.GetProperty("type").GetInt32() == necromancerSceneType) == 1,
+            "Eiren appears only in the second wave");
+        Check(second.All(actor => actor.GetProperty("wave").GetInt32() == 0)
+            && second.GroupBy(actor => actor.GetProperty("type").GetInt32()).All(group => group.Count() == 2)
+            && second.Count(actor => actor.GetProperty("type").GetInt32() == necromancerSceneType) == 2,
+            "copying battle has one wave with two necromancers and paired servants");
+        foreach (string statistic in new[] { "health", "attack", "defense" })
+        {
+            Check(openingWave.Sum(actor => actor.GetProperty(statistic).GetInt32()) < eirenWave.Sum(actor => actor.GetProperty(statistic).GetInt32())
+                && eirenWave.Sum(actor => actor.GetProperty(statistic).GetInt32()) < second.Sum(actor => actor.GetProperty(statistic).GetInt32()),
+                "successive storehouse waves increase total " + statistic);
+        }
+        foreach (var pair in second.GroupBy(actor => actor.GetProperty("type").GetInt32()))
+        {
+            foreach (string statistic in new[] { "health", "attack", "defense" })
+            {
+                Check(pair.Select(actor => actor.GetProperty(statistic).GetInt32()).Distinct().Count() == 1, "copies have the same combat statistics");
+            }
+        }
     }
     private static void Check(bool value, string message)
     {

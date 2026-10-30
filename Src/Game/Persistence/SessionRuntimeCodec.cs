@@ -49,7 +49,7 @@ public sealed record SessionDungeonSnapshot(
     int TreasureItem,
     bool HudEnabled
 );
-public sealed record SessionRuntimeSnapshot
+public record SessionRuntimeSnapshot
 {
     [JsonRequired]
     public required int SavedMode
@@ -57,11 +57,6 @@ public sealed record SessionRuntimeSnapshot
         get; init;
     }
 
-    [JsonRequired]
-    public required ModeStackSnapshot Modes
-    {
-        get; init;
-    }
 
     [JsonRequired]
     public required LegacyRandomSnapshot Random
@@ -153,11 +148,6 @@ public sealed record SessionRuntimeSnapshot
         get; init;
     }
 
-    [JsonRequired]
-    public required int PreviousTown
-    {
-        get; init;
-    }
 
     [JsonRequired]
     public required int MusicId
@@ -275,10 +265,8 @@ public sealed record SessionRuntimeSnapshot
     {
         get; init;
     }
-    public SessionLocationSnapshot? ScriptReturnLocation
-    {
-        get; init;
-    }
+    public SessionLocationSnapshot? AdmissionTarget { get; init; }
+
     public uint? NextBattleSeed
     {
         get; init;
@@ -289,7 +277,7 @@ public sealed record SessionRuntimeSnapshot
 public static class SessionRuntimeCodec
 {
     public const string Schema = "atria.session";
-    public const int Version = 1;
+    public const int Version = 2;
     public static NativeRuntimeContext Encode(SessionRuntimeSnapshot value)
     {
         Validate(value);
@@ -299,14 +287,32 @@ public static class SessionRuntimeCodec
 
     public static SessionRuntimeSnapshot Decode(NativeRuntimeContext context)
     {
-        if (context.Schema != Schema || context.Version != Version)
+        if (context.Schema != Schema || context.Version is not (1 or Version))
         {
             throw new InvalidDataException("Session runtime schema/version is unsupported.");
         }
 
         try
         {
-            var result = JsonSerializer.Deserialize(context.Payload.Span, SessionRuntimeJson.Default.SessionRuntimeSnapshot) ?? throw new InvalidDataException("Session runtime context is absent.");
+            SessionRuntimeSnapshot result;
+            if (context.Version == 1)
+            {
+                var legacy = JsonSerializer.Deserialize(context.Payload.Span, SessionRuntimeJson.Default.LegacySessionRuntimeSnapshot)
+                    ?? throw new InvalidDataException("Session runtime context is absent.");
+                if (legacy.Modes is null)
+                    throw new InvalidDataException("Historical mode stack is absent.");
+                legacy.Modes.Validate();
+                if (!legacy.ExactResume && legacy.Modes.UnderlyingSavedMode() != legacy.SavedMode)
+                    throw new InvalidDataException("Underlying save mode disagrees with retained mode slots.");
+                result = legacy;
+                if (legacy.Script?.Continuation == ScenarioContinuation.EnterTown)
+                    result = legacy with { AdmissionTarget = legacy.Location, Location = legacy.ScriptReturnLocation };
+            }
+            else
+            {
+                result = JsonSerializer.Deserialize(context.Payload.Span, SessionRuntimeJson.Default.SessionRuntimeSnapshot)
+                    ?? throw new InvalidDataException("Session runtime context is absent.");
+            }
             // Source-generated record construction supplies null for an absent init property.
             if (result.SaveReason is null)
             {
@@ -373,7 +379,7 @@ public static class SessionRuntimeCodec
         if (value.Script is { } script)
         {
             if (!value.ExactResume || string.IsNullOrEmpty(script.Member) || script.Member.Length > 260 || string.IsNullOrEmpty(script.Function)
-|| script.Function.Length > 128 || script.SourceHash is not { Length: 64 } || script.Continuation is < 0 or > 5 || script.Calls is null || script.Calls.Length > 100000)
+|| script.Function.Length > 128 || script.SourceHash is not { Length: 64 } || !Enum.IsDefined(script.Continuation) || script.Calls is null || script.Calls.Length > 100000)
             {
                 throw new InvalidDataException("Invalid script continuation.");
             }
@@ -396,7 +402,25 @@ public static class SessionRuntimeCodec
                     Bytes(arg.Bytes, 4096);
                 }
             }
+
+            bool validRoute = script.Continuation switch
+            {
+                ScenarioContinuation.None => value.AdmissionTarget is null,
+                ScenarioContinuation.EnterTown => value.SavedMode == GameMode.World && value.AdmissionTarget is not null
+                    && script.ContinuationMode is 0 or 1,
+                ScenarioContinuation.EnterBuilding => value.SavedMode == GameMode.Town && value.Town is { PendingPreEnter: true },
+                ScenarioContinuation.LeaveTown => value.SavedMode == GameMode.Town && value.Town is { PendingPreOut: true },
+                ScenarioContinuation.InteriorInteraction => value.Interior is not null && value.SavedMode is GameMode.Interior or GameMode.Inn or GameMode.Shop,
+                ScenarioContinuation.LeaveBuilding => value.Interior is not null && script.ContinuationMode == value.SavedMode
+                    && value.SavedMode is GameMode.Interior or GameMode.Inn or GameMode.Shop,
+                _ => false
+            };
+            if (!validRoute)
+                throw new InvalidDataException("Scenario continuation contradicts its location/transition state.");
         }
+
+        else if (value.AdmissionTarget is not null)
+            throw new InvalidDataException("Town admission requires a saved scenario continuation.");
 
         if (value.FrameThreshold is < 15 or > 45)
         {
@@ -420,11 +444,6 @@ public static class SessionRuntimeCodec
         }
 
         Map(value.CurrentMap);
-        if (value.Modes is null || value.Modes.Slots is not { Length: ModeStack.SafeCapacity } || value.Modes.Depth is < -1 or >= ModeStack.SafeCapacity)
-        {
-            throw new InvalidDataException("Session mode bank is invalid.");
-        }
-
         if (value.SelectedEquipmentActor < 0 || value.Town is null)
         {
             throw new InvalidDataException("Session actor/town state is invalid.");
@@ -469,7 +488,7 @@ public static class SessionRuntimeCodec
             }
         }
 
-        if (value.ScriptReturnLocation is { } prior)
+        if (value is LegacySessionRuntimeSnapshot { ScriptReturnLocation: { } prior })
         {
             Bytes(prior.SceneMember);
             Bytes(prior.ScriptMember);
@@ -477,6 +496,14 @@ public static class SessionRuntimeCodec
             {
                 throw new InvalidDataException("Scenario return location is invalid.");
             }
+        }
+
+        if (value.AdmissionTarget is { } target)
+        {
+            Bytes(target.SceneMember, 260);
+            Bytes(target.ScriptMember, 260);
+            if ((uint)target.AreaIndex >= 8 || (uint)target.SceneIndex >= 52 || target.SceneMember.Length == 0 || target.ScriptMember.Length == 0)
+                throw new InvalidDataException("Town admission destination is invalid.");
         }
 
         if (value.Exploration is { } world)
@@ -529,6 +556,7 @@ public static class SessionRuntimeCodec
 
 [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)]
 [JsonSerializable(typeof(SessionRuntimeSnapshot))]
+[JsonSerializable(typeof(LegacySessionRuntimeSnapshot))]
 internal partial class SessionRuntimeJson : JsonSerializerContext
 {
 }

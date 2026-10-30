@@ -7,9 +7,8 @@ namespace Atria.Game;
 /// <summary>Discard previous-playthrough scene context before entering the new game's first town.</summary>
 public static class NewGameSceneReset
 {
-    public static void Apply(GameState state, TownController town, ActionMenuController actions, ref int previousTown)
+    public static void Apply(GameState state, TownController town, ActionMenuController actions)
     {
-        previousTown = 0;
         town.SetSavedSelection(0);
         actions.CloseAll();
         state.ScriptActive = 0;

@@ -111,8 +111,16 @@ public static class DungeonTests
         };
         map.Write(45, 4, 1);
         var motion = new DungeonMotion(state, map, new([], sequences));
+        var idleMotion = motion.CaptureRuntime();
+        motion.DelayMovement(1000);
+        Check(motion.CaptureRuntime() == idleMotion, "Pausing idle dungeon animation leaves its pass counter unchanged.");
         Check(motion.Begin(WorldDirection.Right), "dungeon valid target begins travel");
         var retainedMotion = motion.CaptureRuntime();
+        motion.DelayMovement(1000);
+        Check(motion.CaptureRuntime() == (retainedMotion with { Deadline = retainedMotion.Deadline + 1000 }),
+            "UI pause shifts only the dungeon movement deadline.");
+        Check(motion.Advance(() => 1000).Pose.Frame == 0, "UI elapsed time cannot consume a dungeon movement frame.");
+        motion.RestoreRuntime(retainedMotion);
         motion.ClearMovementAfterBattle();
         Check(motion.CaptureRuntime() == (retainedMotion with
         {

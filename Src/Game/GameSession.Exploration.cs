@@ -1,3 +1,6 @@
+using Atria.Game.Town;
+using Atria.Script;
+using Atria.Game.Navigation;
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
@@ -19,6 +22,7 @@ public sealed partial class GameSession
     private byte[] explorationOriginalAmf = [];
     private bool explorationMapReload;
     private int explorationTravelSteps, explorationRevealX, explorationRevealY;
+    private WorldSceneReference? admissionTarget;
     private QuestMapIndex? questMap;
     private WorldRevealPose? questMarker;
     private void ResetExplorationSession()
@@ -34,16 +38,23 @@ public sealed partial class GameSession
         explorationRevealX = explorationRevealY = 0;
     }
 
-    //HandleTown.LoadReturnMap calls this BEFORE its later ResetModeStack/ChangeMode300 commands.
+    // Prepare resources before replacing the retained world context.
     private void LoadExplorationReturnMap(ReadOnlyMemory<byte> member)
     {
         explorationTravelSteps = exploration?.TravelSteps ?? explorationTravelSteps;
         byte[] loaded = [];
         var entry = WorldMapBoundary.Load(member, areas, key => loaded = Read("AT2AMF.000", key.Span));
+        var assets = WorldSceneAssets.Load(root, entry.Map, loaded);
+        var renderer = new WorldSceneRenderer(assets);
+        var controller = new ExplorationController(state, entry.Map, assets.CharacterAnimation, random,
+            renderer.IsSceneReferenceBlocked, WorldDirection.Down, explorationTravelSteps);
         map = entry.Map;
+        explorationAssets = assets;
+        explorationRenderer = renderer;
+        exploration = controller;
         explorationEntry = entry;
         explorationOriginalAmf = loaded;
-        explorationMapReload = true;
+        explorationMapReload = false;
         scriptMember = entry.ScriptMember.ToArray();
         townName = entry.PrimaryName.ToArray();
         returnMap = entry.MapMember.ToArray();
@@ -95,7 +106,7 @@ public sealed partial class GameSession
 
         //428f00/428ea0 mode300: clear town saved selection; refresh arrival visibility+cached ground.
         town.SetSavedSelection(0);
-        exploration.InputDelay = 2; //428ea0 resets this guard on every300 entry, including status/menu return.
+        exploration.InputDelay = 2; // Guard the first movement input after a physical arrival.
         ExplorationRules.MarkArrival(currentMap, state.WorldX, state.WorldY);
         explorationRenderer!.RebuildBase(currentMap, state);
         townName = (explorationEntry ?? throw new InvalidOperationException("World entry identity was lost.")).PrimaryName.ToArray();
@@ -113,16 +124,15 @@ public sealed partial class GameSession
         explorationRevealX = state.WorldX;
         explorationRevealY = state.WorldY;
         explorationRenderer.ResetRevealAnimation();
-        state.Mode = GameMode.WorldEntry;
+        navigation.SetWorldReveal(true);
+        SetVisibleMode(navigation.Mode);
         // Native directly changes current mode; stack content/depth remain the underlying300 entry.
     }
 
     private void FinishExplorationReveal()
     {
-        modes.ResetDepth();
-        modes.Push(GameMode.World);
-        state.Mode = GameMode.World;
-        state.ModeStackDepth = 0;
+        navigation.SetWorldReveal(false);
+        SetVisibleMode(navigation.Mode);
         //41bdc0 does not execute mode300 entry, reset ANI timing, reset save gate, or update music.
     }
 
@@ -246,10 +256,8 @@ public sealed partial class GameSession
             case ExplorationInputEffect.ActionDialogue:
                 actions.OpenWorld(map!, state, explorationRenderer!.IsSceneReferenceBlocked, displayMessages);
                 break;
-            case ExplorationInputEffect.Map500With300Sentinel:
-                modes.Push(GameMode.World);
-                modes.Push(GameMode.Status);
-                EnterMode(GameMode.Status);
+            case ExplorationInputEffect.OpenStatus:
+                OpenScreen(UiScreen.Status);
                 break;
             default:
                 throw new InvalidDataException("Unknown exploration input effect.");
@@ -260,20 +268,24 @@ public sealed partial class GameSession
     {
         byte[] loaded = [];
         var transition = WorldMapBoundary.PrepareTransition(state, map!, areas, key => loaded = Read("AT2AMF.000", key.Span));
+        var assets = WorldSceneAssets.Load(root, transition.Entry.Map, loaded);
+        var renderer = new WorldSceneRenderer(assets);
+        var controller = new ExplorationController(state, transition.Entry.Map, assets.CharacterAnimation, random,
+            renderer.IsSceneReferenceBlocked);
         map = transition.Entry.Map;
+        explorationAssets = assets;
+        explorationRenderer = renderer;
+        exploration = controller;
         explorationEntry = transition.Entry;
         explorationOriginalAmf = loaded;
         explorationTravelSteps = 0;
-        exploration = null;
-        explorationMapReload = true;
+        explorationMapReload = false;
         scriptMember = transition.Entry.ScriptMember.ToArray();
         townName = transition.Entry.PrimaryName.ToArray();
         returnMap = transition.Entry.MapMember.ToArray();
         WorldMapBoundary.ApplyCoordinatesAndNativeResets(transition, state);
         saveDisabled = false;
-        modes.ResetDepth();
-        modes.Push(GameMode.World);
-        EnterMode(GameMode.World);
+        CommitLocation(LocationKind.World);
         RequestAutosave(AutosaveReason.WorldArea);
     }
 
@@ -372,11 +384,9 @@ public sealed partial class GameSession
             }
             else if (choice is 1 or 2)
             {
-                modes.Push(GameMode.WorldOverlay);
                 actions.SetRenderEnabled(false);
                 int mode = choice == 1 ? 500 : 200;
-                modes.Push(mode);
-                EnterMode(mode);
+                OpenScreen((UiScreen)mode);
             }
             else if (choice == 3)
             {
@@ -415,11 +425,9 @@ public sealed partial class GameSession
             }
             else if (choice is 1 or 2)
             {
-                modes.Push(GameMode.WorldOverlay);
                 actions.SetRenderEnabled(false);
                 int mode = choice == 1 ? 500 : 200;
-                modes.Push(mode);
-                EnterMode(mode);
+                OpenScreen((UiScreen)mode);
             }
             else
             {
@@ -466,33 +474,27 @@ public sealed partial class GameSession
             return;
         }
 
-        var previous = location;
-        location = current.SelectScene(state.WorldX, state.WorldY);
+        admissionTarget = current.SelectScene(state.WorldX, state.WorldY);
+        _ = TownSceneAssets.Load(root, admissionTarget.SceneMember.Span);
         state.EnterPermission = 0;
-        scriptReturnLocation = previous;
-        RunScript(location.ScriptMember.Span, "pre_enter"u8, 5, testNativeSceneGate ? 1 : 0);
-        CompleteWorldPreEnter(testNativeSceneGate, previous);
+        RunScript(admissionTarget.ScriptMember.Span, "pre_enter"u8, ScenarioContinuation.EnterTown, testNativeSceneGate ? 1 : 0);
+        CompleteWorldPreEnter();
     }
 
-    private void CompleteWorldPreEnter(bool testNativeSceneGate, WorldSceneReference? previous)
+    private void CompleteWorldPreEnter()
     {
-        var current = map ?? throw new InvalidOperationException("World map not loaded.");
-        if (state.EnterPermission == 0)
-        {
-            location = previous;
+        var target = admissionTarget ?? throw new InvalidDataException("Town admission destination is absent.");
+        admissionTarget = null;
+        if (state.EnterPermission == 0 || state.Mode is GameMode.Defeat or GameMode.Ending)
             return;
-        }
 
-        if (testNativeSceneGate && state.Mode == GameMode.Defeat)
-        {
-            return; //427d70 guard;4284e0(message99) has no such guard.
-        }
+        var current = map ?? throw new InvalidOperationException("World map not loaded.");
+        if (navigation.Location != LocationKind.World || current.AreaIndex != target.AreaIndex)
+            throw new InvalidDataException("Town admission no longer belongs to the source location.");
 
         areas.Capture(current.AreaIndex, current);
-        location = current.SelectScene(state.WorldX, state.WorldY);
-        modes.ResetDepth();
+        location = target;
         saveDisabled = false;
-        modes.Push(GameMode.Town);
-        EnterMode(GameMode.Town);
+        CommitLocation(LocationKind.Town);
     }
 }

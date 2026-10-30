@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using Atria.Game.Controls;
 using Atria.Game.Settings;
 using Atria.Render.Codecs;
@@ -71,7 +72,6 @@ public sealed partial class GameSession
 
         modernSettings = CreateModernSettings();
         controls.Clear();
-        music.Update(musicId);
     }
 
     private void HandleSettingsInput()
@@ -82,17 +82,11 @@ public sealed partial class GameSession
             return;
         }
 
-        if (!modes.TryPop(out var t))
+        if (!CloseScreen())
         {
             throw new InvalidOperationException("Options return stack empty.");
         }
 
-        if (t.RestoreFlag)
-        {
-            actions.SetRenderEnabled(true);
-        }
-
-        EnterMode(t.Mode);
     }
 
     private void ComposeSettings(Span<ushort> target)

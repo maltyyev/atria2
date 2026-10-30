@@ -13,7 +13,6 @@ public enum TownEffectKind
     SetTownNames,
     SetMusic,
     PlayMusic,
-    SetPreviousTown,
     LoadBackground,
     OpenActionMenu,
     SetObjectActionField,
@@ -22,12 +21,11 @@ public enum TownEffectKind
     RunPreEnter,
     CopyReturnMapReferences,
     LoadReturnMap,
-    ResetModeStackAndEnableSave,
+    EnableSave,
     ChangeMode,
     CopyTownToBattleReturn,
     InitializeEncounter,
     CloseActionMenus,
-    PushMapReturnMarker,
     SetUiDirty
 }
 
@@ -60,7 +58,7 @@ public sealed partial class TownController
     private ReadOnlyMemory<byte> loadedSceneName;
     private readonly int[] effectFrames = new int[5], effectCounters = new int[5];
     private int inputDelay, markerCounter, markerPhase, motionX, motionY, leaveFlash;
-    private bool pendingPreOut, pendingPreEnter, actionPreOut;
+    private bool pendingPreOut, pendingPreEnter;
     public bool InputDeferred => inputDelay != 0;
     public int TownId
     {
@@ -95,6 +93,12 @@ public sealed partial class TownController
     public SodV2 Scene => scene ?? throw new InvalidOperationException("Town not loaded.");
 
     public void ReleaseObjectSprites() => sprites = null;
+
+    public void QueueArrival(Action<TownCommand> emit)
+    {
+        _ = Scene;
+        emit(new(TownEffectKind.QueueEnterScript, TownId, Bytes: "enter"u8.ToArray()));
+    }
     // Native mode300/330 reset63bc0 before town reload;400 itself retains it.
     public void SetSavedSelection(int value)
     {
@@ -103,11 +107,10 @@ public sealed partial class TownController
         SavedSelection = value;
     }
 
-    public void Enter(
+    public void Initialize(
         SodV2 townScene,
         SpriteFile? townSprites,
         int townId,
-        int previousTownId,
         ReadOnlyMemory<byte> sceneName,
         ReadOnlyMemory<byte> townName,
         int musicId,
@@ -165,12 +168,6 @@ public sealed partial class TownController
         }
 
         emit(new(TownEffectKind.SetScriptContext, Bytes: townScene.ScriptReference));
-        if (previousTownId != townId)
-        {
-            emit(new(TownEffectKind.SetPreviousTown, townId));
-            emit(new(TownEffectKind.QueueEnterScript, townId, Bytes: "enter"u8.ToArray()));
-        }
-
         inputDelay = 1;
         emit(new(TownEffectKind.SetTownNames, Bytes: townName));
         emit(new(TownEffectKind.SetMusic, musicId));
@@ -197,7 +194,6 @@ public sealed partial class TownController
         if (encounterPending)
         {
             emit(new(TownEffectKind.ReleaseTownSprite));
-            emit(new(TownEffectKind.SetPreviousTown, 0));
             emit(new(TownEffectKind.CopyTownToBattleReturn, Bytes: loadedSceneName));
             emit(new(TownEffectKind.InitializeEncounter));
             emit(new(TownEffectKind.ChangeMode, 330));
@@ -287,7 +283,6 @@ public sealed partial class TownController
             if (LeaveYes)
             {
                 pendingPreOut = true;
-                actionPreOut = false;
                 emit(new(TownEffectKind.RunPreOut, Bytes: Scene.ScriptReference));
             }
         }
@@ -311,20 +306,16 @@ public sealed partial class TownController
             return;
         }
 
-        emit(new(TownEffectKind.ReleaseTownSprite));
-        if (actionPreOut && currentMode == 1100)
+        if (currentMode is GameMode.Defeat or GameMode.Ending)
         {
             return;
         }
 
+        emit(new(TownEffectKind.ReleaseTownSprite));
         emit(new(TownEffectKind.CopyReturnMapReferences, Bytes: HeaderString(81)));
         emit(new(TownEffectKind.LoadReturnMap, Bytes: HeaderString(81)));
-        emit(new(TownEffectKind.ResetModeStackAndEnableSave));
+        emit(new(TownEffectKind.EnableSave));
         emit(new(TownEffectKind.ChangeMode, 300));
-        if (actionPreOut)
-        {
-            emit(new(TownEffectKind.SetPreviousTown, 0));
-        }
     }
 
     //0x4283e0 action0: callback can change mode during pre_enter; never enter after game-over.
@@ -353,12 +344,10 @@ public sealed partial class TownController
         {
             emit(new(TownEffectKind.CloseActionMenus));
             pendingPreOut = true;
-            actionPreOut = true;
             emit(new(TownEffectKind.RunPreOut, 1, Bytes: Scene.ScriptReference));
             return;
         }
 
-        emit(new(TownEffectKind.PushMapReturnMarker, 320));
         emit(new(TownEffectKind.SetUiDirty, 0));
         emit(new(TownEffectKind.ChangeMode, action == 2 ? 500 : 200));
     }
@@ -371,13 +360,13 @@ public sealed partial class TownController
         }
 
         pendingPreEnter = false;
-        if (!allowed || currentMode == 1100)
+        if (!allowed || currentMode is GameMode.Defeat or GameMode.Ending)
         {
             return;
         }
 
         emit(new(TownEffectKind.ReleaseTownSprite));
-        emit(new(TownEffectKind.ResetModeStackAndEnableSave));
+        emit(new(TownEffectKind.EnableSave));
         int kind = Scene.GetObject(Selection).GetInteger(7);
         if (kind is >= 0 and <= 2)
         {

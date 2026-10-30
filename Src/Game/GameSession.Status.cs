@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using Atria.Game.Status;
 using Atria.Render.Codecs;
 using Atria.Resources;
@@ -47,7 +48,6 @@ public sealed partial class GameSession
         statusEventDescriptions = eventDescriptions;
         statusClock.Reset();
         statusRuntime.Enter(HandleStatus);
-        music.Update(musicId);
     }
 
     private void HandleStatus(StatusMenuCommand command)
@@ -64,16 +64,7 @@ public sealed partial class GameSession
                 statusRenderer = null;
                 break;
             case StatusMenuEffect.PopMode:
-                if (modes.TryPop(out var transition))
-                {
-                    if (transition.RestoreFlag)
-                    {
-                        actions.SetRenderEnabled(true);
-                    }
-
-                    EnterMode(transition.Mode);
-                }
-
+                CloseScreen();
                 break;
             case StatusMenuEffect.SetRestoreFlag:
                 // Native473154 requests background restoration. This session fully composes each logical draw;

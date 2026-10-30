@@ -1,3 +1,4 @@
+using Atria.Game.Navigation;
 using Atria.Game.Credits;
 using Atria.Render.Codecs;
 using Atria.Resources;
@@ -33,17 +34,11 @@ public sealed partial class GameSession
     private void HandleCreditsInput() => credits.Input(() => host.IsHeld(bindings.Confirm), () => Query(bindings.Cancel), () =>
     {
         // Native frees rows/sprite and restores text clip0..479 before popping. Managed immutable cache is reusable.
-        if (!modes.TryPop(out var transition))
+        if (!CloseScreen())
         {
             throw new InvalidOperationException("Credits return stack is empty.");
         }
 
-        if (transition.RestoreFlag)
-        {
-            actions.SetRenderEnabled(true);
-        }
-
-        EnterMode(transition.Mode);
         actions.SetRenderEnabled(true);
     });
     private void ComposeCredits(Span<ushort> target)

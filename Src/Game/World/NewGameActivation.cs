@@ -3,7 +3,7 @@ using Atria.Resources;
 
 namespace Atria.Game.World;
 
-public sealed record NewGameActivation(GameState State, WorldMapContext Map, WorldAreaStore Areas, ModeStack Modes, WorldSceneReference FirstScene)
+public sealed record NewGameActivation(GameState State, WorldMapContext Map, WorldAreaStore Areas, WorldSceneReference FirstScene)
 {
     /// <summary>425990 state/storage portion. Caller must execute mode400 entry and all resource/script effects.</summary>
     public static NewGameActivation Prepare(ItemCatalog items, IReadOnlyList<ReadOnlyMemory<byte>> messages, ReadOnlyMemory<byte> ground1)
@@ -15,11 +15,9 @@ public sealed record NewGameActivation(GameState State, WorldMapContext Map, Wor
         areas.ResetNames(messages);
         var first = map.SelectScene(state.WorldX, state.WorldY);
         areas.Capture(0, map);
-        var modes = new ModeStack();
-        modes.StartNewGame();
         state.Mode = 400;
         state.ModeStackDepth = 0;
-        return new(state, map, areas, modes, first);
+        return new(state, map, areas, first);
     }
 }
 

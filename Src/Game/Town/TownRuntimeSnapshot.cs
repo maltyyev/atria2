@@ -40,7 +40,7 @@ public sealed partial class TownController
         leaveFlash,
         pendingPreOut,
         pendingPreEnter,
-        actionPreOut,
+        false, // v1 exit-control discriminator is no longer used.
         (int[])effectFrames.Clone(),
         (int[])effectCounters.Clone(),
         loadedSceneName.ToArray(),
@@ -87,7 +87,6 @@ public sealed partial class TownController
         leaveFlash = value.LeaveFlash;
         pendingPreOut = value.PendingPreOut;
         pendingPreEnter = value.PendingPreEnter;
-        actionPreOut = value.ActionPreOut;
         value.EffectFrames.CopyTo(effectFrames, 0);
         value.EffectCounters.CopyTo(effectCounters, 0);
     }
