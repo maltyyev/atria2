@@ -5,6 +5,8 @@ namespace Atria.Game.Town;
 
 public sealed record TownSceneAssets(SodV2 Scene, SpriteFile? Objects, ushort[] Background565)
 {
+    public string ResourceId { get; init; } = "";
+
     // Native425dc0 strips extension, performs Binder lookup, then reads120-byte header +370-byte records.
     public static TownSceneAssets Load(string originalRoot, ReadOnlySpan<byte> sceneReference, bool loadObjects = true)
     {
@@ -26,7 +28,7 @@ public sealed record TownSceneAssets(SodV2 Scene, SpriteFile? Objects, ushort[] 
         }
 
         ushort[] pixels = background.ToRgb565();
-        return new(scene, objects, pixels);
+        return new(scene, objects, pixels) { ResourceId = scenes.Entries[sceneIndex].Name };
     }
 
     private static int Find(BinderArchive archive, ReadOnlySpan<byte> name)

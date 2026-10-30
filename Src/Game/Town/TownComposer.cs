@@ -41,7 +41,9 @@ public static class TownComposer
 
         if (frame.DrawLabel)
         {
-            SodScenePresentation.DrawSelectionLabel(assets.Scene, assets.Objects!, etc, smallFont, frame.Selection, frame.MotionX, frame.MotionY, target, 640, 480, 640);
+            string? key = ResourceLabelKeys.Scene(assets.ResourceId, frame.Selection);
+            string label = key is null ? GameText.Decode(assets.Scene.GetObject(frame.Selection).GetString(4).Span) : GameText.Get(key);
+            SodScenePresentation.DrawSelectionLabel(assets.Scene, assets.Objects!, etc, smallFont, frame.Selection, label, frame.MotionX, frame.MotionY, target, 640, 480, 640);
         }
 
         if (frame.LeaveConfirmation)

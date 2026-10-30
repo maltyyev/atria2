@@ -1,3 +1,4 @@
+using Atria.Localization;
 using Atria.Render.Codecs;
 using Atria.Render.Scenes;
 using Atria.Resources;
@@ -25,7 +26,7 @@ public static class SceneRenderTests
 
         var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(originalRoot, "eng1.fnt")), true);
         var etc = SpriteFile.Decode(Read(menuSprites, "ETC"u8));
-        SodScenePresentation.DrawSelectionLabel(scene, townSprite, etc, font, 0, 0, 0, target, 640, 480, 640);
+        SodScenePresentation.DrawSelectionLabel(scene, townSprite, etc, font, 0, GameText.Get(ResourceLabelKeys.Scene("01MERCEN", 0)!), 0, 0, target, 640, 480, 640);
         int[] order = SodScenePresentation.BuildDepthOrder(scene, townSprite);
         Require(order.Distinct().Count() == scene.Count, "Depth order lost objects.");
         // Native adjacent-swap tolerance preserves depth10 before9, but moves7 before both.

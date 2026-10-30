@@ -51,7 +51,5 @@ public static class GameText
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
-    public static ReadOnlyMemory<byte> Name(ReadOnlyMemory<byte> original) => Current.Name(original);
-
     public static ReadOnlyMemory<byte> ItemName(Atria.Resources.ItemCatalog items, int id) => Legacy($"items.{id:D2}.name", items.GetItem(id).Name);
 }

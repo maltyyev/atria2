@@ -49,9 +49,8 @@ public static class LocalizationTests
                 "new embedded defaults replace original binary labels without external edits");
             Check(Decode(baseline.Legacy("messages.002", messages[2]).Span) == "Своллоу",
                 "fresh matching external JSON replaces original labels");
-            Check(Decode(embedded.Name(messages[2]).Span) == "Своллоу"
-                && Decode(embedded.Name(GameText.Encoding.GetBytes("Сволоу")).Span) == "Своллоу",
-                "old party and scene name aliases survive changed embedded defaults");
+            Check(Decode(embedded.Legacy("messages.002", GameText.Encoding.GetBytes("Сволоу")).Span) == "Своллоу",
+                "stable character key handles an obsolete saved spelling");
             Check(originalSwallow.SequenceEqual(messages[2].ToArray()), "name display preserves old save/resource bytes");
             string legacyMessages = Path.Combine(temporary, LocalizationCatalog.BaseLanguage, "messages.json");
             Write("messages.json", new Dictionary<string, string>(LocalizationCatalog.Defaults["messages.json"])
@@ -142,7 +141,7 @@ public static class LocalizationTests
             Check(Decode(GameText.ItemName(items, 0).Span) == "Новый предмет", "item name display");
             Check(StatusTextList.LoadDescription(1, 0, items, Read("EITEM.DAT"), journal) == "Описание предмета", "inventory description display");
             Check(StatusTextList.LoadDescription(4, 0, items, Read("EITEM.DAT"), journal) == "Описание задания", "quest description display");
-            Check(Decode(GameText.Name(messages[119]).Span) == "Новый город", "raw saved location name maps to translated display");
+            Check(Atria.Game.World.LocationTitle.Town(0).Text == "Новый город", "town ID maps to edited display text");
             Check(CreditsText.Parse(Read("CREDIT.DAT")).Flow.Lines[0] == "Автор", "credits display");
             Check(EndingText.Parse(Read("END.DAT"), 1).Flow.Lines[0] == "Конец", "ending display");
             Check(rawItem.SequenceEqual(items.GetItem(0).Raw.ToArray()) && rawDialogue.SequenceEqual(dialogue.GetText(0).ToArray()), "raw item stats and dialogue data remain unchanged");

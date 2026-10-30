@@ -1,5 +1,15 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--resource-labels")
+{
+    Console.WriteLine(Atria.Tests.Localization.ResourceLabelTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Localization.LiveLanguageTests.Run(args[0]));
+    Atria.Tests.Render.SceneRenderTests.Run(args[0]);
+    Console.WriteLine(Atria.Tests.Interiors.InteriorTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--save-localization")
 {
     Atria.Tests.Persistence.RuntimeSnapshotTests.Run(args[0]);
@@ -352,6 +362,7 @@ if (!v.TryMapInput(2239, 1439, out int x, out int y) || x != 639 || y != 479)
 Console.WriteLine("Presentation geometry checks passed.");
 Console.WriteLine(Atria.Tests.Localization.LocalizationTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Localization.LiveLanguageTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.Localization.ResourceLabelTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Resources.StateModelTests.Run());
 Console.WriteLine(Atria.Tests.Resources.GameDefinitionTests.Run());
 Console.WriteLine(Atria.Tests.RefactoringTests.Run(args[0]));

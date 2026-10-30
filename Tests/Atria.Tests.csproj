@@ -8,6 +8,7 @@
   <Import Project="../Assets/InterfaceResources.props" />
   <ItemGroup>
     <ProjectReference Include="../Src/Atria.Game.csproj" />
+    <EmbeddedResource Include="../Src/Content/Atria2/OriginalNames.json" LogicalName="Atria.Tests.OriginalNames.json" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Video/Fixtures/*.framemd5" Link="VideoFixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

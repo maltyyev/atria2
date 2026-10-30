@@ -15,10 +15,8 @@ public sealed class LocalizationCatalog
     private const int MaximumLegacyRowTextBytes = 79;
     private const int MaximumParagraphCharacters = 16_384;
     private static readonly Lazy<Dictionary<string, Dictionary<string, string>>> defaults = new(ReadDefaults);
-    private static readonly Lazy<Dictionary<string, string>> originalNames = new(ReadOriginalNames);
     private readonly Dictionary<string, string> texts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, byte[]> legacyOverrides = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, byte[]> nameOverrides = new(StringComparer.Ordinal);
     private readonly Dictionary<string, byte[]> encodedTexts = new(StringComparer.Ordinal);
     public List<LocalizationIssue> Issues { get; } = [];
 
@@ -58,15 +56,6 @@ public sealed class LocalizationCatalog
                 }
             }
         }
-
-        // Old saves and binary resources retain the source names even after embedded translations change.
-        foreach (var entry in originalNames.Value)
-        {
-            if (!string.IsNullOrEmpty(entry.Value) && legacyOverrides.TryGetValue(entry.Key, out var translated))
-            {
-                nameOverrides[entry.Value] = translated;
-            }
-        }
     }
 
     public string Get(string key) => texts.TryGetValue(key, out var value) ? value : throw new KeyNotFoundException($"Unknown localization key: {key}");
@@ -81,32 +70,6 @@ public sealed class LocalizationCatalog
 
         return bytes;
     }
-    public ReadOnlyMemory<byte> Name(ReadOnlyMemory<byte> original)
-        => FindName(original.Span) is { } replacement ? replacement : original;
-
-    public ReadOnlySpan<byte> NameSpan(ReadOnlySpan<byte> original)
-        => FindName(original) is { } replacement ? replacement : original;
-
-    private byte[]? FindName(ReadOnlySpan<byte> original)
-    {
-        if (nameOverrides.Count == 0)
-        {
-            return null;
-        }
-
-        int end = original.IndexOf((byte)0);
-        string name = TextResourceSchema.Normalize(GameText.Encoding.GetString(end < 0 ? original : original[..end]));
-        return nameOverrides.GetValueOrDefault(name);
-    }
-
-    private static Dictionary<string, string> ReadOriginalNames()
-    {
-        using var stream = typeof(LocalizationCatalog).Assembly.GetManifestResourceStream("Atria.Content.Atria2.OriginalNames.json")
-            ?? throw new InvalidDataException("Original name identities are missing.");
-        using var document = JsonDocument.Parse(stream);
-        return ReadObject(document.RootElement);
-    }
-
     public byte[] Bytes(string key)
     {
         if (!encodedTexts.TryGetValue(key, out var bytes))

@@ -60,7 +60,6 @@ public sealed class SaveLoadMenuRenderer
     public IReadOnlyList<SaveMenuDrawCommand> BuildPlan(
         SaveLoadMenuFrame frame,
         IReadOnlyList<SaveSlotInfo> slots,
-        bool alternateEmptyName = false,
         string safetyFailureLabel = ""
     )
     {
@@ -128,15 +127,7 @@ public sealed class SaveLoadMenuRenderer
                     continue;
                 }
 
-                var label = frame.Kind == SaveLoadMenuKind.Save && alternateEmptyName ? metadata.SecondaryName : metadata.PrimaryName;
-                // Native empty-slot metadata can have a zero-length name. Keep the slot visible
-                // using the supplied localization; do not change its empty/load-rejection state.
-                if (label.IsEmpty && slots[i].Status == SaveSlotStatus.Empty)
-                {
-                    label = messages[361];
-                }
-
-                Outline(GameText.Decode(GameText.Name(label).Span), 140, y, style, flash);
+                Outline(GameText.Get("messages.361"), 140, y, style, flash);
                 continue;
             }
 

@@ -291,7 +291,7 @@ public static class PersistenceRuntimeTests
 && plan.Any(p => p.Primitive == SaveMenuPrimitive.Panel && p.X == 96 && p.Y == 64 && p.A == 12 && p.B == 7), "native static save panels");
         check(plan.Any(p => p.Text == GameText.Decode(messages[362].Span) && p.X == 156 && p.Y == 390 && p.Style == SaveMenuTextStyle.Selected), "save footer362 native coordinates");
         check(plan.Any(p => p.Text == GameText.Decode(filled.PrimaryName.Span).Trim().ToUpperInvariant() && p.X == 140 && p.Y == 99 && p.Style == SaveMenuTextStyle.Purple), "selected occupied slot native name position/palette");
-        check(plan.Any(p => p.Text == GameText.Decode(empty.PrimaryName.Span).Trim().ToUpperInvariant() && p.X == 140 && p.Y == 147), "empty second slot shares occupied-name alignment");
+        check(plan.Any(p => p.Text == GameText.Get("messages.361").Trim().ToUpperInvariant() && p.X == 140 && p.Y == 147), "empty second slot shares occupied-name alignment");
         plan = renderer.BuildPlan(frame with
         {
             Confirmation = true
@@ -329,34 +329,26 @@ public static class PersistenceRuntimeTests
         }
         )
         {
-            foreach (bool alternate in new[]
+            plan = renderer.BuildPlan(frame with
             {
-                false,
-                true
-            }
-            )
+                Kind = kind,
+                Selection = 2
+            }, blankSlots);
+            for (int row = 0; row < 5; row++)
             {
-                plan = renderer.BuildPlan(frame with
-                {
-                    Kind = kind,
-                    Selection = 2
-                }, blankSlots, alternate);
-                for (int row = 0; row < 5; row++)
-                {
-                    check(plan.Any(p => p.Primitive == SaveMenuPrimitive.Text && p.X == 140 && p.Y == 99 + 48 * row && p.Text == GameText.Decode(messages[361].Span).Trim().ToUpperInvariant()
+                check(plan.Any(p => p.Primitive == SaveMenuPrimitive.Text && p.X == 140 && p.Y == 99 + 48 * row && p.Text == GameText.Get("messages.361").Trim().ToUpperInvariant()
 && p.Style == (row == 2 ? SaveMenuTextStyle.Purple : SaveMenuTextStyle.Normal)), "blank slot has localized visible label and selection palette");
-                }
-
-                ushort[] blank = new ushort[640 * 480], drawn = new ushort[640 * 480];
-                renderer.Draw(plan.Where(p => p.Primitive != SaveMenuPrimitive.Text).ToArray(), blank);
-                renderer.Draw(plan, drawn);
-                for (int row = 0; row < 5; row++)
-                {
-                    check(!blank.AsSpan((100 + 48 * row) * 640, 24 * 640).SequenceEqual(drawn.AsSpan((100 + 48 * row) * 640, 24 * 640)), "empty row draws actual bitmap glyph pixels");
-                }
-
-                check(blankSlots.All(s => s.Metadata.Present == 0 && s.Metadata.PrimaryName.IsEmpty), "presentation fix leaves empty metadata unchanged");
             }
+
+            ushort[] blank = new ushort[640 * 480], drawn = new ushort[640 * 480];
+            renderer.Draw(plan.Where(p => p.Primitive != SaveMenuPrimitive.Text).ToArray(), blank);
+            renderer.Draw(plan, drawn);
+            for (int row = 0; row < 5; row++)
+            {
+                check(!blank.AsSpan((100 + 48 * row) * 640, 24 * 640).SequenceEqual(drawn.AsSpan((100 + 48 * row) * 640, 24 * 640)), "empty row draws actual bitmap glyph pixels");
+            }
+
+            check(blankSlots.All(s => s.Metadata.Present == 0 && s.Metadata.PrimaryName.IsEmpty), "presentation fix leaves empty metadata unchanged");
         }
     }
 

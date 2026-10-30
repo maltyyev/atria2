@@ -4,7 +4,7 @@ namespace Atria.Game.Interiors;
 
 public sealed record InteriorTalkChoice(ReadOnlyMemory<byte> SourceLabel, ReadOnlyMemory<byte> ScriptMember, ReadOnlyMemory<byte> Function, bool IsEvent, string? TextKey = null)
 {
-    public ReadOnlyMemory<byte> Label => TextKey is null ? GameText.Name(SourceLabel) : GameText.Legacy(TextKey, SourceLabel);
+    public ReadOnlyMemory<byte> Label => TextKey is null ? SourceLabel : GameText.Legacy(TextKey, SourceLabel);
 }
 /// <summary>Owned talk choices from people_name and actual bounded event offer; choosing never invents a script result.</summary>
 public sealed class InteriorTalkMenu
@@ -25,7 +25,8 @@ public sealed class InteriorTalkMenu
         var choices = new List<InteriorTalkChoice>();
         foreach (var person in state.People)
         {
-            choices.Add(new(person.DisplayName.ToArray(), currentScript.ToArray(), person.Handler.ToArray(), false));
+            choices.Add(new(person.DisplayName.ToArray(), currentScript.ToArray(), person.Handler.ToArray(), false,
+                ResourceLabelKeys.Person(currentScript.Span, person.Handler.Span)));
         }
 
         if (offer is not null)
