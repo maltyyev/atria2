@@ -475,7 +475,7 @@ public sealed partial class GameSession
         }
 
         admissionTarget = current.SelectScene(state.WorldX, state.WorldY);
-        _ = TownSceneAssets.Load(root, admissionTarget.SceneMember.Span);
+        // Script-only destinations such as 44CORE have no town view; load it only if admission succeeds.
         state.EnterPermission = 0;
         RunScript(admissionTarget.ScriptMember.Span, "pre_enter"u8, ScenarioContinuation.EnterTown, testNativeSceneGate ? 1 : 0);
         CompleteWorldPreEnter();

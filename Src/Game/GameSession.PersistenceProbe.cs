@@ -197,6 +197,7 @@ public sealed partial class GameSession
             s.CommitLocation(LocationKind.World);
             s.state.ScriptActive = 0;
             Roundtrip("World");
+            s.VerifyMovingSave();
             // Real dungeon resource, with the original town-script entry and return path.
             byte[] dungeonBytes = s.Read("AT2AMF.000", "ed00.amf"u8);
             var dungeonMap = AmfMap.Parse(dungeonBytes);
@@ -206,6 +207,7 @@ public sealed partial class GameSession
             s.PrepareDungeon(false);
             s.CommitLocation(LocationKind.Dungeon);
             Roundtrip("Dungeon");
+            s.VerifyMovingSave();
             s.state.PendingBattle = 2;
             s.state.BattleVariant = 0;
             s.state.EndingResetFlag = 1;

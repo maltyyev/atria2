@@ -1,5 +1,11 @@
 using Atria.Render;
 
+if (args.Length == 3 && args[1] == "--script-only-admission")
+{
+    Console.WriteLine(Atria.Tests.Persistence.ScriptOnlyAdmissionTests.Run(args[0], args[2]));
+    return;
+}
+
 if (args.Length == 3 && args[1] == "--location-ui")
 {
     Console.WriteLine(Atria.Tests.World.LocationNavigationTests.Run(args[0]));
@@ -311,6 +317,7 @@ if (args.Length == 4 && args[3] == "--autosave-session")
 
 if (args.Length == 2 && args[1] == "--autosave")
 {
+    Console.WriteLine(Atria.Tests.Persistence.SaveRecoveryTests.Run(args[0]));
     Console.WriteLine(Atria.Tests.Persistence.AutosaveTests.Run(args[0]));
     Console.WriteLine(Atria.Tests.Persistence.PersistenceRuntimeTests.Run(args[0]));
     return;
@@ -413,6 +420,7 @@ Console.WriteLine(Atria.Tests.Menu.Feedback011Tests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Persistence.PersistenceTests.Run());
 Console.WriteLine(Atria.Tests.Persistence.PersistenceRuntimeTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Persistence.AutosaveTests.Run(args[0]));
+Console.WriteLine(Atria.Tests.Persistence.SaveRecoveryTests.Run(args[0]));
 Console.WriteLine(Atria.Tests.Audio.MusicTests.Run());
 Console.WriteLine(Atria.Tests.Audio.MusicStreamTests.Run(args[1]));
 Console.WriteLine(Atria.Tests.Dialogue.DialogueTests.Run(args[0]));

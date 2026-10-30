@@ -210,7 +210,7 @@ public sealed class NativeSaveStore
                 throw new IOException("Redirected autosave file.");
             }
 
-            PreserveVersionOneSave(path);
+            PreserveExistingSave(path);
             File.Delete(path);
         }
     }
@@ -260,7 +260,7 @@ public sealed class NativeSaveStore
 
             if (File.Exists(destination))
             {
-                PreserveVersionOneSave(destination);
+                PreserveExistingSave(destination);
                 File.Replace(temporary, destination, null);
             }
             else
@@ -286,42 +286,71 @@ public sealed class NativeSaveStore
         }
     }
 
-    private void PreserveVersionOneSave(string path)
+    private void PreserveExistingSave(string path)
     {
         if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
             throw new IOException("Redirected save file.");
 
-        var info = new FileInfo(path);
-        if (info.Length > NativeSaveImage.MaximumSize)
-            throw new InvalidDataException("Save exceeds the supported size.");
+        string backupFolder = "recovery-backups";
+        if (new FileInfo(path).Length <= NativeSaveImage.MaximumSize)
+        {
+            byte[] bytes = File.ReadAllBytes(path);
+            try
+            {
+                if (!NativeSaveImage.HasNativeSignature(bytes))
+                {
+                    _ = LegacySaveImage.Parse(bytes);
+                    return;
+                }
 
-        byte[] bytes = File.ReadAllBytes(path);
-        if (!NativeSaveImage.HasNativeSignature(bytes))
-            return;
+                var context = NativeSaveImage.Parse(bytes).Context;
+                if (context.Schema != SessionRuntimeCodec.Schema || context.Version != 1)
+                    return;
 
-        var context = NativeSaveImage.Parse(bytes).Context;
-        if (context.Schema != SessionRuntimeCodec.Schema || context.Version != 1)
-            return;
+                backupFolder = "migration-backups";
+            }
+            catch (InvalidDataException)
+            {
+                // Keep unreadable bytes for recovery without blocking autosave rotation.
+            }
+        }
 
-        string backupDirectory = Path.Combine(directory, "migration-backups");
-        string expected = Path.Combine(ResolveDirectory(directory), "migration-backups");
+        string backupDirectory = Path.Combine(directory, backupFolder);
+        string expected = Path.Combine(ResolveDirectory(directory), backupFolder);
         if (!string.Equals(ResolveDirectory(backupDirectory), expected, StringComparison.OrdinalIgnoreCase))
             throw new IOException("Redirected migration backup directory.");
 
         Directory.CreateDirectory(backupDirectory);
-        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
+        using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source));
         string backup = Path.Combine(backupDirectory, Path.GetFileNameWithoutExtension(path) + "-" + hash + ".sav");
         if (File.Exists(backup))
         {
             if ((File.GetAttributes(backup) & FileAttributes.ReparsePoint) != 0
-                || !File.ReadAllBytes(backup).AsSpan().SequenceEqual(bytes))
+                || new FileInfo(backup).Length != source.Length)
                 throw new IOException("Existing migration backup differs from the source save.");
+            using var existing = File.OpenRead(backup);
+            if (Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(existing)) != hash)
+                throw new IOException("Existing recovery backup differs from the source save.");
             return;
         }
 
-        using var file = new FileStream(backup, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536, FileOptions.WriteThrough);
-        file.Write(bytes);
-        file.Flush(true);
+        string temporary = Path.Combine(backupDirectory, $".{Guid.NewGuid():N}.tmp");
+        try
+        {
+            using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536, FileOptions.WriteThrough))
+            {
+                source.Position = 0;
+                source.CopyTo(file);
+                file.Flush(true);
+            }
+            File.Move(temporary, backup);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+                File.Delete(temporary);
+        }
     }
 
     private void EnsureSafeDirectory()

@@ -255,6 +255,9 @@ public record SessionRuntimeSnapshot
     {
         get; init;
     }
+    // Absent in older stationary saves; UI time must not advance a paused movement deadline.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public uint? MovementClock { get; init; }
     // Localization key since 0.15.7; older snapshots may contain a literal caption.
     public string SaveReason { get; init; } = "";
     public ScriptCheckpoint? Script
@@ -369,6 +372,11 @@ public static class SessionRuntimeCodec
         {
             throw new InvalidDataException("Invalid save reason.");
         }
+
+        bool moving = (value.SavedMode == GameMode.World && value.Exploration?.Controller?.Moving == true)
+            || (value.SavedMode == GameMode.Dungeon && value.Dungeon?.Controller.Motion.Moving == true);
+        if (moving && (value.MovementClock is null || !value.ExactResume))
+            throw new InvalidDataException("Moving snapshot requires its clock and exact continuation.");
 
         if (value.SavedMode is 410 or 420 or 430
 && (value.Interior is null || value.Interior.Mode != value.SavedMode || !value.ExactResume || value.Location is null))

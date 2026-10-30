@@ -92,6 +92,8 @@ public static class ScriptTests
         results.Add("Temple: inferred narration278 repair gates, immutable tokens, complete literal catalog coverage and controlled ScriptMachine route checks passed.");
         Check(originalVidon is not null, "35_BAR fixture missing.");
         VidonConditionTests.Run(originalVidon!, programs["35_BAR"]);
+        AncientRuinAdmissionTests.Run(programs["05ANCIEN"], programs["05_IN"]);
+        results.Add("Ancient ruin admission: 8 flag/status combinations, MD2 route and unreachable ED1 branch verified.");
         results.Add("Vidon: exact source identity, raw string/offset preservation, instruction-derived branch partition and reward-once behavior passed.");
         Check(originalSubevent is not null, "SUBEVENT fixture missing.");
         var rawSubevent = ScriptProgram.Parse("SUBEVENT", originalSubevent!, false);

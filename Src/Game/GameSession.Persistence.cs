@@ -180,10 +180,8 @@ public sealed partial class GameSession
             throw new NotSupportedException("An active script, battle transition, or movie cannot be snapshotted yet.");
         }
 
-        if ((savedMode == GameMode.World && exploration?.Moving == true) || (savedMode == GameMode.Dungeon && dungeon?.Motion.Moving == true))
-        {
-            throw new NotSupportedException("Moving-controller absolute clock rebasing is not recovered for snapshots.");
-        }
+        bool moving = (savedMode == GameMode.World && exploration?.Moving == true)
+            || (savedMode == GameMode.Dungeon && dungeon?.Motion.Moving == true);
 
         var current = map ?? throw new InvalidDataException("Current AMF context is missing.");
         int currentKind = ReferenceEquals(current, dungeon?.RuntimeMap.Context) ? 2 : ReferenceEquals(current, explorationEntry?.Map) ? 1 : 0;
@@ -270,6 +268,7 @@ public sealed partial class GameSession
             RetainedBattleRenderPeriod = retainedBattleRenderPeriod,
 
             ExactResume = exact,
+            MovementClock = moving ? (navigation.ScreenDepth > 0 ? worldScreenOpenedAt : gate.LastFrameMilliseconds) : null,
             Script = CaptureScriptCheckpoint(),
             Interior = savedMode is GameMode.Interior or GameMode.Inn or GameMode.Shop ? interior.CaptureRuntime() : null,
             NextBattleSeed = nextBattleSeed,
@@ -333,7 +332,7 @@ public sealed partial class GameSession
             var targetShops = shopStocks ?? new ShopStock[30];
             image.CommitStorage(state, areas, targetShops, (context, savedState) =>
             {
-                prepared = loader.Prepare(context, savedState);
+                prepared = loader.Prepare(context, savedState, gate.LastFrameMilliseconds);
                 InventoryMaintenance.ReconcileBattleSupplies(savedState);
             });
             shopStocks = targetShops;

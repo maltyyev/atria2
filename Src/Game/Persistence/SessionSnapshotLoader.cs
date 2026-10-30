@@ -57,7 +57,7 @@ internal sealed class SessionSnapshotLoader(
         return (map, raw);
     }
 
-    public PreparedSession Prepare(NativeRuntimeContext context, GameState savedState)
+    public PreparedSession Prepare(NativeRuntimeContext context, GameState savedState, uint movementClock = 0)
     {
         var saved = SessionRuntimeCodec.Decode(context);
         if ((uint)saved.SelectedEquipmentActor >= (uint)savedState.Heroes.Length)
@@ -99,8 +99,8 @@ internal sealed class SessionSnapshotLoader(
         TownSceneAssets? retainedTownAssets = saved.Town.SceneName.Length == 0 ? null : TownSceneAssets.Load(root, saved.Town.SceneName);
         retainedTown.RestoreRuntime(saved.Town, retainedTownAssets?.Scene, retainedTownAssets?.Objects);
         result.TownAssets = retainedTownAssets;
-        PrepareWorld(saved, savedState, result);
-        PrepareDungeon(saved, savedState, result);
+        PrepareWorld(saved, savedState, result, movementClock);
+        PrepareDungeon(saved, savedState, result, movementClock);
         ValidateMapAliases(saved, result);
         PrepareEntry(saved, savedState, result, retainedTown);
         PrepareInterior(saved, result, retainedTown);
@@ -112,13 +112,19 @@ internal sealed class SessionSnapshotLoader(
                 || !selected.ScriptMember.Span.SequenceEqual(target.ScriptMember))
                 throw new InvalidDataException("Saved town admission differs from its world destination.");
 
-            _ = TownSceneAssets.Load(root, target.SceneMember);
+            // A pending scenario may never enter a town (44CORE); CommitLocation validates an approved destination.
         }
         ValidateScripts(saved, result);
         return result;
     }
 
-    private void PrepareWorld(SessionRuntimeSnapshot saved, GameState savedState, PreparedSession result)
+    private static uint RebaseMovementDeadline(uint deadline, uint savedClock, uint resumedClock)
+    {
+        int remaining = unchecked((int)(deadline - savedClock));
+        return unchecked(resumedClock + (uint)Math.Max(remaining, 0));
+    }
+
+    private void PrepareWorld(SessionRuntimeSnapshot saved, GameState savedState, PreparedSession result, uint movementClock)
     {
         if (saved.Exploration is { } world)
         {
@@ -141,7 +147,10 @@ internal sealed class SessionSnapshotLoader(
             {
                 if (controller.Moving && saved.SavedMode == GameMode.World)
                 {
-                    throw new NotSupportedException("Moving world snapshot clock rebasing is not recovered.");
+                    controller = controller with
+                    {
+                        MovementDeadline = RebaseMovementDeadline(controller.MovementDeadline, saved.MovementClock!.Value, movementClock)
+                    };
                 }
 
                 result.World = new(
@@ -170,7 +179,7 @@ internal sealed class SessionSnapshotLoader(
         }
     }
 
-    private void PrepareDungeon(SessionRuntimeSnapshot saved, GameState savedState, PreparedSession result)
+    private void PrepareDungeon(SessionRuntimeSnapshot saved, GameState savedState, PreparedSession result, uint movementClock)
     {
         if (saved.Dungeon is { } dungeonSaved)
         {
@@ -187,12 +196,19 @@ internal sealed class SessionSnapshotLoader(
                 dungeonSaved.CaptureArea
             );
             result.Dungeon = new(state, dungeonMap, assets.Base.CharacterAnimation, random, initializeState: false);
-            if (dungeonSaved.Controller.Motion.Moving && saved.SavedMode == GameMode.Dungeon)
+            var controller = dungeonSaved.Controller;
+            if (controller.Motion.Moving && saved.SavedMode == GameMode.Dungeon)
             {
-                throw new NotSupportedException("Moving dungeon snapshot clock rebasing is not recovered.");
+                controller = controller with
+                {
+                    Motion = controller.Motion with
+                    {
+                        Deadline = RebaseMovementDeadline(controller.Motion.Deadline, saved.MovementClock!.Value, movementClock)
+                    }
+                };
             }
 
-            result.Dungeon.RestoreRuntime(dungeonSaved.Controller);
+            result.Dungeon.RestoreRuntime(controller);
             result.DungeonComposer = new(
                 state,
                 result.Dungeon,
