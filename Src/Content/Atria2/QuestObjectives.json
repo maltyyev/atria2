@@ -273,6 +273,24 @@
     },
     {
       "quest": 1022,
+      "phase": "objectiveReached",
+      "at": [
+        6,
+        8,
+        4
+      ]
+    },
+    {
+      "quest": 1022,
+      "phase": "pursuitContinued",
+      "at": [
+        6,
+        8,
+        3
+      ]
+    },
+    {
+      "quest": 1022,
       "phase": "leadFound",
       "at": [
         6,

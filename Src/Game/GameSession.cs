@@ -824,6 +824,12 @@ public sealed partial class GameSession : IScriptEffects
 
     private void RunScript(ReadOnlySpan<byte> member, ReadOnlySpan<byte> handler, ScenarioContinuation continuation = ScenarioContinuation.None, int continuationMode = 0, ScriptCheckpoint? replay = null)
     {
+        if (replay is null && NarrativeScenes.Replacement(state,
+            Path.GetFileNameWithoutExtension(Encoding.ASCII.GetString(member)).ToUpperInvariant(), Encoding.ASCII.GetString(handler)) is { } replacement)
+        {
+            member = Encoding.ASCII.GetBytes(replacement.Id);
+            handler = "run"u8;
+        }
         byte[] source = GameResources.Read(root, "SCRIPT.000", member, replay?.SourceHash);
         string name = Path.GetFileNameWithoutExtension(Encoding.ASCII.GetString(member)).ToUpperInvariant();
         string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source));
@@ -865,6 +871,7 @@ public sealed partial class GameSession : IScriptEffects
         if (state.Mode is not (GameMode.Defeat or GameMode.Ending) && NarrativeScenes.All.Any(scene => scene.Id == name))
         {
             state.NarrativeHistory.Add(name);
+            RefreshAuthoredDungeon();
         }
 
         Console.WriteLine($"Scenario returned: {name}/{function}; active={state.ScriptActive}, introFlag={state.Globals[501]}.");

@@ -8,12 +8,20 @@ namespace Atria.Game.State;
 /// <summary>Authored scenes run through the same checkpointed interpreter as archive scenarios.</summary>
 internal static class NarrativeScenes
 {
-    internal sealed record Scene(string Id, string AfterMember, string AfterFunction, JsonElement Conditions, byte[] Source);
+    internal sealed record Scene(string Id, string AfterMember, string AfterFunction, JsonElement Conditions, byte[] Source,
+        bool Repeatable = false, bool Replaces = false);
     internal static IReadOnlyList<Scene> All { get; } = Load();
     private static readonly Dictionary<(string Member, string Hash), byte[]> legacySources = LoadLegacySources();
 
     public static Scene? After(GameState state, string member, string function, int? worldArea = null) =>
-        All.FirstOrDefault(scene => !state.NarrativeHistory.Contains(scene.Id) && scene.AfterMember == member && scene.AfterFunction == function && Matches(scene.Conditions, state, worldArea));
+        Find(state, member, function, worldArea, replaces: false);
+
+    public static Scene? Replacement(GameState state, string member, string function) =>
+        Find(state, member, function, null, replaces: true);
+
+    private static Scene? Find(GameState state, string member, string function, int? worldArea, bool replaces) =>
+        All.FirstOrDefault(scene => scene.Replaces == replaces && (scene.Repeatable || !state.NarrativeHistory.Contains(scene.Id))
+            && scene.AfterMember == member && scene.AfterFunction == function && Matches(scene.Conditions, state, worldArea));
 
     public static byte[]? Read(ReadOnlySpan<byte> member, string? sourceHash = null)
     {
@@ -59,6 +67,7 @@ internal static class NarrativeScenes
                 "any" => property.Value.EnumerateArray().Any(id => state.HasHero(id.GetString()!)),
                 "none" => property.Value.EnumerateArray().All(id => !state.HasHero(id.GetString()!)),
                 "quests" => property.Value.EnumerateArray().All(row => (int)state.Journal.Progress(state, row[0].GetInt32()) == row[1].GetInt32()),
+                "questsActive" => property.Value.EnumerateArray().All(id => state.Journal.CanTrack(state, id.GetInt32())),
                 "events" => property.Value.EnumerateArray().All(row => state.Events[row[0].GetInt32()] == row[1].GetInt32()),
                 "globals" => property.Value.EnumerateArray().All(row => state.Globals[row[0].GetInt32()] == row[1].GetInt32()),
                 // WorldIndex is a retained legacy field, not the loaded AMF's area identity.
@@ -79,7 +88,9 @@ internal static class NarrativeScenes
         var scenes = document.RootElement.EnumerateArray().Select(row => new Scene(
             row.GetProperty("id").GetString()!, row.GetProperty("afterMember").GetString()!,
             row.GetProperty("afterFunction").GetString()!, row.GetProperty("conditions").Clone(),
-            Encoding.ASCII.GetBytes(row.GetProperty("source").GetString()!))).ToArray();
+            Encoding.ASCII.GetBytes(row.GetProperty("source").GetString()!),
+            row.TryGetProperty("repeatable", out var repeatable) && repeatable.GetBoolean(),
+            row.TryGetProperty("replaces", out var replaces) && replaces.GetBoolean())).ToArray();
         if (scenes.Select(scene => scene.Id).Distinct().Count() != scenes.Length
             || scenes.Any(scene => scene.Id.Length > 8 || !scene.Id.StartsWith("NAR", StringComparison.Ordinal)))
         {

@@ -1,0 +1,94 @@
+{
+  "EIRARCH": {
+    "template": "ED00.amf",
+    "titleId": 18,
+    "titleKey": "eiren.expedition.archive.title",
+    "entrance": [
+      0,
+      1
+    ],
+    "exit": [
+      0,
+      0
+    ],
+    "points": [
+      {
+        "at": [
+          4,
+          4
+        ],
+        "function": "guard",
+        "completedScene": "NAR0015"
+      },
+      {
+        "at": [
+          9,
+          9
+        ],
+        "function": "diary",
+        "completedScene": "NAR0016"
+      }
+    ],
+    "source": "enter(){set_dungeonfog(1);script_end();}\ndungeon_nofire(){dialogue_text(-1,-1,\"eiren.expedition.noFire.text\");script_end();}\nguard(){script_end();}\ndiary(){script_end();}"
+  },
+  "EIRCRYPT": {
+    "template": "ED02.amf",
+    "titleId": 19,
+    "titleKey": "eiren.expedition.crypt.title",
+    "entrance": [
+      6,
+      9
+    ],
+    "exit": [
+      5,
+      9
+    ],
+    "points": [
+      {
+        "at": [
+          0,
+          3
+        ],
+        "function": "seal1",
+        "completedScene": "NAR0017",
+        "completedQuest": [
+          1023,
+          2
+        ]
+      },
+      {
+        "at": [
+          9,
+          3
+        ],
+        "function": "seal2",
+        "completedScene": "NAR0018",
+        "completedQuest": [
+          1023,
+          2
+        ]
+      },
+      {
+        "at": [
+          2,
+          0
+        ],
+        "function": "seal3",
+        "completedScene": "NAR0019",
+        "completedQuest": [
+          1023,
+          2
+        ]
+      },
+      {
+        "at": [
+          6,
+          0
+        ],
+        "function": "final",
+        "completedScene": "NAR0020"
+      }
+    ],
+    "source": "enter(){set_dungeonfog(1);script_end();}\ndungeon_nofire(){dialogue_text(-1,-1,\"eiren.expedition.noFire.text\");script_end();}\nseal1(){if(hero_present(\"mist\")==0){dialogue_text(0,1,\"eiren.expedition.needMist.text\");}script_end();}\nseal2(){if(hero_present(\"mist\")==0){dialogue_text(0,1,\"eiren.expedition.needMist.text\");}script_end();}\nseal3(){if(hero_present(\"mist\")==0){dialogue_text(0,1,\"eiren.expedition.needMist.text\");}script_end();}\nfinal(){if(hero_present(\"mist\")==0){dialogue_text(0,1,\"eiren.expedition.needMist.text\");}if(journal_progress(1023)!=3){dialogue_text(0,1,\"eiren.expedition.sealsRemain.text\");}script_end();}"
+  }
+}

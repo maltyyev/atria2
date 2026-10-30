@@ -645,6 +645,8 @@ public sealed class ScriptMachine
         "set_global",
         "hero_present",
         "journal_mark",
+        "journal_progress",
+        "narrative_seen",
         "recruit_hero",
         "dialogue_text",
         "get_global",

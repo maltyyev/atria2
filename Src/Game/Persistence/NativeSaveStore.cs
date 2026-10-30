@@ -166,8 +166,7 @@ public sealed class NativeSaveStore
             case GameMode.Shop:
                 return LocationTitle.Town(metadata.TownId);
             case GameMode.Dungeon when runtime?.Dungeon is { } dungeon:
-                using (var maps = BinderArchive.Open(Path.Combine(originalDirectory, "AT2AMF.000")))
-                    return LocationTitle.Dungeon(AmfMap.Parse(maps.ReadMember(maps.FindResource(dungeon.Map.Member))));
+                return LocationTitle.Dungeon(AmfMap.Parse(GameResources.Read(originalDirectory, "AT2AMF.000", dungeon.Map.Member)));
             default:
                 // Unsupported historical formats retain their original caption; never infer identity from text.
                 return null;

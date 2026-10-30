@@ -5,7 +5,7 @@ using Atria.Resources;
 namespace Atria.Game.World;
 
 /// <summary>Language-independent location identity; resolve text only when drawing.</summary>
-public readonly record struct LocationTitle(int MessageId, bool IncludeWorldSuffix = false)
+public readonly record struct LocationTitle(int MessageId, bool IncludeWorldSuffix = false, string? ResourceKey = null)
 {
     private const int FirstWorldMessage = 298;
     private const int WorldAreaCount = 8;
@@ -14,7 +14,7 @@ public readonly record struct LocationTitle(int MessageId, bool IncludeWorldSuff
     private const int DungeonTitleOffset = 73;
     private const string WorldSuffixKey = "messages.309";
 
-    public string Text => GameText.Get($"messages.{MessageId:D3}").Trim()
+    public string Text => GameText.Get(ResourceKey ?? $"messages.{MessageId:D3}").Trim()
         + (IncludeWorldSuffix ? " " + GameText.Get(WorldSuffixKey).Trim() : "");
 
     public static LocationTitle World(int area, bool includeSuffix = false)
@@ -36,6 +36,8 @@ public readonly record struct LocationTitle(int MessageId, bool IncludeWorldSuff
         var scene = map.EmbeddedScene
             ?? throw new InvalidDataException("Dungeon title requires embedded scene metadata.");
         int title = BinaryPrimitives.ReadInt32LittleEndian(scene.Header.Span.Slice(DungeonTitleOffset, sizeof(int)));
+        if (Atria.Game.Dungeon.AuthoredDungeons.TitleKey(scene.ScriptReference.Span, title) is { } key)
+            return new(FirstDungeonMessage, ResourceKey: key);
         if ((uint)title >= DungeonTitleCount)
             throw new InvalidDataException("Dungeon title references a non-title message.");
         return new(FirstDungeonMessage + title);

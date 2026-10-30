@@ -100,12 +100,12 @@ internal static class NecromancerExecutionTests
         }
 
         CheckAiAndWaves(root);
-        CheckStorehouseWaves(root);
+        CheckQuestWaves(root);
     }
 
-    private static void CheckStorehouseWaves(string root)
+    private static void CheckQuestWaves(string root)
     {
-        foreach (int encounter in new[] { 906, 907 })
+        foreach (int encounter in Enumerable.Range(906, 9))
         {
             var state = Party(root, 10);
             var random = new LegacyRandom(321);
@@ -113,14 +113,15 @@ internal static class NecromancerExecutionTests
             var runtime = entry.Runtime;
             var execution = Execution(root, entry, state, random);
             var enemies = runtime.Actors.Take(runtime.Scene.Actors.Count).ToArray();
+            foreach (var image in runtime.Actors) image.State.Invulnerable = 1;
             var seen = new HashSet<int>();
             uint waveStarted = 0;
             CombatFrameResult result = default;
-            for (uint now = 10; now <= 10_000; now += 10)
+            for (uint now = 10; now <= 30_000; now += 10)
             {
                 Step(execution, now);
                 var active = enemies.Where(image => image.State.Active != 0 && image.State.SpawnCondition == 0).ToArray();
-                if (active.Length > 0 && now - waveStarted < 500)
+                if (active.Length > 0 && now - waveStarted < 3_000)
                 {
                     continue;
                 }
@@ -131,7 +132,7 @@ internal static class NecromancerExecutionTests
                 if (active.Length > 0)
                 {
                     execution.AdvanceLogicalVisual(now);
-                    string output = Path.GetFullPath(Path.Combine(root, "..", "audit", "eiren-staging-01512"));
+                    string output = Path.GetFullPath(Path.Combine(root, "..", "audit", "eiren-expedition-0170"));
                     Directory.CreateDirectory(output);
                     UnicodeTextTests.SaveBitmap(Path.Combine(output, $"battle-{encounter}-after-{seen.Count}.bmp"), execution.CachedFrame.ToArray());
                 }
@@ -150,8 +151,8 @@ internal static class NecromancerExecutionTests
                     break;
                 }
             }
-            Check(seen.Count == enemies.Length && result.ReturnCode == 1, "every storehouse wave spawns before victory: " + encounter);
-            Console.WriteLine($"Storehouse EBAT{encounter}: {seen.Count} actors activated; victory returns to the dialogue.");
+            Check(seen.Count == enemies.Length && result.ReturnCode == 1, "every quest wave spawns before victory: " + encounter);
+            Console.WriteLine($"Quest EBAT{encounter}: {seen.Count} actors activated; victory returns to the dialogue.");
         }
     }
 

@@ -2,7 +2,7 @@
   {
     "id": "NAR0001",
     "afterMember": "43SALIN",
-    "afterFunction": "pre_enter",
+    "afterFunction": "enter",
     "conditions": {
       "events": [
         [
@@ -44,7 +44,7 @@
   {
     "id": "NAR0003",
     "afterMember": "43SALIN",
-    "afterFunction": "pre_enter",
+    "afterFunction": "enter",
     "conditions": {
       "quests": [
         [
@@ -57,7 +57,7 @@
         ]
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.staging.home.text\");\n  dialogue_text(0,1,\"eiren.staging.showNotes.text\");\n  dialogue_text(1,73,\"eiren.revised.scholar.text\");\n  dialogue_text(0,1,\"eiren.revised.scholarQuestion.text\");\n  dialogue_text(1,73,\"eiren.revised.scholarRoute.text\");\n  dialogue_text(1,73,\"eiren.revised.scholarDiary.text\");\n  if(hero_present(\"swallow\")){dialogue_text(0,4,\"eiren.party.swallowDiary.text\");}\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.revised.investigate.text\");}\n  dialogue_text(0,1,\"eiren.revised.investigateDecision.text\");\n  journal_mark(1020,4);\n  journal_mark(1021,1);\n  script_end();\n}"
+    "source": "run(){\n  dialogue_text(1,33,\"eiren.expedition.home.text\");\n  dialogue_text(0,1,\"eiren.expedition.homeAnswer.text\");\n  dialogue_text(1,33,\"eiren.expedition.academy.text\");\n  journal_mark(1020,16);\n  script_end();\n}"
   },
   {
     "id": "NAR0004",
@@ -71,12 +71,13 @@
         ]
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.revised.archive.text\");\n  battle_start3(901);\n  dialogue_text(-1,-1,\"eiren.revised.diary.text\");\n  dialogue_text(0,1,\"eiren.revised.diaryRead.text\");\n  dialogue_text(-1,-1,\"eiren.revised.diaryGuard.text\");\n  if(hero_present(\"brian\")){dialogue_text(0,5,\"eiren.party.brianGuard.text\");}\n  journal_mark(1021,16);\n  battle_start3(902);\n  dialogue_text(-1,-1,\"eiren.staging.readOath.text\");\n  dialogue_text(0,1,\"eiren.staging.oathRoland.text\");\n  if(hero_present(\"mist\")){\n  dialogue_text(0,3,\"eiren.staging.oathMist.text\");\n  }\n  dialogue_text(0,1,\"eiren.revised.returnRecords.text\");\n  journal_mark(1021,2);\n  script_end();\n}"
+    "source": "run(){\n  if(narrative_seen(\"NAR0004\")==0){dialogue_text(-1,-1,\"eiren.expedition.archiveEntry.text\");}\n  dungeon_enter(\"EIRARCH.amf\" \"EIRARCH.scr\");\n  script_end();\n}",
+    "repeatable": true
   },
   {
     "id": "NAR0005",
-    "afterMember": "43SALIN",
-    "afterFunction": "pre_enter",
+    "afterMember": "43_ACADE",
+    "afterFunction": "aaron_talk",
     "conditions": {
       "quests": [
         [
@@ -89,12 +90,12 @@
         ]
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.staging.academyReturn.text\");\n  dialogue_text(0,1,\"eiren.staging.assessmentQuestion.text\");\n  dialogue_text(1,73,\"eiren.revised.assessment.text\");\n  dialogue_text(0,1,\"eiren.revised.coreQuestion.text\");\n  dialogue_text(1,73,\"eiren.revised.coreAnswer.text\");\n  if(hero_present(\"emerald\")){dialogue_text(0,2,\"eiren.party.emeraldOath.text\");}\n  dialogue_text(1,73,\"eiren.staging.assessmentRoute.text\");\n  if(hero_present(\"mist\")){\n  dialogue_text(0,3,\"eiren.staging.mistUndertakes.text\");\n  }else{\n  dialogue_text(0,1,\"eiren.staging.needMist.text\");\n  }\n  dialogue_text(0,1,\"eiren.revised.assessmentDecision.text\");\n  journal_mark(1021,4);\n  journal_mark(1022,1);\n  script_end();\n}"
+    "source": "run(){\n  dialogue_text(0,1,\"eiren.expedition.diaryShow.text\");\n  dialogue_text(1,38,\"eiren.expedition.aaronOath.text\");\n  dialogue_text(0,1,\"eiren.expedition.coreQuestion.text\");\n  dialogue_text(1,38,\"eiren.expedition.coreAnswer.text\");\n  if(hero_present(\"emerald\")){dialogue_text(0,2,\"eiren.party.emeraldOath.text\");}\n  dialogue_text(1,38,\"eiren.expedition.rustRoute.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.expedition.mistRecords.text\");}else{dialogue_text(0,1,\"eiren.expedition.needMist.text\");}\n  dialogue_text(0,1,\"eiren.expedition.rustDecision.text\");\n  journal_mark(1021,4);\n  journal_mark(1022,1);\n  script_end();\n}"
   },
   {
     "id": "NAR0006",
     "afterMember": "45ROOST",
-    "afterFunction": "pre_enter",
+    "afterFunction": "enter",
     "conditions": {
       "quests": [
         [
@@ -103,12 +104,13 @@
         ]
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.staging.keeperArrival.text\");\n  dialogue_text(0,1,\"eiren.revised.threadRequest.text\");\n  dialogue_text(1,19,\"eiren.staging.thread.text\");\n  dialogue_text(0,1,\"eiren.staging.threadQuestion.text\");\n  dialogue_text(1,19,\"eiren.revised.threadRoute.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.party.mistThread.text\");}\n  dialogue_text(0,1,\"eiren.revised.threadDecision.text\");\n  journal_mark(1022,16);\n  script_end();\n}"
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.rustEmpty.text\");\n  dialogue_text(0,1,\"eiren.expedition.rustSearch.text\");\n  dialogue_text(-1,-1,\"eiren.expedition.rustFind.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.expedition.rustMist.text\");}\n  dialogue_text(0,1,\"eiren.expedition.rustEnox.text\");\n  journal_mark(1022,16);\n  script_end();\n}",
+    "replaces": true
   },
   {
     "id": "NAR0007",
-    "afterMember": "46SAGE",
-    "afterFunction": "pre_enter",
+    "afterMember": "46_ENOX",
+    "afterFunction": "enox_talk",
     "conditions": {
       "all": [
         "mist"
@@ -120,7 +122,7 @@
         ]
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.staging.hermitArrival.text\");\n  dialogue_text(0,3,\"eiren.revised.hermitRequest.text\");\n  dialogue_text(1,18,\"eiren.revised.hermit.text\");\n  dialogue_text(1,18,\"eiren.revised.hermitWarning.text\");\n  dialogue_text(0,1,\"eiren.revised.hermitDecision.text\");\n  dialogue_text(-1,-1,\"eiren.staging.hermitApproach.text\");\n  if(hero_present(\"tiger\")){dialogue_text(0,8,\"eiren.party.tigerGuardians.text\");}\n  battle_start3(903);\n  dialogue_text(-1,-1,\"eiren.staging.preparationReturn.text\");\n  dialogue_text(0,3,\"eiren.staging.ritualQuestion.text\");\n  dialogue_text(1,18,\"eiren.staging.ritualAnswer.text\");\n  dialogue_text(-1,-1,\"eiren.staging.ritualReady.text\");\n  dialogue_text(0,3,\"eiren.revised.preparation.text\");\n  if(hero_present(\"brian\")){dialogue_text(0,5,\"eiren.party.brianMercy.text\");}\n  dialogue_text(0,1,\"eiren.revised.ossuaryRoute.text\");\n  journal_mark(1022,2);\n  journal_mark(1022,4);\n  journal_mark(1023,1);\n  script_end();\n}"
+    "source": "run(){\n  dialogue_text(0,3,\"eiren.expedition.enoxRequest.text\");\n  dialogue_text(1,27,\"eiren.expedition.enoxAnswer.text\");\n  dialogue_text(0,1,\"eiren.expedition.enoxQuestion.text\");\n  dialogue_text(1,27,\"eiren.expedition.enoxCemetery.text\");\n  dialogue_text(1,27,\"eiren.expedition.enoxWarning.text\");\n  dialogue_text(0,1,\"eiren.expedition.cemeteryDecision.text\");\n  journal_mark(1022,32);\n  script_end();\n}"
   },
   {
     "id": "NAR0008",
@@ -134,14 +136,12 @@
       "none": [
         "eiren_wald"
       ],
-      "quests": [
-        [
-          1023,
-          1
-        ]
+      "questsActive": [
+        1023
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.revised.anchors.text\");\n  dialogue_text(0,1,\"eiren.revised.confront.text\");\n  dialogue_text(1,157,\"eiren.revised.command.text\");\n  dialogue_text(1,157,\"eiren.revised.motive.text\");\n  dialogue_text(0,1,\"eiren.revised.challengeMotive.text\");\n  dialogue_text(1,157,\"eiren.revised.doubt.text\");\n  dialogue_text(0,3,\"eiren.revised.mistSees.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.party.mistAppeal.text\");}\n  dialogue_text(1,157,\"eiren.revised.refusal.text\");\n  dialogue_text(0,3,\"eiren.revised.battlePlan.text\");\n  battle_start3(904);\n  journal_mark(1023,2);\n  dialogue_text(0,3,\"eiren.revised.broken.text\");\n  dialogue_text(1,157,\"eiren.staging.brokenReaction.text\");\n  battle_start3(905);\n  dialogue_text(-1,-1,\"eiren.staging.defeated.text\");\n  dialogue_text(0,3,\"eiren.revised.unbind1.text\");\n  dialogue_text(1,157,\"eiren.revised.unbind2.text\");\n  dialogue_text(0,3,\"eiren.revised.unbind3.text\");\n  dialogue_text(1,157,\"eiren.revised.unbindChoice.text\");\n  dialogue_text(-1,-1,\"eiren.revised.unbind4.text\");\n  dialogue_text(-1,-1,\"eiren.staging.afterCurse.text\");\n  dialogue_text(1,158,\"eiren.revised.free1.text\");\n  dialogue_text(0,1,\"eiren.revised.free2.text\");\n  dialogue_text(1,158,\"eiren.revised.free3.text\");\n  dialogue_text(0,3,\"eiren.revised.free4.text\");\n  dialogue_text(1,158,\"eiren.revised.free5.text\");\n  dialogue_text(1,158,\"eiren.revised.offer.text\");\n  dialogue_text(0,1,\"eiren.revised.free6.text\");\n  dialogue_text(1,158,\"eiren.revised.free7.text\");\n  if(hero_present(\"swallow\")){dialogue_text(0,4,\"eiren.party.swallowFreedom.text\");}\n  if(hero_present(\"emerald\")){dialogue_text(0,2,\"eiren.party.emeraldWelcome.text\");}\n  recruit_hero(\"eiren_wald\");\n  journal_mark(1023,4);\n  script_end();\n}"
+    "source": "run(){\n  if(narrative_seen(\"NAR0008\")==0){dialogue_text(-1,-1,\"eiren.expedition.cryptEntry.text\");dialogue_text(0,3,\"eiren.expedition.cryptPlan.text\");}\n  dungeon_enter(\"EIRCRYPT.amf\" \"EIRCRYPT.scr\");\n  script_end();\n}",
+    "repeatable": true
   },
   {
     "id": "NAR0009",
@@ -206,5 +206,181 @@
       ]
     },
     "source": "run(){\n  dialogue_text(0,1,\"eiren.revised.islandQuestion.text\");\n  dialogue_text(1,158,\"eiren.revised.islandAnswer.text\");\n  if(hero_present(\"brian\")){dialogue_text(0,5,\"eiren.party.brianChoice.text\");}\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0012",
+    "afterMember": "43_ACADE",
+    "afterFunction": "aaron_talk",
+    "conditions": {
+      "quests": [
+        [
+          1020,
+          19
+        ],
+        [
+          1021,
+          0
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(0,1,\"eiren.expedition.notes.text\");\n  dialogue_text(1,38,\"eiren.expedition.aaronRecognizes.text\");\n  dialogue_text(0,1,\"eiren.expedition.aaronQuestion.text\");\n  dialogue_text(1,38,\"eiren.expedition.aaronPast.text\");\n  dialogue_text(1,38,\"eiren.expedition.aaronArchive.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.expedition.mistArchive.text\");}\n  dialogue_text(0,1,\"eiren.expedition.archiveDecision.text\");\n  journal_mark(1020,4);\n  journal_mark(1021,1);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0013",
+    "afterMember": "WORLD",
+    "afterFunction": "arrival",
+    "conditions": {
+      "world": [
+        6,
+        8,
+        3
+      ],
+      "quests": [
+        [
+          1022,
+          49
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.cemeteryArrival.text\");\n  if(hero_present(\"tiger\")){dialogue_text(0,8,\"eiren.expedition.tigerCemetery.text\");}\n  battle_start3(910);\n  dialogue_text(-1,-1,\"eiren.expedition.scrollFound.text\");\n  dialogue_text(0,1,\"eiren.expedition.scrollReturn.text\");\n  journal_mark(1022,2);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0014",
+    "afterMember": "46_ENOX",
+    "afterFunction": "enox_talk",
+    "conditions": {
+      "all": [
+        "mist"
+      ],
+      "quests": [
+        [
+          1022,
+          51
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(0,3,\"eiren.expedition.scrollShow.text\");\n  dialogue_text(1,27,\"eiren.expedition.enoxRitual.text\");\n  dialogue_text(0,3,\"eiren.expedition.mistRitual.text\");\n  dialogue_text(1,27,\"eiren.expedition.enoxChoice.text\");\n  dialogue_text(-1,-1,\"eiren.expedition.ritualReady.text\");\n  dialogue_text(0,3,\"eiren.expedition.mistReady.text\");\n  if(hero_present(\"brian\")){dialogue_text(0,5,\"eiren.party.brianMercy.text\");}\n  dialogue_text(0,1,\"eiren.expedition.cryptRoute.text\");\n  journal_mark(1022,4);\n  journal_mark(1023,1);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0015",
+    "afterMember": "EIRARCH",
+    "afterFunction": "guard",
+    "conditions": {
+      "quests": [
+        [
+          1021,
+          1
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.archiveGuard.text\");\n  battle_start3(908);\n  dialogue_text(0,1,\"eiren.expedition.archiveCleared.text\");\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0016",
+    "afterMember": "EIRARCH",
+    "afterFunction": "diary",
+    "conditions": {
+      "quests": [
+        [
+          1021,
+          1
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.diaryGuard.text\");\n  battle_start3(909);\n  dialogue_text(-1,-1,\"eiren.expedition.diaryFound.text\");\n  dialogue_text(0,1,\"eiren.expedition.diaryRead.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.expedition.diaryMist.text\");}\n  dialogue_text(0,1,\"eiren.expedition.diaryReturn.text\");\n  journal_mark(1021,16);\n  journal_mark(1021,2);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0017",
+    "afterMember": "EIRCRYPT",
+    "afterFunction": "seal1",
+    "conditions": {
+      "quests": [
+        [
+          1023,
+          1
+        ]
+      ],
+      "all": [
+        "mist"
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.seal1.text\");\n  battle_start3(911);\n  dialogue_text(0,3,\"eiren.expedition.seal1Broken.text\");\n  if(narrative_seen(\"NAR0018\")&&narrative_seen(\"NAR0019\")){dialogue_text(0,3,\"eiren.expedition.sealsDone.text\");journal_mark(1023,2);}\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0018",
+    "afterMember": "EIRCRYPT",
+    "afterFunction": "seal2",
+    "conditions": {
+      "quests": [
+        [
+          1023,
+          1
+        ]
+      ],
+      "all": [
+        "mist"
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.seal2.text\");\n  battle_start3(912);\n  dialogue_text(0,3,\"eiren.expedition.seal2Broken.text\");\n  if(narrative_seen(\"NAR0017\")&&narrative_seen(\"NAR0019\")){dialogue_text(0,3,\"eiren.expedition.sealsDone.text\");journal_mark(1023,2);}\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0019",
+    "afterMember": "EIRCRYPT",
+    "afterFunction": "seal3",
+    "conditions": {
+      "quests": [
+        [
+          1023,
+          1
+        ]
+      ],
+      "all": [
+        "mist"
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.seal3.text\");\n  battle_start3(913);\n  dialogue_text(0,3,\"eiren.expedition.seal3Broken.text\");\n  if(narrative_seen(\"NAR0017\")&&narrative_seen(\"NAR0018\")){dialogue_text(0,3,\"eiren.expedition.sealsDone.text\");journal_mark(1023,2);}\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0020",
+    "afterMember": "EIRCRYPT",
+    "afterFunction": "final",
+    "conditions": {
+      "all": [
+        "roland",
+        "mist"
+      ],
+      "none": [
+        "eiren_wald"
+      ],
+      "quests": [
+        [
+          1023,
+          3
+        ]
+      ]
+    },
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.finalArrival.text\");\n  dialogue_text(0,1,\"eiren.revised.confront.text\");\n  dialogue_text(1,157,\"eiren.revised.command.text\");\n  dialogue_text(1,157,\"eiren.revised.motive.text\");\n  dialogue_text(0,1,\"eiren.revised.challengeMotive.text\");\n  dialogue_text(1,157,\"eiren.revised.doubt.text\");\n  dialogue_text(0,3,\"eiren.revised.mistSees.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.party.mistAppeal.text\");}\n  dialogue_text(1,157,\"eiren.revised.refusal.text\");\n  dialogue_text(0,3,\"eiren.expedition.finalPlan.text\");\n  dialogue_text(1,157,\"eiren.expedition.finalOrder.text\");\n  battle_start3(914);\n  dialogue_text(-1,-1,\"eiren.staging.defeated.text\");\n  dialogue_text(0,3,\"eiren.revised.unbind1.text\");\n  dialogue_text(1,157,\"eiren.revised.unbind2.text\");\n  dialogue_text(0,3,\"eiren.revised.unbind3.text\");\n  dialogue_text(1,157,\"eiren.revised.unbindChoice.text\");\n  dialogue_text(-1,-1,\"eiren.revised.unbind4.text\");\n  dialogue_text(-1,-1,\"eiren.staging.afterCurse.text\");\n  dialogue_text(1,158,\"eiren.revised.free1.text\");\n  dialogue_text(0,1,\"eiren.revised.free2.text\");\n  dialogue_text(1,158,\"eiren.revised.free3.text\");\n  dialogue_text(0,3,\"eiren.revised.free4.text\");\n  dialogue_text(1,158,\"eiren.revised.free5.text\");\n  dialogue_text(1,158,\"eiren.revised.offer.text\");\n  dialogue_text(0,1,\"eiren.revised.free6.text\");\n  dialogue_text(1,158,\"eiren.revised.free7.text\");\n  if(hero_present(\"swallow\")){dialogue_text(0,4,\"eiren.party.swallowFreedom.text\");}\n  if(hero_present(\"emerald\")){dialogue_text(0,2,\"eiren.party.emeraldWelcome.text\");}\n  recruit_hero(\"eiren_wald\");\n  journal_mark(1023,4);\n  script_end();\n}"
+  },
+  {
+    "id": "NAR0021",
+    "afterMember": "45ROOST",
+    "afterFunction": "pre_enter",
+    "conditions": {
+      "quests": [
+        [
+          1022,
+          1
+        ]
+      ],
+      "events": [
+        [
+          452,
+          1
+        ]
+      ]
+    },
+    "source": "run(){\n  enter_out(1);\n  script_end();\n}",
+    "repeatable": true,
+    "replaces": true
   }
 ]

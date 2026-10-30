@@ -40,6 +40,7 @@ public sealed partial class GameSession
         var decoded = AmfMap.Parse(raw);
         var loaded = WorldMapContext.Parse(raw);
         var nextMap = new DungeonMap(loaded);
+        AuthoredDungeons.ApplyProgress(nextMap, state);
         var assets = DungeonSceneAssets.Load(root, loaded, raw);
         var functionMember = DungeonEntry.ResolveScript(plan, decoded);
         if (functionMember.IsEmpty)
@@ -101,6 +102,13 @@ public sealed partial class GameSession
         dungeonComposer.ApplyRasterCommand(new(DungeonCommandKind.RebuildObjects));
         musicId = NativeModeEntry.MusicId(GameMode.Dungeon, musicId, 0, random.Next);
         music.Update(musicId);
+    }
+
+    private void RefreshAuthoredDungeon()
+    {
+        if (state.Mode == GameMode.Dungeon && dungeon is not null
+            && AuthoredDungeons.ApplyProgress(dungeon.RuntimeMap, state))
+            dungeonComposer!.ApplyRasterCommand(new(DungeonCommandKind.RebuildObjects));
     }
 
     private void HandleDungeonInput()

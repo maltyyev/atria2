@@ -1,5 +1,19 @@
 using Atria.Render;
 
+if (args.Length == 4 && args[3] == "--expedition-session")
+{
+    Console.WriteLine(Atria.Game.GameSession.VerifyExpedition(args[0], args[1], args[2], Atria.Tests.Render.UnicodeTextTests.SaveBitmap));
+    return;
+}
+
+if (args.Length == 2 && args[1] == "--eiren-expedition")
+{
+    Console.WriteLine(Atria.Tests.Combat.EirenExpeditionTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Combat.NecromancerTests.Run(args[0]));
+    return;
+}
+
+
 if (args.Length == 3 && args[1] == "--script-only-admission")
 {
     Console.WriteLine(Atria.Tests.Persistence.ScriptOnlyAdmissionTests.Run(args[0], args[2]));

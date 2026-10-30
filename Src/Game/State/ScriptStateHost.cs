@@ -69,6 +69,17 @@ public sealed class ScriptStateHost(GameState state, IScriptEffects? effects = n
 
                 state.Journal.Record(state, Int(0), (QuestMilestones)Int(1));
                 return 0;
+            case "journal_progress":
+                Count(1);
+                if (!StoryQuests.Contains(Int(0)))
+                    throw Error("ARGUMENT_VALUE", "Unknown authored quest.");
+                return (int)state.Journal.Progress(state, Int(0));
+            case "narrative_seen":
+                Count(1);
+                string scene = System.Text.Encoding.ASCII.GetString(Bytes(0, 8));
+                if (!NarrativeScenes.All.Any(entry => entry.Id == scene))
+                    throw Error("ARGUMENT_VALUE", "Unknown authored scene.");
+                return state.NarrativeHistory.Contains(scene) ? 1 : 0;
             case "recruit_hero":
                 Count(1);
                 HeroRecruitment.Join(state, System.Text.Encoding.ASCII.GetString(Bytes(0, 128)));

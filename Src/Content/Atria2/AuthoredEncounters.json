@@ -638,5 +638,930 @@
         "anchor": false
       }
     ]
+  },
+  "EBAT908": {
+    "template": "SBATTL45",
+    "actors": [
+      {
+        "type": 24,
+        "health": 725,
+        "attack": 38,
+        "defense": 7,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 24,
+        "health": 725,
+        "attack": 38,
+        "defense": 7,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 725,
+        "attack": 38,
+        "defense": 7,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 725,
+        "attack": 38,
+        "defense": 7,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1025,
+        "attack": 44,
+        "defense": 9,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 975,
+        "attack": 37,
+        "defense": 9,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 700,
+        "attack": 40,
+        "defense": 8,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 700,
+        "attack": 40,
+        "defense": 8,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1000,
+        "attack": 46,
+        "defense": 10,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1000,
+        "attack": 46,
+        "defense": 10,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 950,
+        "attack": 38,
+        "defense": 10,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 950,
+        "attack": 38,
+        "defense": 10,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 1,
+        "anchor": false
+      }
+    ]
+  },
+  "EBAT909": {
+    "template": "SBATTL45",
+    "actors": [
+      {
+        "type": 24,
+        "health": 700,
+        "attack": 40,
+        "defense": 8,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 24,
+        "health": 700,
+        "attack": 40,
+        "defense": 8,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 725,
+        "attack": 40,
+        "defense": 8,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 725,
+        "attack": 40,
+        "defense": 8,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1050,
+        "attack": 47,
+        "defense": 10,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1050,
+        "attack": 47,
+        "defense": 10,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1000,
+        "attack": 39,
+        "defense": 10,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 0,
+        "anchor": false
+      }
+    ]
+  },
+  "EBAT910": {
+    "template": "SBATTL45",
+    "actors": [
+      {
+        "type": 24,
+        "health": 750,
+        "attack": 42,
+        "defense": 9,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 24,
+        "health": 750,
+        "attack": 42,
+        "defense": 9,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 775,
+        "attack": 42,
+        "defense": 9,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 775,
+        "attack": 42,
+        "defense": 9,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1100,
+        "attack": 48,
+        "defense": 11,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1100,
+        "attack": 48,
+        "defense": 11,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1050,
+        "attack": 40,
+        "defense": 11,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 800,
+        "attack": 43,
+        "defense": 9,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 800,
+        "attack": 43,
+        "defense": 9,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 800,
+        "attack": 43,
+        "defense": 9,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1150,
+        "attack": 49,
+        "defense": 11,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1150,
+        "attack": 49,
+        "defense": 11,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1100,
+        "attack": 41,
+        "defense": 11,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1100,
+        "attack": 41,
+        "defense": 11,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 1,
+        "anchor": false
+      }
+    ]
+  },
+  "EBAT911": {
+    "template": "SBATTL45",
+    "actors": [
+      {
+        "type": 25,
+        "health": 825,
+        "attack": 44,
+        "defense": 10,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 825,
+        "attack": 44,
+        "defense": 10,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1200,
+        "attack": 50,
+        "defense": 12,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1200,
+        "attack": 50,
+        "defense": 12,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1150,
+        "attack": 42,
+        "defense": 12,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1150,
+        "attack": 42,
+        "defense": 12,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 850,
+        "attack": 43,
+        "defense": 10,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 850,
+        "attack": 43,
+        "defense": 10,
+        "x": 560,
+        "depthPercent": 62,
+        "wave": 0,
+        "anchor": false
+      }
+    ]
+  },
+  "EBAT912": {
+    "template": "SBATTL45",
+    "actors": [
+      {
+        "type": 25,
+        "health": 850,
+        "attack": 45,
+        "defense": 10,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 850,
+        "attack": 45,
+        "defense": 10,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 850,
+        "attack": 45,
+        "defense": 10,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1250,
+        "attack": 51,
+        "defense": 12,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1250,
+        "attack": 51,
+        "defense": 12,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1200,
+        "attack": 43,
+        "defense": 12,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1200,
+        "attack": 43,
+        "defense": 12,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 900,
+        "attack": 44,
+        "defense": 11,
+        "x": 560,
+        "depthPercent": 62,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 900,
+        "attack": 44,
+        "defense": 11,
+        "x": 640,
+        "depthPercent": 81,
+        "wave": 0,
+        "anchor": false
+      }
+    ]
+  },
+  "EBAT913": {
+    "template": "SBATTL45",
+    "actors": [
+      {
+        "type": 25,
+        "health": 875,
+        "attack": 46,
+        "defense": 11,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 875,
+        "attack": 46,
+        "defense": 11,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 875,
+        "attack": 46,
+        "defense": 11,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1300,
+        "attack": 52,
+        "defense": 13,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1300,
+        "attack": 52,
+        "defense": 13,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1250,
+        "attack": 44,
+        "defense": 13,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1250,
+        "attack": 44,
+        "defense": 13,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 950,
+        "attack": 45,
+        "defense": 11,
+        "x": 560,
+        "depthPercent": 62,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 950,
+        "attack": 45,
+        "defense": 11,
+        "x": 640,
+        "depthPercent": 81,
+        "wave": 0,
+        "anchor": false
+      }
+    ]
+  },
+  "EBAT914": {
+    "template": "SBATTL45",
+    "actors": [
+      {
+        "type": 25,
+        "health": 900,
+        "attack": 47,
+        "defense": 11,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 900,
+        "attack": 47,
+        "defense": 11,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 900,
+        "attack": 47,
+        "defense": 11,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1350,
+        "attack": 53,
+        "defense": 13,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1350,
+        "attack": 53,
+        "defense": 13,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1300,
+        "attack": 45,
+        "defense": 13,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1300,
+        "attack": 45,
+        "defense": 13,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 1000,
+        "attack": 46,
+        "defense": 12,
+        "x": 560,
+        "depthPercent": 62,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 1000,
+        "attack": 46,
+        "defense": 12,
+        "x": 640,
+        "depthPercent": 81,
+        "wave": 0,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 925,
+        "attack": 48,
+        "defense": 12,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 925,
+        "attack": 48,
+        "defense": 12,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 925,
+        "attack": 48,
+        "defense": 12,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1400,
+        "attack": 54,
+        "defense": 14,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1400,
+        "attack": 54,
+        "defense": 14,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1350,
+        "attack": 46,
+        "defense": 14,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1350,
+        "attack": 46,
+        "defense": 14,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 1050,
+        "attack": 47,
+        "defense": 12,
+        "x": 560,
+        "depthPercent": 62,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 1050,
+        "attack": 47,
+        "defense": 12,
+        "x": 640,
+        "depthPercent": 81,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 1050,
+        "attack": 47,
+        "defense": 12,
+        "x": 480,
+        "depthPercent": 19,
+        "wave": 1,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 950,
+        "attack": 49,
+        "defense": 12,
+        "x": 480,
+        "depthPercent": 10,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 950,
+        "attack": 49,
+        "defense": 12,
+        "x": 560,
+        "depthPercent": 29,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 25,
+        "health": 950,
+        "attack": 49,
+        "defense": 12,
+        "x": 640,
+        "depthPercent": 48,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1450,
+        "attack": 55,
+        "defense": 14,
+        "x": 480,
+        "depthPercent": 67,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 39,
+        "health": 1450,
+        "attack": 55,
+        "defense": 14,
+        "x": 560,
+        "depthPercent": 86,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1400,
+        "attack": 47,
+        "defense": 14,
+        "x": 640,
+        "depthPercent": 24,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 43,
+        "health": 1400,
+        "attack": 47,
+        "defense": 14,
+        "x": 480,
+        "depthPercent": 43,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 1100,
+        "attack": 48,
+        "defense": 13,
+        "x": 560,
+        "depthPercent": 62,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 1100,
+        "attack": 48,
+        "defense": 13,
+        "x": 640,
+        "depthPercent": 81,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 47,
+        "health": 1100,
+        "attack": 48,
+        "defense": 13,
+        "x": 480,
+        "depthPercent": 19,
+        "wave": 2,
+        "anchor": false
+      },
+      {
+        "type": 42,
+        "health": 1600,
+        "attack": 50,
+        "defense": 14,
+        "x": 560,
+        "depthPercent": 38,
+        "wave": 2,
+        "anchor": false
+      }
+    ]
   }
 }
