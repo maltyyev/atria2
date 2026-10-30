@@ -234,7 +234,7 @@ public sealed partial class GameSession
                 Check((s.autosavePending.Length > 0) == (status == 4 && previous != 4), "quest completion edge only");
             }
 
-            s.RequestAutosave(GameText.Get("ui.autosave.questComplete"));
+            s.RequestAutosave(AutosaveReason.QuestComplete);
             s.FlushAutosave();
             Check(s.autosavePending.Length == 0, "quest flush committed");
             s.EnterMode(GameMode.Save);

@@ -1,4 +1,5 @@
 using System.Text;
+using Atria.Game.Persistence;
 using Atria.Script;
 
 namespace Atria.Game;
@@ -84,7 +85,7 @@ public sealed partial class GameSession
         if (call.Function is "battle_start2" or "battle_start3")
         {
             nextBattleSeed ??= ReadBattleSeed();
-            WriteAutosave(GameText.Get("ui.autosave.beforeBattle"));
+            WriteAutosave(AutosaveReason.BeforeBattle);
         }
     }
 
@@ -92,12 +93,12 @@ public sealed partial class GameSession
     {
         if (call.Function is "battle_start2" or "battle_start3")
         {
-            WriteAutosave(GameText.Get("ui.autosave.afterBattle"));
+            WriteAutosave(AutosaveReason.AfterBattle);
         }
 
         if (state.Journal.CompletionRevision != questCompletionBeforeCall)
         {
-            RequestAutosave(GameText.Get("ui.autosave.questComplete"));
+            RequestAutosave(AutosaveReason.QuestComplete);
         }
     }
 

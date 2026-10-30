@@ -140,7 +140,7 @@ public sealed class SaveLoadMenuRenderer
                 continue;
             }
 
-            Outline(GameText.Decode(GameText.Name(metadata.PrimaryName).Span), 140, y, style, flash);
+            Outline(slots[i].Location?.Text ?? GameText.Decode(metadata.PrimaryName.Span), 140, y, style, flash);
             Pair(Join(GameText.Decode(messages[310].Span), " ", Number(metadata.ActorZeroLevel)), 440, y + 1, style, flash: flash, shadowX: -1, shadowY: -1, w: 82);
             var date = slots[i].Date;
             var dateText = Join(
@@ -168,7 +168,7 @@ public sealed class SaveLoadMenuRenderer
         if (slots.Count > 0 && !slots[frame.Selection].IsNew)
         {
             var row = slots[frame.Selection];
-            string detail = row.Reason;
+            string detail = AutosaveReason.Text(row.Reason);
             if (row.WrittenUtc != default)
             {
                 detail = row.WrittenUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss") + "  " + detail;

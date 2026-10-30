@@ -173,6 +173,7 @@ internal sealed class SessionSnapshotLoader(
         {
             var loaded = PrepareSessionMap(dungeonSaved.Map, false);
             var dungeonMap = new DungeonMap(loaded.Map);
+            result.DungeonTitle = LocationTitle.Dungeon(AmfMap.Parse(loaded.Raw));
             var assets = DungeonSceneAssets.Load(root, loaded.Map, loaded.Raw);
             result.DungeonEntry = new(
                 (DungeonEntrySource)dungeonSaved.Source,
@@ -335,6 +336,7 @@ internal sealed class PreparedSession
     public ExplorationController? World;
     public byte[] WorldRaw = [];
     public DungeonEntryPlan? DungeonEntry;
+    public LocationTitle DungeonTitle;
     public DungeonController? Dungeon;
     public DungeonComposer? DungeonComposer;
     public TownSceneAssets? InteriorAssets;

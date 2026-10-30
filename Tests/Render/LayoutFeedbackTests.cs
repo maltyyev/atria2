@@ -202,14 +202,14 @@ public static class LayoutFeedbackTests
         state.Mode = 300;
         state.WorldY = 8;
         Array.Clear(pixels);
-        hud.Draw(state, GameText.Encoding.GetBytes("Порт Синоп"), pixels);
+        hud.Draw(state, "Порт Синоп", pixels);
         ushort[] mixed = pixels.ToArray();
         Array.Clear(pixels);
-        hud.Draw(state, GameText.Encoding.GetBytes("ПОРТ СИНОП"), pixels);
+        hud.Draw(state, "ПОРТ СИНОП", pixels);
         Check(pixels.SequenceEqual(mixed), "Location HUD always uppercase");
         Capture("location-hud");
         Array.Clear(pixels);
-        hud.Draw(state, [], pixels);
+        hud.Draw(state, "", pixels);
         int[] titleColumns = Enumerable.Range(7, 16).SelectMany(y => Enumerable.Range(180, 280)
             .Where(x => pixels[y * 640 + x] != mixed[y * 640 + x])).ToArray();
         Check(titleColumns.Length > 0 && Math.Abs(titleColumns.Min() + titleColumns.Max() - 640) <= 3, "Location title ink is centered on the screen");

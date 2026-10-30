@@ -1,6 +1,7 @@
 using System.Text;
 using Atria.Game.Combat;
 using Atria.Game.Controls;
+using Atria.Game.Persistence;
 using Atria.Game.Progression;
 using Atria.Render.Codecs;
 
@@ -27,7 +28,7 @@ public sealed partial class GameSession
         nextBattleSeed ??= ReadBattleSeed();
         if (activeScriptHost is null)
         {
-            WriteAutosave(GameText.Get("ui.autosave.beforeBattle"));
+            WriteAutosave(AutosaveReason.BeforeBattle);
         }
 
         uint encounterSeed = nextBattleSeed.Value;
@@ -173,7 +174,7 @@ public sealed partial class GameSession
 
         if (activeScriptHost is null && state.Mode != GameMode.Defeat)
         {
-            WriteAutosave(GameText.Get("ui.autosave.afterBattle"));
+            WriteAutosave(AutosaveReason.AfterBattle);
         }
     }
 

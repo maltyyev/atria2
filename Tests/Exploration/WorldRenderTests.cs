@@ -33,13 +33,13 @@ public static class WorldRenderTests
         Check(target.Any(p => p != 0), "real world ground/object/fog/CHIPCHAR composition");
         var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng1.fnt")), true);
         var hud = WorldHudRenderer.Load(root, font);
-        hud.Draw(state, "world"u8, target);
+        hud.Draw(state, "world", target);
         state.WorldY = 5;
-        hud.Draw(state, "world"u8, target);
+        hud.Draw(state, "world", target);
         state.Mode = 400;
-        hud.Draw(state, "town"u8, target, townAnchorY: 100);
+        hud.Draw(state, "town", target, townAnchorY: 100);
         state.Mode = 410;
-        hud.Draw(state, "interior"u8, target);
+        hud.Draw(state, "interior", target);
         Check(WorldHudRenderer.OriginY(300, 4, false) == 421 && WorldHudRenderer.OriginY(300, 5, false) == 0, "normal world HUD avoids player half");
         Check(WorldHudRenderer.OriginY(400, 0, false, 79) == 421 && WorldHudRenderer.OriginY(400, 0, false, 80) == 0, "town anchor80 HUD boundary");
         Check(WorldHudRenderer.OriginY(410, 0, true) is null && WorldHudRenderer.OriginY(300, 4, true) is null, "modal suppresses lower HUD");

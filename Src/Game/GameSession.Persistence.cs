@@ -452,6 +452,7 @@ public sealed partial class GameSession
         explorationRevealX = saved.Exploration?.RevealX ?? 0;
         explorationRevealY = saved.Exploration?.RevealY ?? 0;
         dungeonEntry = next.DungeonEntry;
+        dungeonTitle = next.DungeonTitle;
         dungeon = next.Dungeon;
         dungeonComposer = next.DungeonComposer;
         if (saved.Dungeon is { } retained)

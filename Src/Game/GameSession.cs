@@ -6,15 +6,16 @@ using Atria.Game.Controls;
 using Atria.Game.Dialogue;
 using Atria.Game.Exploration;
 using Atria.Game.Menu;
+using Atria.Game.Persistence;
 using Atria.Game.Progression;
 using Atria.Game.State;
 using Atria.Game.Town;
 using Atria.Game.World;
-using Atria.Platform;
 using Atria.Platform.Win32;
-using Atria.Render;
+using Atria.Platform;
 using Atria.Render.Codecs;
 using Atria.Render.Scenes;
+using Atria.Render;
 using Atria.Resources;
 using Atria.Script;
 using Atria.Video;
@@ -561,7 +562,14 @@ public sealed partial class GameSession : IScriptEffects
             anchor = SodScenePresentation.GetSelectionAnchor(town.Scene, sprites, town.Selection).Y;
         }
 
-        hud.Draw(value, townName, target, modal, anchor, dungeonHudEnabled: DungeonHudVisible);
+        string title = value.Mode switch
+        {
+            GameMode.World or GameMode.WorldEntry => LocationTitle.World(map!.AreaIndex).Text,
+            GameMode.Dungeon => dungeonTitle.Text,
+            GameMode.Town or GameMode.Interior or GameMode.Inn or GameMode.Shop => LocationTitle.Town(town.TownId).Text,
+            _ => ""
+        };
+        hud.Draw(value, title, target, modal, anchor, dungeonHudEnabled: DungeonHudVisible);
         if (!modal && value.Mode == GameMode.World && questMarker is { } marker)
         {
             int? hudY = WorldHudRenderer.OriginY(value.WorldY, false);
@@ -778,7 +786,7 @@ public sealed partial class GameSession : IScriptEffects
         if (oldMode != mode && (oldMode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town)
 && (mode is GameMode.World or GameMode.Dungeon or GameMode.Town))
         {
-            RequestAutosave(GameText.Get("ui.autosave.location"));
+            RequestAutosave(AutosaveReason.Location);
         }
     }
 

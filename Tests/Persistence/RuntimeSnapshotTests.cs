@@ -252,6 +252,7 @@ internal static class RuntimeSnapshotTests
         }
 
         VerifyLibrarySnapshot(root, snapshot);
+        Atria.Tests.Localization.SaveLocalizationTests.Verify(root, snapshot, new DungeonController(new GameState(), new DungeonMap(map), animation, new LegacyRandom(1), initializeState: false).CaptureRuntime());
     }
 
     private static void VerifyLibrarySnapshot(string root, SessionRuntimeSnapshot template)

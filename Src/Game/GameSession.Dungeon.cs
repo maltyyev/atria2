@@ -11,6 +11,7 @@ namespace Atria.Game;
 public sealed partial class GameSession
 {
     private DungeonEntryPlan? dungeonEntry;
+    private LocationTitle dungeonTitle;
     private DungeonController? dungeon;
     private DungeonComposer? dungeonComposer;
     private byte[] dungeonReturnMap = [], dungeonReturnTown = [], dungeonReturnTownScript = [];
@@ -85,14 +86,8 @@ public sealed partial class GameSession
             GameText.ItemNames(items),
             retainedMessage
         );
-        int title = decoded.EmbeddedScene is { } scene ? BinaryPrimitives.ReadInt32LittleEndian(scene.Header.Span.Slice(73, 4)) : throw new InvalidDataException("Dungeon title requires actual embedded scene metadata.");
-        int message = checked(173 + title);
-        if ((uint)message >= (uint)messages.Count)
-        {
-            throw new InvalidDataException("Dungeon title exceeds TEXTmsg table.");
-        }
-
-        townName = messages[message].ToArray();
+        dungeonTitle = LocationTitle.Dungeon(decoded);
+        townName = messages[dungeonTitle.MessageId].ToArray();
     }
 
     private void EnterDungeon()

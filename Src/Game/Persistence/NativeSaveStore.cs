@@ -1,3 +1,6 @@
+using Atria.Game.World;
+using Atria.Resources;
+
 namespace Atria.Game.Persistence;
 
 public enum SaveSlotStatus
@@ -19,7 +22,8 @@ public sealed record SaveSlotInfo(
     bool Automatic = false,
     bool IsNew = false,
     DateTime WrittenUtc = default,
-    string Reason = ""
+    string Reason = "",
+    LocationTitle? Location = null
 );
 public sealed record SaveSlotContent(NativeSaveImage? Native, LegacySaveImage? Legacy);
 /// <summary>Unbounded manual slots and a bounded rotating autosave bank in an explicit writable directory.</summary>
@@ -126,9 +130,11 @@ public sealed class NativeSaveStore
             _ = metadata.SecondaryName;
             var state = content.Native?.State ?? content.Legacy!.ReadRecoveredState();
             string reason = "";
+            SessionRuntimeSnapshot? runtime = null;
             if (content.Native is { } native && native.Context.Schema == SessionRuntimeCodec.Schema)
             {
-                reason = SessionRuntimeCodec.Decode(native.Context).SaveReason;
+                runtime = SessionRuntimeCodec.Decode(native.Context);
+                reason = AutosaveReason.FromSaved(runtime.SaveReason);
             }
 
             return new(
@@ -138,12 +144,33 @@ public sealed class NativeSaveStore
                 new(state.Year, state.Month, state.Day),
                 Automatic: id < 0,
                 WrittenUtc: written,
-                Reason: reason
+                Reason: reason,
+                Location: ReadLocation(state.Mode, metadata, runtime)
             );
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
         {
             return new(id, SaveSlotStatus.Invalid, empty, default, e.Message, id < 0, WrittenUtc: written);
+        }
+    }
+
+    private LocationTitle? ReadLocation(int mode, LegacySlotMetadata metadata, SessionRuntimeSnapshot? runtime)
+    {
+        switch (mode)
+        {
+            case GameMode.World:
+                return LocationTitle.World(metadata.AreaIndex, includeSuffix: true);
+            case GameMode.Town:
+            case GameMode.Interior:
+            case GameMode.Inn:
+            case GameMode.Shop:
+                return LocationTitle.Town(metadata.TownId);
+            case GameMode.Dungeon when runtime?.Dungeon is { } dungeon:
+                using (var maps = BinderArchive.Open(Path.Combine(originalDirectory, "AT2AMF.000")))
+                    return LocationTitle.Dungeon(AmfMap.Parse(maps.ReadMember(maps.FindResource(dungeon.Map.Member))));
+            default:
+                // Unsupported historical formats retain their original caption; never infer identity from text.
+                return null;
         }
     }
 

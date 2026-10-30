@@ -1,5 +1,14 @@
 using Atria.Render;
 
+if (args.Length == 2 && args[1] == "--save-localization")
+{
+    Atria.Tests.Persistence.RuntimeSnapshotTests.Run(args[0]);
+    Console.WriteLine(Atria.Tests.Render.LayoutFeedbackTests.Run(args[0]));
+    Console.WriteLine(Atria.Tests.Render.LayoutFeedbackTests.Run(args[0], "be-BY"));
+    Atria.Tests.Exploration.WorldRenderTests.Run(args[0]);
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--library-save")
 {
     Atria.Tests.Persistence.RuntimeSnapshotTests.Run(args[0]);

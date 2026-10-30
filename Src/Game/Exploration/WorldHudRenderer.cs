@@ -70,7 +70,7 @@ public sealed class WorldHudRenderer
     //429420 normal/4295e0 modal placement;4297c0 composition. Call after scene/dialogue/action overlays.
     public void Draw(
         GameState state,
-        ReadOnlySpan<byte> areaName,
+        string areaName,
         Span<ushort> target,
         bool modal = false,
         int townAnchorY = 400,
@@ -97,7 +97,7 @@ public sealed class WorldHudRenderer
         bool title = state.Mode != 320 || previousMode is 300 or 310 or 330 or 400;
         if (title)
         {
-            string name = GameText.Decode(GameText.Current.NameSpan(areaName)).Trim().ToUpperInvariant();
+            string name = areaName.Trim().ToUpperInvariant();
             TextBoxRaster.Draw(font, name, target, 640, 480, 640, new(182, y + 8, 462, y + 24), 0, centered: true);
             TextBoxRaster.Draw(font, name, target, 640, 480, 640, new(180, y + 7, 460, y + 23), 0xffff, NativeUiPalette.Normal, centered: true);
         }

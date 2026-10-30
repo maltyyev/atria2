@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using Atria.Game.ActionMenu;
 using Atria.Game.Exploration;
+using Atria.Game.Persistence;
 using Atria.Game.World;
 
 namespace Atria.Game;
@@ -273,7 +274,7 @@ public sealed partial class GameSession
         modes.ResetDepth();
         modes.Push(GameMode.World);
         EnterMode(GameMode.World);
-        RequestAutosave(GameText.Get("ui.autosave.worldArea"));
+        RequestAutosave(AutosaveReason.WorldArea);
     }
 
     private void ComposeExploration(Span<ushort> target)

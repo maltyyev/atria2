@@ -265,6 +265,7 @@ public sealed record SessionRuntimeSnapshot
     {
         get; init;
     }
+    // Localization key since 0.15.7; older snapshots may contain a literal caption.
     public string SaveReason { get; init; } = "";
     public ScriptCheckpoint? Script
     {
