@@ -93,7 +93,8 @@ public sealed class CombatSoundBank : IDisposable
             int index = archive.FindResource(Encoding.ASCII.GetBytes(name));
             if (index < 0)
             {
-                throw new FileNotFoundException($"Exclusive battle WAV resource is missing: {name}");
+                // Original animations also reference absent WAVs; their playback was optional.
+                return;
             }
             // The session callback consumes RIFF bytes, never the ASCII resource name.
             playExclusiveWave(archive.ReadMember(index));

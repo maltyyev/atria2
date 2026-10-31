@@ -95,6 +95,18 @@ public static class CombatEntryTests
         Check(execution.GlobalEffectBusy && execution.Magic.GlobalDepth == 330, "Actual magic routes through the shared pool and scene depth, without a second effect owner.");
         execution.AdvanceLogicalVisual(1011);
         Check(execution.Frames.Shake.Phase == 1, "Actors and particles share one logical background shake stage.");
+        foreach (int spell in new[] { 130, 156 })
+        {
+            int soundCount = exclusiveSounds;
+            int defense = leader.DefenseBonus;
+            int particleSlot = execution.Particles.NextSlot;
+            execution.ApplyFrameEffect(battle.Runtime.Scene.PartyStartIndex, spell, 10, 1012);
+            Check(execution.GlobalEffectBusy && exclusiveSounds == soundCount && leader.DefenseBonus > defense
+                && execution.Particles.Particles[particleSlot].Assets == execution.Magic.ActiveMagic
+                && execution.Particles.Particles[particleSlot].Facing != 0,
+                "Spell particles remain active when their original optional WAV is absent: " + spell);
+            execution.AdvanceLogicalVisual(1012);
+        }
         battle.Dispose();
         battle.Dispose();
         Check(voices.All(v => v.Stops == 1 && v.Disposals == 1), "Owned numeric voices stop/dispose once after complete entry.");

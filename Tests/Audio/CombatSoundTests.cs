@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Atria.Audio;
+using Atria.Render.Codecs;
 using Atria.Resources;
 
 namespace Atria.Tests.Audio;
@@ -61,14 +62,23 @@ public static class CombatSoundTests
         bank.Play(340, 0);
         string Hash(string name) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(archive.ReadMember(archive.FindResource(Encoding.ASCII.GetBytes(name)))));
         Check(exclusive.SequenceEqual(new[] { Hash("300.wav"), Hash("340.wav") }), "Large sound IDs dispatch exact archive payloads to the session exclusive channel.");
-        try
+        using (var animations = BinderArchive.Open(Path.Combine(root, "ANI.000")))
         {
+            int[] missingSounds = animations.Entries
+                .SelectMany(entry => AnimationFile.Decode(animations.ReadMember(entry.Index)).Sequences)
+                .SelectMany(sequence => sequence.Frames)
+                .Select(frame => (int)frame.Sound)
+                .Where(id => id >= CombatSoundBank.Capacity
+                    && archive.FindResource(Encoding.ASCII.GetBytes(id.ToString(CultureInfo.InvariantCulture))) < 0)
+                .Distinct().Order().ToArray();
+            Check(missingSounds.SequenceEqual(new[] { 321, 334 }), "Original MAGIC30/MAGIC56 refer to absent sounds.");
+            foreach (int id in missingSounds)
+            {
+                bank.Play(id, 0);
+                bank.Play(id, 0);
+            }
             bank.Play(200, 0);
-            throw new Exception("Missing exclusive WAV accepted.");
-        }
-        catch (FileNotFoundException e)
-        {
-            Check(e.Message.Contains("200.wav", StringComparison.Ordinal), "Missing resource diagnostic identifies requested sound.");
+            Check(exclusive.Count == 2, "Missing optional sounds neither abort playback nor substitute another effect.");
         }
 
         int absent = Enumerable.Range(1, 199).First(id => archive.FindResource(Encoding.ASCII.GetBytes(id.ToString("D3", CultureInfo.InvariantCulture))) < 0);
