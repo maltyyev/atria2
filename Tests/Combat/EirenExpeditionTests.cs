@@ -1,5 +1,6 @@
 using System.Text;
 using Atria.Game;
+using Atria.Game.Combat;
 using Atria.Game.Dungeon;
 using Atria.Game.Exploration;
 using Atria.Game.Persistence;
@@ -56,6 +57,7 @@ internal static class EirenExpeditionTests
 
     public static string Run(string root)
     {
+        CheckGuardVariety(root);
         var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
         var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
         var state = InitialGameState.Create(items, messages);
@@ -152,6 +154,31 @@ internal static class EirenExpeditionTests
         new ScriptMachine(ScriptProgram.Parse(diary.Id, diary.Source), new ScriptStateHost(state, new Outcomes(true))).Invoke("run");
         Check(state.Journal.Progress(state, 1021) == QuestMilestones.Started, "losing the diary fight cannot award its objective");
         return "Eiren expedition PASS: two real maps/artwork, reachable objectives/exits, repeatable failed attempts, persistent defeated guards, Rust access and cemetery markers.";
+    }
+
+    private static void CheckGuardVariety(string root)
+    {
+        var backgrounds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (encounter, expectedTypes, expectedBackground) in new[]
+        {
+            (911, new[] { 25, 39, 43, 47 }, "dung_f1.bmp"),
+            (916, new[] { 29, 32, 36, 44 }, "dung_f2.bmp"),
+            (917, new[] { 17, 20, 37, 43 }, "dung_f5.bmp")
+        })
+        {
+            var sod = AuthoredEncounters.Read(root, "EBAT" + encounter)!;
+            int[] types = Enumerable.Range(1, sod.Count - 1).Select(i => sod.GetObject(i).GetInteger(2)).Distinct().Order().ToArray();
+            Check(types.SequenceEqual(expectedTypes), "seal guard roster: " + encounter);
+            string background = Encoding.ASCII.GetString(sod.BackgroundReference.Span);
+            Check(background.Equals(expectedBackground, StringComparison.OrdinalIgnoreCase) && backgrounds.Add(background),
+                "seal rooms use distinct original underground backgrounds");
+        }
+        var cemetery = AuthoredEncounters.Read(root, "EBAT915")!;
+        Check(Encoding.ASCII.GetString(cemetery.BackgroundReference.Span).Equals("grave02.bmp", StringComparison.OrdinalIgnoreCase),
+            "cemetery uses the original outdoor graveyard");
+        using var encounters = GameData.Open("AuthoredEncounters");
+        Check(encounters.RootElement.GetProperty("EBAT910").GetProperty("actors").GetRawText()
+            == encounters.RootElement.GetProperty("EBAT915").GetProperty("actors").GetRawText(), "cemetery roster and balance unchanged");
     }
 
     private static void Check(bool value, string message)

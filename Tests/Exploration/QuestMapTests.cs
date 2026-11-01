@@ -33,6 +33,8 @@ public static class QuestMapTests
         state.Events[353] = 1;
         state.Journal.ToggleTracking(state, 1007);
         Check(index.Marker(state, 3) == new QuestMapPoint(3, 0, 2), "multi-area route follows first actual directed exit");
+        state.Events[422] = 1;
+        Check(index.Objective(state) == null && Enumerable.Range(0, 8).All(area => index.Marker(state, area) == null), "destroyed Hyohyan removes hostage objective and every regional route marker");
         state = new();
         state.EventStatuses[63] = state.EventStatuses[161] = state.EventStatuses[162] = 1;
         state.Journal.ToggleTracking(state, 63);

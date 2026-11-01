@@ -282,6 +282,29 @@
             "maximum": 1
           }
         ]
+      },
+      {
+        "milestone": "stopped",
+        "all": [
+          {
+            "bank": "event",
+            "index": 353,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 422,
+            "minimum": 1,
+            "maximum": 1
+          },
+          {
+            "bank": "event",
+            "index": 423,
+            "minimum": 0,
+            "maximum": 0
+          }
+        ]
       }
     ]
   },

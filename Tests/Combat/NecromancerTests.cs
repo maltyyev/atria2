@@ -109,7 +109,7 @@ public static class NecromancerTests
         }
 
         CheckStorehouseEncounters();
-        for (int encounter = 900; encounter <= 914; encounter++)
+        for (int encounter = 900; encounter <= 918; encounter++)
         {
             foreach (var hero in state.Heroes.Where(hero => hero.MemberStatus != 0))
             {
@@ -125,7 +125,7 @@ public static class NecromancerTests
             selection.Commit(state);
             entry.BindSelectedParty(selection, 6, 0);
             var runtime = entry.Runtime;
-            if (encounter == 914)
+            if (encounter is 914 or 918)
             {
                 var enemy = runtime.Actors.First(actor => actor.Binding?.Info.Type == 40);
                 var spellEffects = enemy.Binding!.Info.Attacks.SelectMany(attack => enemy.Binding.Assets.Animation.Sequences[attack.Animation].Frames)
@@ -190,7 +190,7 @@ public static class NecromancerTests
         }
         NecromancerPresentationTests.Run(root, state);
         NecromancerExecutionTests.Run(root);
-        return "Necromancer PASS: four staged quests/reload, generic membership, recruitment, RU/BE, portraits, nine current encounters plus legacy scenes, three summon choices and death-only cleanup.";
+        return "Necromancer PASS: four staged quests/reload, generic membership, recruitment, RU/BE, portraits, current and archived encounters, three summon choices and death-only cleanup.";
     }
 
     private static void CheckStorehouseEncounters()

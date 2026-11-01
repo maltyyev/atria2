@@ -242,7 +242,7 @@
         ]
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.cemeteryArrival.text\");\n  if(hero_present(\"tiger\")){dialogue_text(0,8,\"eiren.expedition.tigerCemetery.text\");}\n  battle_start3(910);\n  dialogue_text(-1,-1,\"eiren.expedition.scrollFound.text\");\n  dialogue_text(0,1,\"eiren.expedition.scrollReturn.text\");\n  journal_mark(1022,2);\n  script_end();\n}"
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.cemeteryArrival.text\");\n  if(hero_present(\"tiger\")){dialogue_text(0,8,\"eiren.expedition.tigerCemetery.text\");}\n  battle_start3(915);\n  dialogue_text(-1,-1,\"eiren.expedition.scrollFound.text\");\n  dialogue_text(0,1,\"eiren.expedition.scrollReturn.text\");\n  journal_mark(1022,2);\n  script_end();\n}"
   },
   {
     "id": "NAR0014",
@@ -321,7 +321,7 @@
         "mist"
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.seal2.text\");\n  battle_start3(912);\n  dialogue_text(0,3,\"eiren.expedition.seal2Broken.text\");\n  if(narrative_seen(\"NAR0017\")&&narrative_seen(\"NAR0019\")){dialogue_text(0,3,\"eiren.expedition.sealsDone.text\");journal_mark(1023,2);}\n  script_end();\n}"
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.seals.humanArrival.text\");\n  dialogue_text(0,1,\"eiren.seals.rolandHalt.text\");\n  dialogue_text(1,76,\"eiren.seals.guardOrder.text\");\n  dialogue_text(0,3,\"eiren.seals.mistReach.text\");\n  dialogue_text(1,76,\"eiren.seals.guardRepeat.text\");\n  dialogue_text(0,1,\"eiren.seals.rolandAsk.text\");\n  dialogue_text(0,3,\"eiren.seals.mistTruth.text\");\n  if(hero_present(\"brian\")){dialogue_text(0,5,\"eiren.seals.brianTry.text\");}\n  if(hero_present(\"swallow\")){dialogue_text(0,4,\"eiren.seals.swallowWarning.text\");}\n  dialogue_text(0,1,\"eiren.seals.rolandFight.text\");\n  battle_start3(916);\n  dialogue_text(-1,-1,\"eiren.seals.humanAfter.text\");\n  dialogue_text(0,1,\"eiren.seals.rolandRegret.text\");\n  dialogue_text(0,3,\"eiren.seals.mistRegret.text\");\n  if(hero_present(\"emerald\")){dialogue_text(0,2,\"eiren.seals.emeraldRegret.text\");}\n  if(hero_present(\"tiger\")){dialogue_text(0,8,\"eiren.seals.tigerRegret.text\");}\n  dialogue_text(0,1,\"eiren.seals.rolandRemember.text\");\n  dialogue_text(0,3,\"eiren.expedition.seal2Broken.text\");\n  if(narrative_seen(\"NAR0017\")&&narrative_seen(\"NAR0019\")){dialogue_text(0,3,\"eiren.expedition.sealsDone.text\");journal_mark(1023,2);}\n  script_end();\n}"
   },
   {
     "id": "NAR0019",
@@ -338,7 +338,7 @@
         "mist"
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.seal3.text\");\n  battle_start3(913);\n  dialogue_text(0,3,\"eiren.expedition.seal3Broken.text\");\n  if(narrative_seen(\"NAR0017\")&&narrative_seen(\"NAR0018\")){dialogue_text(0,3,\"eiren.expedition.sealsDone.text\");journal_mark(1023,2);}\n  script_end();\n}"
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.seals.tribalArrival.text\");\n  battle_start3(917);\n  dialogue_text(0,3,\"eiren.expedition.seal3Broken.text\");\n  if(narrative_seen(\"NAR0017\")&&narrative_seen(\"NAR0018\")){dialogue_text(0,3,\"eiren.expedition.sealsDone.text\");journal_mark(1023,2);}\n  script_end();\n}"
   },
   {
     "id": "NAR0020",
@@ -359,7 +359,7 @@
         ]
       ]
     },
-    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.finalArrival.text\");\n  dialogue_text(0,1,\"eiren.revised.confront.text\");\n  dialogue_text(1,157,\"eiren.revised.command.text\");\n  dialogue_text(1,157,\"eiren.revised.motive.text\");\n  dialogue_text(0,1,\"eiren.revised.challengeMotive.text\");\n  dialogue_text(1,157,\"eiren.revised.doubt.text\");\n  dialogue_text(0,3,\"eiren.revised.mistSees.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.party.mistAppeal.text\");}\n  dialogue_text(1,157,\"eiren.revised.refusal.text\");\n  dialogue_text(0,3,\"eiren.expedition.finalPlan.text\");\n  dialogue_text(1,157,\"eiren.expedition.finalOrder.text\");\n  battle_start3(914);\n  dialogue_text(-1,-1,\"eiren.staging.defeated.text\");\n  dialogue_text(0,3,\"eiren.revised.unbind1.text\");\n  dialogue_text(1,157,\"eiren.revised.unbind2.text\");\n  dialogue_text(0,3,\"eiren.revised.unbind3.text\");\n  dialogue_text(1,157,\"eiren.revised.unbindChoice.text\");\n  dialogue_text(-1,-1,\"eiren.revised.unbind4.text\");\n  dialogue_text(-1,-1,\"eiren.staging.afterCurse.text\");\n  dialogue_text(1,158,\"eiren.revised.free1.text\");\n  dialogue_text(0,1,\"eiren.revised.free2.text\");\n  dialogue_text(1,158,\"eiren.revised.free3.text\");\n  dialogue_text(0,3,\"eiren.revised.free4.text\");\n  dialogue_text(1,158,\"eiren.revised.free5.text\");\n  dialogue_text(1,158,\"eiren.revised.offer.text\");\n  dialogue_text(0,1,\"eiren.revised.free6.text\");\n  dialogue_text(1,158,\"eiren.revised.free7.text\");\n  if(hero_present(\"swallow\")){dialogue_text(0,4,\"eiren.party.swallowFreedom.text\");}\n  if(hero_present(\"emerald\")){dialogue_text(0,2,\"eiren.party.emeraldWelcome.text\");}\n  recruit_hero(\"eiren_wald\");\n  journal_mark(1023,4);\n  script_end();\n}"
+    "source": "run(){\n  dialogue_text(-1,-1,\"eiren.expedition.finalArrival.text\");\n  dialogue_text(0,1,\"eiren.revised.confront.text\");\n  dialogue_text(1,157,\"eiren.revised.command.text\");\n  dialogue_text(1,157,\"eiren.revised.motive.text\");\n  dialogue_text(0,1,\"eiren.revised.challengeMotive.text\");\n  dialogue_text(1,157,\"eiren.revised.doubt.text\");\n  dialogue_text(0,3,\"eiren.revised.mistSees.text\");\n  if(hero_present(\"mist\")){dialogue_text(0,3,\"eiren.party.mistAppeal.text\");}\n  dialogue_text(1,157,\"eiren.revised.refusal.text\");\n  dialogue_text(0,3,\"eiren.expedition.finalPlan.text\");\n  dialogue_text(1,157,\"eiren.expedition.finalOrder.text\");\n  battle_start3(918);\n  dialogue_text(-1,-1,\"eiren.staging.defeated.text\");\n  dialogue_text(0,3,\"eiren.revised.unbind1.text\");\n  dialogue_text(1,157,\"eiren.revised.unbind2.text\");\n  dialogue_text(0,3,\"eiren.revised.unbind3.text\");\n  dialogue_text(1,157,\"eiren.revised.unbindChoice.text\");\n  dialogue_text(-1,-1,\"eiren.revised.unbind4.text\");\n  dialogue_text(-1,-1,\"eiren.staging.afterCurse.text\");\n  dialogue_text(1,158,\"eiren.revised.free1.text\");\n  dialogue_text(0,1,\"eiren.revised.free2.text\");\n  dialogue_text(1,158,\"eiren.revised.free3.text\");\n  dialogue_text(0,1,\"eiren.seals.rolandAccount.text\");\n  dialogue_text(1,158,\"eiren.seals.eirenAccount.text\");\n  dialogue_text(0,3,\"eiren.seals.mistAccount.text\");\n  dialogue_text(0,3,\"eiren.revised.free4.text\");\n  dialogue_text(1,158,\"eiren.revised.free5.text\");\n  dialogue_text(1,158,\"eiren.revised.offer.text\");\n  dialogue_text(0,1,\"eiren.revised.free6.text\");\n  dialogue_text(1,158,\"eiren.revised.free7.text\");\n  if(hero_present(\"swallow\")){dialogue_text(0,4,\"eiren.party.swallowFreedom.text\");}\n  if(hero_present(\"emerald\")){dialogue_text(0,2,\"eiren.party.emeraldWelcome.text\");}\n  recruit_hero(\"eiren_wald\");\n  journal_mark(1023,4);\n  script_end();\n}"
   },
   {
     "id": "NAR0021",

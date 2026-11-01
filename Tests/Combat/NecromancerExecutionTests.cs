@@ -105,7 +105,7 @@ internal static class NecromancerExecutionTests
 
     private static void CheckQuestWaves(string root)
     {
-        foreach (int encounter in Enumerable.Range(906, 9))
+        foreach (int encounter in Enumerable.Range(906, 13))
         {
             var state = Party(root, 10);
             var random = new LegacyRandom(321);
@@ -131,6 +131,18 @@ internal static class NecromancerExecutionTests
                 }
                 if (active.Length > 0)
                 {
+                    if (encounter == 918)
+                    {
+                        int[] expected = seen.Count switch
+                        {
+                            0 => [17, 17, 20, 20, 37, 37, 37, 43, 43],
+                            9 => [29, 29, 32, 32, 32, 36, 36, 44, 44],
+                            18 => [25, 25, 39, 39, 42, 47, 47],
+                            _ => throw new InvalidOperationException("Unexpected final battle wave boundary.")
+                        };
+                        int[] actual = active.Select(image => runtime.Scene.Actors[Array.IndexOf(enemies, image)].Type).Order().ToArray();
+                        Check(actual.SequenceEqual(expected), "final waves follow north, east, west; only Eiren casts in the last wave");
+                    }
                     execution.AdvanceLogicalVisual(now);
                     string output = Path.GetFullPath(Path.Combine(root, "..", "audit", "eiren-expedition-0170"));
                     Directory.CreateDirectory(output);

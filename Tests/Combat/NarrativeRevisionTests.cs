@@ -97,6 +97,28 @@ internal static class NarrativeRevisionTests
                 }
             }
 
+            if (scene.Id == "NAR0018")
+            {
+                string[] ordered = ["eiren.seals.humanArrival.text", "eiren.seals.guardOrder.text",
+                    "eiren.seals.mistReach.text", "eiren.seals.guardRepeat.text", "eiren.seals.mistTruth.text",
+                    "eiren.seals.rolandFight.text", "battle:916", "eiren.seals.humanAfter.text",
+                    "eiren.seals.rolandRegret.text", "eiren.seals.mistRegret.text", "eiren.expedition.seal2Broken.text"];
+                int previous = -1;
+                foreach (string turn in ordered)
+                {
+                    int index = newEffects.Timeline.IndexOf(turn);
+                    Check(index > previous, "captives are approached before combat and mourned only after victory: " + turn);
+                    previous = index;
+                }
+            }
+
+            if (scene.Id == "NAR0020")
+            {
+                Check(newEffects.Battles.SequenceEqual([918]), "current finale uses the three revised guard waves");
+                Check(newEffects.Timeline.IndexOf("eiren.revised.challengeMotive.text") < newEffects.Timeline.IndexOf("battle:918"),
+                    "Eiren is confronted about his crimes before the final battle");
+            }
+
             for (int mask = 0; mask < 1 << companions.Length; mask++)
             {
                 var variant = NativeGameStateCodec.Decode(beforeScene);

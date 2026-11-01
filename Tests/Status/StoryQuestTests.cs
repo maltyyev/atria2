@@ -75,6 +75,37 @@ public static class StoryQuestTests
         state.Events[83] = state.Events[84] = 1;
         state.Globals[936] = 1;
         Check(Has(1001, QuestMilestones.Stopped) && !Has(1001, QuestMilestones.Completed), "old failed escort is recognized");
+        state = new();
+        state.Events[353] = 1;
+        state.Journal.Record(state, 1007, QuestMilestones.Started);
+        state.Journal.ToggleTracking(state, 1007);
+        Run("42HYOHAN", "pre_enter");
+        Check(state.Events[422] == 1 && Has(1007, QuestMilestones.Stopped), "Alan's assault stops the hostage quest");
+        Check(!Has(1007, QuestMilestones.Completed) && state.Journal.ActiveQuest(state) == null, "destruction neither rescues the hostage nor leaves tracking active");
+        Check(state.Journal.CompletionRevision == 0, "failed rescue does not trigger completion autosave");
+        state = new();
+        state.Events[353] = state.Events[421] = state.Events[422] = 1;
+        state.Journal.Restore(1007, QuestMilestones.Started);
+        state.Journal.RestoreTracking(1007);
+        Check(Has(1007, QuestMilestones.Stopped) && !state.Journal.CanTrack(state, 1007), "old started-only save infers destroyed-town outcome before observation");
+        state = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(state));
+        Check(Has(1007, QuestMilestones.Stopped) && state.Journal.ActiveQuest(state) == null, "old save roundtrip keeps failure and removes active tracking");
+        state = new();
+        state.Events[422] = 1;
+        Check(!QuestJournalText.IsVisible(state, 1007), "destroyed town does not invent an unaccepted rescue quest");
+        state = new();
+        state.Events[353] = 1;
+        state.Globals[648] = 1;
+        Run("42HYOHAN", "pre_enter");
+        Check(state.Events[422] == 0 && state.Journal.CanTrack(state, 1007), "twelve-spirit victory leaves rescue available");
+        effects.Answer = 2;
+        Run("42_THIEF", "enter");
+        Check(Has(1007, QuestMilestones.Completed) && !Has(1007, QuestMilestones.Stopped), "sparing Gordon still completes rescue");
+        state = new();
+        state.Events[353] = 1;
+        effects.Answer = 1;
+        Run("42_THIEF", "enter");
+        Check(Has(1007, QuestMilestones.Stopped) && !Has(1007, QuestMilestones.Completed), "killing Gordon still stops rescue");
         Console.WriteLine("Story quests: real book branches, escort acceptance/refusal/success/failure, consumed letter, Duncan, old saves and completion revisions passed.");
     }
 
