@@ -35,7 +35,7 @@ public sealed partial class GameSession
             etc,
             portraits,
             smallFont,
-            BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false),
+            BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng.fnt")), false),
             items,
             displayMessages,
             File.ReadAllBytes(Path.Combine(root, "CHARINTR.DAT"))

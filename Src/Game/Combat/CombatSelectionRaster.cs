@@ -32,7 +32,7 @@ public sealed record CombatSelectionAssets(SpriteFile Etc, SpriteFile Player, Bi
         return new(
             Read("ETC"u8),
             portraits,
-            BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG1.FNT")), true),
+            BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng1.fnt")), true),
             GameText.Messages(LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(root, "BATTLE.DAT"))), "battle")
         );
     }

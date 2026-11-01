@@ -1,7 +1,7 @@
 namespace Atria.Audio;
 
 /// <summary>Owns one streaming voice. Device ownership stays with the game host.</summary>
-public sealed class FileMusicTransport(AudioDevice device, string musicDirectory, float volume = 1) : IMusicTransport, IDisposable
+public sealed class FileMusicTransport(AudioDevice device, string musicDirectory, float volume = 1) : IFileMusicTransport, IDisposable
 {
     private readonly MusicCatalog catalog = new(musicDirectory);
     private float currentVolume = volume;

@@ -19,7 +19,7 @@ public sealed partial class GameSession
 
     private void InitializeModernControls(ControlBindings original)
     {
-        controls = new(initialControlProfile ?? ControlProfile.Defaults(original), bindings, new XInputDevice());
+        controls = new(initialControlProfile ?? ControlProfile.Defaults(original), bindings, hostServices.Gamepads);
         Console.WriteLine("Controls: semantic input, profiles=" + string.Join(",", controls.Profile.Players.Select(p => p.Preset)) + "; XInput enabled.");
     }
 

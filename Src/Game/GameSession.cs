@@ -27,13 +27,14 @@ namespace Atria.Game;
 public sealed partial class GameSession : IScriptEffects
 {
     private readonly string root;
+    private readonly GameHostServices hostServices;
     private readonly string sessionOutputDirectory;
-    private readonly NativeWindow window;
-    private readonly D3D11Presenter presenter;
-    private readonly AudioDevice audio;
-    private readonly FileMusicTransport musicTransport;
+    private readonly IGameWindow window;
+    private readonly IFramePresenter presenter;
+    private readonly IGameAudio audio;
+    private readonly IFileMusicTransport musicTransport;
     private readonly MusicController music;
-    private readonly SoundEffectBank[] effects;
+    private readonly IBufferedSoundEffect[] effects;
     private readonly ControlBindings bindings;
     private readonly ModalFrameGate gate = new(new MonotonicModalClock(), 0);
     private readonly NativeDialogueFrameHost host;
@@ -74,18 +75,21 @@ public sealed partial class GameSession : IScriptEffects
     private long logicalFrames, presents, dialoguesCompleted;
     private GameSession(
         string root,
-        NativeWindow window,
-        D3D11Presenter presenter,
-        AudioDevice audio,
-        FileMusicTransport musicTransport,
+        IGameWindow window,
+        IFramePresenter presenter,
+        IGameAudio audio,
+        IFileMusicTransport musicTransport,
         FaceSpriteSource faces,
         double maximumSeconds,
         bool muted,
         string? controlsFile,
-        string outputDirectory
+        string outputDirectory,
+        GameHostServices? services = null
     )
     {
         this.root = root;
+        hostServices = services ?? new GameHostServices(Path.Combine(AppContext.BaseDirectory, "assets"), new XInputDevice(),
+            (path, skip, volume, duration) => MoviePlayer.Play(path, (NativeWindow)window, (D3D11Presenter)presenter, (AudioDevice)audio, skip, volume, duration));
         this.window = window;
         this.presenter = presenter;
         this.audio = audio;
@@ -106,13 +110,13 @@ public sealed partial class GameSession : IScriptEffects
         etc = SpriteFile.Decode(Read("AT2SPR.000", "ETC"u8));
         effectSprites = SpriteFile.Decode(Read("AT2SPR.000", "CON_EFF"u8));
         effectAnimation = AnimationFile.Decode(Read("ANI.000", "CON_EFF"u8));
-        smallFont = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG1.FNT")), true);
+        smallFont = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng1.fnt")), true);
         hud = WorldHudRenderer.Load(root, smallFont);
-        var largeFont = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false);
+        var largeFont = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng.fnt")), false);
         menuModal = new(etc, largeFont, text);
         leaveModal = new(etc, smallFont, text);
         actionRenderer = new(etc, smallFont);
-        menuBackground = MainMenuArtwork.Load(Path.Combine(AppContext.BaseDirectory, "assets"));
+        menuBackground = MainMenuArtwork.Load(hostServices.InterfaceRoot);
         effects = SoundEffectBank.UiMemberNames.Select(name => audio.LoadEffect(Read("AT2WAV.000", Encoding.ASCII.GetBytes(name)))).ToArray();
         host = new(
             window,
@@ -131,7 +135,7 @@ public sealed partial class GameSession : IScriptEffects
         host.Controls = controls;
         host.PresentCustomFrame = PresentMainMenu;
         menuNavigation = new(bindings, host.QueryScan);
-        dialogue = new(DialogueCatalog.Load(Path.Combine(root, "roland.idx"), Path.Combine(root, "roland.dat")), new DialogueModalDriver(host, etc, smallFont, faces, DrawModalHud));
+        dialogue = new(DialogueCatalog.Load(Path.Combine(root, "roland.idx"), Path.Combine(root, "ROLAND.DAT")), new DialogueModalDriver(host, etc, smallFont, faces, DrawModalHud));
         menu.Enter();
         gate.Resume();
     }
@@ -155,18 +159,30 @@ public sealed partial class GameSession : IScriptEffects
             controlsFile,
             outputDirectory ?? Path.Combine(AppContext.BaseDirectory, "userdata")
         );
+        return session.Execute();
+    }
+
+    public static int RunHosted(string root, string outputDirectory, IGameWindow window, IFramePresenter presenter, IGameAudio audio, IFileMusicTransport music, GameHostServices services)
+    {
+        using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
+        var session = new GameSession(root, window, presenter, audio, music, faces, double.PositiveInfinity, false, null, outputDirectory, services);
+        return session.Execute();
+    }
+
+    private int Execute()
+    {
         try
         {
-            session.Loop();
+            Loop();
         }
-        catch (OperationCanceledException) when (window.Closed || session.lifetime.Elapsed.TotalSeconds >= maximumSeconds)
+        catch (OperationCanceledException) when (window.Closed || lifetime.Elapsed.TotalSeconds >= maximumSeconds)
         {
         }
         finally
         {
-            session.DisposeProgression();
-            session.controls.Dispose();
-            Console.WriteLine($"Session: mode={session.state.Mode}, logicalFrames={session.logicalFrames}, presents={session.presents}, dialoguesCompleted={session.dialoguesCompleted}, introFlag={session.state.Globals[501]}, scriptActive={session.state.ScriptActive}, seconds={session.lifetime.Elapsed.TotalSeconds:F3}, dynamicCode={System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}.");
+            DisposeProgression();
+            controls.Dispose();
+            Console.WriteLine($"Session: mode={state.Mode}, logicalFrames={logicalFrames}, presents={presents}, dialoguesCompleted={dialoguesCompleted}, introFlag={state.Globals[501]}, scriptActive={state.ScriptActive}, seconds={lifetime.Elapsed.TotalSeconds:F3}, dynamicCode={System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}.");
         }
 
         return 0;
@@ -606,7 +622,7 @@ public sealed partial class GameSession : IScriptEffects
 
     private void PlayMovie(string name)
     {
-        var result = MoviePlayer.Play(Path.Combine(root, name), window, presenter, audio, () =>
+        var result = hostServices.PlayMovie(Path.Combine(root, name), () =>
         {
             controls.Poll(window);
             return controls.Menu(GameAction.Confirm) || controls.Menu(GameAction.Back);

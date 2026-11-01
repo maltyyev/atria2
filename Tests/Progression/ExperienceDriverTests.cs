@@ -1,3 +1,4 @@
+using Atria.Platform.Input;
 using System.Buffers.Binary;
 using Atria.Game.Dialogue;
 using Atria.Game.Progression;

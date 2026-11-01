@@ -1,3 +1,4 @@
+using Atria.Platform.Input;
 using Atria.Game.Controls;
 using Atria.Game.Menu;
 using Atria.Platform.Win32;

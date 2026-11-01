@@ -182,7 +182,7 @@ public sealed partial class GameSession
     {
         ushort[] source = new ushort[640 * 480];
         DrawExperienceBackdrop(state, source);
-        var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false);
+        var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng.fnt")), false);
         //458538 is retained zero-fill BSS; no nonempty writer has been recovered. Do not invent a label.
         var raster = new CombatTransitionRaster(source, font, []);
         var transition = new CombatTransitionRuntime();

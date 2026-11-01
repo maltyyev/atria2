@@ -40,10 +40,7 @@ public sealed partial class GameSession
                 break; //No stack pop/entry reset in42aaa0.
             case QuitEffectKind.RequestWindowClose:
                 musicTransport.Stop(); //435760/435740 stop and close native CD stream before WM_CLOSE.
-                if (TerminationNative.PostMessageW(window.Handle, 0x10, 0, 0) == 0)
-                {
-                    throw new IOException("Cannot post game window close.");
-                }
+                window.RequestClose();
 
                 break;
             default:
@@ -53,7 +50,7 @@ public sealed partial class GameSession
     private void ComposeQuit(Span<ushort> target)
     {
         MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, target, menuModal.Draw);
-        terminationLargeFont ??= BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false);
+        terminationLargeFont ??= BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng.fnt")), false);
         TerminationRenderer.DrawQuit(quit, etc, terminationLargeFont, displayMessages, target);
     }
 
@@ -138,9 +135,4 @@ public sealed partial class GameSession
         music.Update(musicId);
     }
 
-    private static class TerminationNative
-    {
-        [DllImport("user32.dll", ExactSpelling = true)]
-        internal static extern int PostMessageW(nint window, uint message, nuint wParam, nint lParam);
-    }
 }

@@ -22,10 +22,10 @@ public readonly record struct CombatTransportState(bool Closed, bool Focused)
     public bool Ready => !Closed && Focused;
 }
 
-/// <summary>Win32 transport for the existing window/frame host; supplies no combat opportunity frequency.</summary>
+/// <summary>Transport for the existing window/frame host; supplies no combat opportunity frequency.</summary>
 public sealed class NativeCombatPresentationHost : ICombatPresentationHost, IDisposable
 {
-    private readonly NativeWindow window;
+    private readonly IGameWindow window;
     private readonly NativeDialogueFrameHost frames;
     private readonly Action updateMusic, ensureFocusedLifecycle;
     private readonly CombatHeldInputSource held;
@@ -36,7 +36,7 @@ public sealed class NativeCombatPresentationHost : ICombatPresentationHost, IDis
     public bool Closed => window.Closed;
     public bool Focused => frames.Focused;
 
-    public NativeCombatPresentationHost(NativeWindow window, NativeDialogueFrameHost frames, int configuredPlayers, Action updateMusic, Action ensureFocusedLifecycle)
+    public NativeCombatPresentationHost(IGameWindow window, NativeDialogueFrameHost frames, int configuredPlayers, Action updateMusic, Action ensureFocusedLifecycle)
     {
         this.window = window;
         this.frames = frames;

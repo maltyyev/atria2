@@ -1,4 +1,4 @@
-namespace Atria.Platform.Win32;
+namespace Atria.Platform.Input;
 
 public enum ScanInputEventKind
 {
@@ -7,7 +7,7 @@ public enum ScanInputEventKind
     Reset
 }
 
-// Time is uint32 Win32 MSG.time/GetTickCount, including wrap. Never a virtual-key identity.
+// Time is a wrapping uint32 monotonic millisecond clock. Scan codes are transport identities, not virtual keys.
 public readonly record struct TimestampedScanInput(uint Time, byte Scan, ScanInputEventKind Kind);
 // Kept separate from HWND dispatch so identical native event sequences can be replayed in tests.
 public sealed class ScanInputCapture

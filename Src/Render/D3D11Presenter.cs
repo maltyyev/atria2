@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Atria.Render;
 
 /// <summary>Owns presentation lifetime; a lost GPU surface does not own or destroy the game session.</summary>
-public sealed class D3D11Presenter : IDisposable
+public sealed class D3D11Presenter : IFramePresenter, IDisposable
 {
     internal const int MaximumFrameDimension = 4096;
     private const int DxgiDeviceRemoved = unchecked((int)0x887A0005);

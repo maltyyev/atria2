@@ -1,3 +1,5 @@
+using Atria.Platform.Input;
+using Atria.Platform;
 using Atria.Platform.Win32;
 using Atria.Render;
 using Atria.Resources;
@@ -37,12 +39,12 @@ public sealed class InputRouter : IDisposable
     private const ushort RumbleLowFrequencyStrength = 10000;
     private const ushort RumbleHighFrequencyStrength = 6000;
     private const int RumbleMilliseconds = 80;
-    private static readonly XInputButtons[] buttonMasks =
+    private static readonly GamepadButtons[] buttonMasks =
     [
-        XInputButtons.A, XInputButtons.B, XInputButtons.X, XInputButtons.Y,
-        XInputButtons.LeftShoulder, XInputButtons.RightShoulder,
-        XInputButtons.Back, XInputButtons.Start, XInputButtons.LeftThumb, XInputButtons.RightThumb,
-        XInputButtons.DpadUp, XInputButtons.DpadRight, XInputButtons.DpadDown, XInputButtons.DpadLeft
+        GamepadButtons.A, GamepadButtons.B, GamepadButtons.X, GamepadButtons.Y,
+        GamepadButtons.LeftShoulder, GamepadButtons.RightShoulder,
+        GamepadButtons.Back, GamepadButtons.Start, GamepadButtons.LeftThumb, GamepadButtons.RightThumb,
+        GamepadButtons.DpadUp, GamepadButtons.DpadRight, GamepadButtons.DpadDown, GamepadButtons.DpadLeft
     ];
     private readonly ControlBindings legacy;
     private readonly bool[] held = new bool[InputTokenCapacity], previous = new bool[InputTokenCapacity], pending = new bool[InputTokenCapacity], blocked = new bool[InputTokenCapacity];
@@ -102,7 +104,7 @@ public sealed class InputRouter : IDisposable
             if (Take(PadTokenStart + slot * PadTokenStride + button, repeat)) return true;
         return false;
     }
-    public void Poll(NativeWindow window)
+    public void Poll(IGameWindow window)
     {
         var size = window.ClientSize;
         var v = Viewport.Fit(size.Width, size.Height);
@@ -195,7 +197,7 @@ public sealed class InputRouter : IDisposable
             int at = PadTokenStart + slot * PadTokenStride;
             for (int b = 0; b < buttonMasks.Length; b++)
             {
-                held[at + b] = ((XInputButtons)s.Buttons & buttonMasks[b]) != 0;
+                held[at + b] = ((GamepadButtons)s.Buttons & buttonMasks[b]) != 0;
             }
 
             held[at + LeftTrigger] = s.LeftTrigger >= Profile.TriggerThreshold;

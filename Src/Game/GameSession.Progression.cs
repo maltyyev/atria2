@@ -13,7 +13,7 @@ public sealed partial class GameSession
     // Native59ce0 is BSS zero until408570 selects a battle reward track.
     // It is independent of the current menu/town musicId.
     private int awardMusicTrack = 0;
-    private SoundEffectBank? exclusiveScenarioSound;
+    private IBufferedSoundEffect? exclusiveScenarioSound;
     private bool exclusiveScenarioSoundOwned;
     private void InitializeProgression()
     {
@@ -104,7 +104,7 @@ public sealed partial class GameSession
 
     //42ed90/42ee00 own one WAV.000 channel. Neither music nor AT2WAV UI banks belong to it.
     // Replacing a channel stops/releases its prior sound; an initially null channel is verified BSS state.
-    private void ReplaceExclusiveScenarioSound(SoundEffectBank sound, bool owned, int attenuation)
+    private void ReplaceExclusiveScenarioSound(IBufferedSoundEffect sound, bool owned, int attenuation)
     {
         StopExclusiveScenarioSound();
         exclusiveScenarioSound = sound;
@@ -161,7 +161,7 @@ public sealed partial class GameSession
         pendingExperience = null;
     }
 
-    private sealed class SessionExperienceNoticeSound(GameSession session, SoundEffectBank sound) : IExperienceNoticeSound
+    private sealed class SessionExperienceNoticeSound(GameSession session, IBufferedSoundEffect sound) : IExperienceNoticeSound
     {
         public void Play(int attenuation) => session.ReplaceExclusiveScenarioSound(sound, false, attenuation);
         public void Stop() => session.StopExclusiveScenarioSound();

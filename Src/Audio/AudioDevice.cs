@@ -4,7 +4,7 @@ using static Atria.Platform.NativeCom;
 namespace Atria.Audio;
 
 /// <summary>Native XAudio2 ownership; instantiate/dispose on the same thread.</summary>
-public sealed class AudioDevice : IDisposable
+public sealed class AudioDevice : IGameAudio, IDisposable
 {
     internal nint Engine
     {
@@ -62,6 +62,8 @@ public sealed class AudioDevice : IDisposable
         chunkStreams.Add(stream);
         return stream;
     }
+
+    IBufferedSoundEffect IGameAudio.LoadEffect(ReadOnlyMemory<byte> wave) => LoadEffect(wave);
 
     public SoundEffectBank LoadEffect(ReadOnlyMemory<byte> wave)
     {

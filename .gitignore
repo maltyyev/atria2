@@ -35,3 +35,14 @@ playtest-data/
 # OS metadata
 Thumbs.db
 .DS_Store
+
+# Reproducible iOS staging, compiler output and xtool signing products.
+/Ios/Host/.build/
+/Ios/Host/.bsp/
+/Ios/Host/.swiftpm/
+/Ios/Host/xtool/
+/Ios/Host/Sources/AtriaProbe/Resources/
+/Ios/*.o
+/Ios/*.rsp
+/Ios/**/__pycache__/
+/Ios/DeviceLogs/

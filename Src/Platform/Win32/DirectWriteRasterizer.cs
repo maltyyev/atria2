@@ -1,13 +1,14 @@
+using Atria.Render.UI;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static Atria.Platform.NativeCom;
 
 namespace Atria.Platform.Win32;
 
-public sealed record TextMask(int Width, int Height, int Advance, byte[] Coverage, int MissingGlyphs, int Lines);
+
 
 /// <summary>Windows shaping/fallback rendered to an owned grayscale mask; no GPU or window dependency.</summary>
-public sealed unsafe partial class DirectWriteRasterizer : IDisposable
+public sealed unsafe partial class DirectWriteRasterizer : Atria.Render.UI.ITextRasterizer
 {
     private const int NoInterface = unchecked((int)0x80004002);
     private const int NotImplemented = unchecked((int)0x80004001);

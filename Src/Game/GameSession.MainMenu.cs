@@ -14,7 +14,7 @@ public sealed partial class GameSession
         var size = window.ClientSize;
         if (size.Width <= 0 || size.Height <= 0)
             return true;
-        mainMenuView ??= new(Path.Combine(AppContext.BaseDirectory, "assets"));
+        mainMenuView ??= new(hostServices.InterfaceRoot);
         bool quitting = state.Mode == GameMode.QuitConfirmation;
         string profile = GameText.Format(CanChangeProfile ? "ui.profiles.menuHint" : "ui.profiles.menuCurrent",
             ("name", playerProfiles.Active.Name));

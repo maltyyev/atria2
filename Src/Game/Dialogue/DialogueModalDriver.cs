@@ -44,17 +44,17 @@ public interface IDialogueFrameHost
     void Present();
 }
 
-/// <summary>Uses an existing Win32/D3D11/XAudio2 session. Owns buffers only, never the window/devices/music.</summary>
+/// <summary>Uses the session's platform services. Owns buffers only, never the window/devices/music.</summary>
 public sealed class NativeDialogueFrameHost : IDialogueFrameHost
 {
-    private readonly NativeWindow window;
-    private readonly D3D11Presenter presenter;
+    private readonly IGameWindow window;
+    private readonly IFramePresenter presenter;
     private readonly ControlBindings bindings;
     private readonly ScheduledScanInput scanInput;
     private readonly DialogueSceneDraw compose;
     private readonly Action<GameState> updateMusic;
     private readonly Func<GameState, bool> beforeInput;
-    private readonly IReadOnlyList<SoundEffectBank> effects;
+    private readonly IReadOnlyList<IBufferedSoundEffect> effects;
     private readonly Func<int> effectAttenuation;
     private readonly Action? afterPump;
     private readonly ushort[] frameBuffer = new ushort[640 * 480];
@@ -93,15 +93,15 @@ public sealed class NativeDialogueFrameHost : IDialogueFrameHost
     public Span<ushort> FrameBuffer => frameBuffer;
 
     public NativeDialogueFrameHost(
-        NativeWindow window,
-        D3D11Presenter presenter,
+        IGameWindow window,
+        IFramePresenter presenter,
         ControlBindings bindings,
         ScanCodeEdges edges,
         ModalFrameGate gate,
         DialogueSceneDraw composeScene,
         Action<GameState> updateMusic,
         Func<GameState, bool> beforeModalInput,
-        IReadOnlyList<SoundEffectBank> effects,
+        IReadOnlyList<IBufferedSoundEffect> effects,
         Func<int> effectAttenuation,
         Action? afterPump = null
     )
@@ -110,7 +110,7 @@ public sealed class NativeDialogueFrameHost : IDialogueFrameHost
         this.presenter = presenter;
         this.bindings = bindings;
         Gate = gate;
-        scanInput = new(NativeWindow.MessageClockMilliseconds, gate.Clock.Milliseconds, edges);
+        scanInput = new(window.InputClockMilliseconds, gate.Clock.Milliseconds, edges);
         inputResumeGeneration = gate.ResumeGeneration;
         scanInput.Resume(gate.Clock.Milliseconds);
         compose = composeScene;

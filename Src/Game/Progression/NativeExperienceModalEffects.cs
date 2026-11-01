@@ -40,12 +40,12 @@ public sealed class ExperienceAssets : IDisposable, IExperienceNoticeSound
     {
         get;
     }
-    public SoundEffectBank LevelUp
+    public IBufferedSoundEffect LevelUp
     {
         get;
     }
 
-    public ExperienceAssets(string resourceRoot, AudioDevice audio, ExperienceAssetContext context = ExperienceAssetContext.Exploration)
+    public ExperienceAssets(string resourceRoot, IGameAudio audio, ExperienceAssetContext context = ExperienceAssetContext.Exploration)
     {
         string spriteArchive = context switch
         {
@@ -60,7 +60,7 @@ public sealed class ExperienceAssets : IDisposable, IExperienceNoticeSound
         // Keep that verified optional load explicit rather than substituting another archive's art.
         int player = sprites.FindResource("PLAYER"u8);
         Player = player < 0 ? null : SpriteFile.Decode(sprites.ReadMember(player));
-        Font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(resourceRoot, "ENG1.FNT")), true);
+        Font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(resourceRoot, "eng1.fnt")), true);
         Labels = GameText.Messages(LegacyTextTables.ParseBattle(File.ReadAllBytes(Path.Combine(resourceRoot, "BATTLE.DAT"))), "battle");
         LevelUp = audio.LoadEffect(Read(waves, "LEVELUP"));
     }

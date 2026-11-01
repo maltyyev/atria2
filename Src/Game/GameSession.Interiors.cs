@@ -151,7 +151,7 @@ public sealed partial class GameSession
             itemSprites,
             etc,
             smallFont,
-            BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false),
+            BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng.fnt")), false),
             items,
             File.ReadAllBytes(Path.Combine(root, "ITEM_EX.DAT")),
             displayMessages

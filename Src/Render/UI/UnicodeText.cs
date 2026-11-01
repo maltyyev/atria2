@@ -10,7 +10,19 @@ public static class UnicodeText
     private const int MaximumCacheBytes = 16 * 1024 * 1024;
     private static readonly object sync = new();
     private static readonly Dictionary<(string Text, float Size, string Family, bool Bold, int Wrap), TextMask> masks = new();
-    private static DirectWriteRasterizer? rasterizer;
+    private static ITextRasterizer? rasterizer;
+
+    public static void UseRasterizer(ITextRasterizer replacement)
+    {
+        ArgumentNullException.ThrowIfNull(replacement);
+        lock (sync)
+        {
+            rasterizer?.Dispose();
+            rasterizer = replacement;
+            masks.Clear();
+            cacheBytes = 0;
+        }
+    }
     private static int cacheBytes;
 
     static UnicodeText() => AppDomain.CurrentDomain.ProcessExit += (_, _) => rasterizer?.Dispose();
@@ -25,7 +37,7 @@ public static class UnicodeText
                 return cached;
             }
 
-            var result = (rasterizer ??= new()).Render(text, size, family, bold, wrapWidth);
+            var result = (rasterizer ??= new DirectWriteRasterizer()).Render(text, size, family, bold, wrapWidth);
             if (masks.Count >= MaximumCachedRuns || cacheBytes + result.Coverage.Length > MaximumCacheBytes)
             {
                 masks.Clear();

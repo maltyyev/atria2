@@ -1,2 +1,5 @@
 /Assets/Game/* filter=lfs diff=lfs merge=lfs -text
 /Assets/Music/* filter=lfs diff=lfs merge=lfs -text
+
+# Preserve executable shell scripts when checking out on Windows.
+/Ios/*.sh text eol=lf

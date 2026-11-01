@@ -1,10 +1,11 @@
+using Atria.Platform.Input;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Atria.Platform.Win32;
 
 /// <summary>Owned Win32 window. No simulation is advanced by the message pump.</summary>
-public sealed unsafe class NativeWindow : IDisposable
+public sealed unsafe class NativeWindow : IGameWindow, IDisposable
 {
     private const int VirtualKeyCount = 256;
     private const uint PopupWindowStyle = 0x80000000;
@@ -101,6 +102,16 @@ public sealed unsafe class NativeWindow : IDisposable
     private bool dispatching;
     private uint dispatchMessageId, dispatchMessageTime;
     public static uint MessageClockMilliseconds => GetTickCount();
+    public uint InputClockMilliseconds => MessageClockMilliseconds;
+
+    public void RequestClose()
+    {
+        if (PostMessageW(Handle, 0x0010, 0, 0) == 0)
+            throw new IOException("Cannot post game window close.");
+    }
+
+    [DllImport("user32.dll", ExactSpelling = true)]
+    private static extern int PostMessageW(nint window, uint message, nuint wParam, nint lParam);
 
     // One consumer: the shared game/dialogue host. Pump does not discard event history.
     public bool TryDequeueScanInput(out TimestampedScanInput input) => scanInput.TryDequeue(out input);

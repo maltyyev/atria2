@@ -1,3 +1,4 @@
+using Atria.Platform.Input;
 using Atria.Game.Controls;
 using Atria.Game.Persistence;
 using Atria.Game.Profiles;
@@ -82,20 +83,20 @@ public static class PlayerProfileTests
         keys[0x3c] = true; Poll();
         Check(input.ProfileMenuPressed() && !input.ProfileMenuPressed(), "F2 edge opens profiles once");
         keys[0x3c] = false; Poll();
-        pads.Buttons = (ushort)XInputButtons.Y; Poll();
+        pads.Buttons = (ushort)GamepadButtons.Y; Poll();
         Check(input.ProfileMenuPressed(), "physical Xbox Y opens profiles");
         pads.Buttons = 0; Poll();
         editor = new("Профиль4");
-        pads.Buttons = (ushort)XInputButtons.Start; Poll();
+        pads.Buttons = (ushort)GamepadButtons.Start; Poll();
         editor.Update(input, "");
         Check(editor.Result == "Профиль4", "controller can accept the default name without keyboard");
         editor = new("Профиль5");
         pads.Buttons = 0; Poll();
-        pads.Buttons = (ushort)XInputButtons.Y; Poll(); editor.Update(input, "");
+        pads.Buttons = (ushort)GamepadButtons.Y; Poll(); editor.Update(input, "");
         pads.Buttons = 0; Poll();
-        pads.Buttons = (ushort)XInputButtons.A; Poll(); editor.Update(input, "");
+        pads.Buttons = (ushort)GamepadButtons.A; Poll(); editor.Update(input, "");
         pads.Buttons = 0; Poll();
-        pads.Buttons = (ushort)XInputButtons.Start; Poll(); editor.Update(input, "");
+        pads.Buttons = (ushort)GamepadButtons.Start; Poll(); editor.Update(input, "");
         Check(editor.Result == "а", "controller can change alphabet, enter a letter and save");
         return "Player profiles PASS: safe migration/retry, isolation, persistent selection/Unicode names, 42 profiles, invalid catalog preservation, F2/Y and name input.";
     }

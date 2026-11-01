@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Atria.Ios</AssemblyName>
+    <Version>0.17.7-ios.3</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <RootNamespace>Atria</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <NativeLib>Static</NativeLib>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Src/**/*.cs" Exclude="../../Src/bin/**;../../Src/obj/**;../../Src/Program.cs" />
+    <EmbeddedResource Include="../../Assets/Localization/ru-RU/*.json" LogicalName="Atria.Localization.Defaults.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../Src/Content/Atria2/*.json" Exclude="../../Src/Content/Atria2/OriginalNames.json" LogicalName="Atria.Content.Atria2.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

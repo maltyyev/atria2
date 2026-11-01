@@ -42,7 +42,7 @@ public sealed partial class GameSession
             persistenceBackground = bitmap.ToRgb565();
         }
 
-        persistenceRenderer ??= new(etc, smallFont, BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG.FNT")), false), displayMessages);
+        persistenceRenderer ??= new(etc, smallFont, BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng.fnt")), false), displayMessages);
         persistenceMenu.Enter((SaveLoadMenuKind)mode, persistenceSelection, HandlePersistence);
     }
 
