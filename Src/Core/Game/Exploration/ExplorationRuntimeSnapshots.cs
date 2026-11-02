@@ -13,7 +13,6 @@ public sealed partial class LegacyRandom
         Calls = value.Calls;
     }
 }
-
 public sealed record ExplorationSnapshot(
     bool Moving,
     WorldDirection Direction,
