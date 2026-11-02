@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Atria.Game.Controls;
+using Atria.Platform.Input;
 using Atria.Render.Codecs;
 using Atria.Render.UI;
 using Atria.Resources;
@@ -44,7 +45,12 @@ public sealed class CombatSelectionRaster(CombatSelectionAssets assets)
     public void DrawControls(InputRouter input, Span<ushort> target)
     {
         Fill(target, 70, 330, 570, 404, 0x1082);
-        ControlPanel.Text(assets.Font, target, GameText.Get("ui.combat.selectHero"), 82, 336, 0xffff, 60);
+        string selectionHint = input.CurrentInputSource.Kind == InputSourceKind.Mouse
+            ? GameText.Format("ui.combat.selectHeroMouseDynamic", ("up", input.Hint(0, GameAction.MenuUp)), ("down", input.Hint(0, GameAction.MenuDown)))
+            : GameText.Format("ui.combat.selectHeroDynamic",
+                ("up", input.Hint(0, GameAction.MenuUp)), ("down", input.Hint(0, GameAction.MenuDown)),
+                ("toggle", input.Hint(0, GameAction.Attack)));
+        ControlPanel.Text(assets.Font, target, selectionHint, 82, 336, 0xffff, 60);
         ControlPanel.Text(assets.Font, target, GameText.Format("ui.combat.toggleHero", ("button", input.Hint(0, GameAction.Attack))), 82, 354, 0xffff, 60);
         ControlPanel.Text(assets.Font, target, GameText.Format("ui.combat.start", ("button", input.Hint(0, GameAction.Confirm))), 130, 380, 0xffe0, 54);
     }

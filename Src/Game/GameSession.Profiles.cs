@@ -89,7 +89,10 @@ public sealed partial class GameSession
                     Console.WriteLine("Player profile operation failed: " + error);
                     failure = GameText.Get("ui.profiles.failed");
                 }
-                panel.Draw(host.FrameBuffer, GameText.Get("ui.profiles.title"), rows, GameText.Get("ui.profiles.listHelp"), failure);
+                panel.Draw(host.FrameBuffer, GameText.Get("ui.profiles.title"), rows, GameText.Format(
+                    "ui.profiles.listHelpDynamic",
+                    ("confirm", controls.Hint(0, GameAction.Confirm)),
+                    ("rename", controls.ProfileRenameHint)), failure);
             });
         }
         finally
@@ -110,7 +113,7 @@ public sealed partial class GameSession
         {
             editor.Update(controls, window.TakeTextInput());
             background.CopyTo(host.FrameBuffer);
-            editor.Draw(host.FrameBuffer, etc, smallFont);
+            editor.Draw(host.FrameBuffer, etc, smallFont, controls);
         });
         controls.Clear();
         return editor.Result;

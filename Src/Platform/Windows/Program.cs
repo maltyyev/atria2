@@ -1,15 +1,21 @@
 using System.Diagnostics;
+using Atria.Game;
+using Atria.Localization;
 using Atria.Platform;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Audio;
+using Atria.Platform.Windows.Render;
+using Atria.Platform.Windows.Video;
+using Atria.Platform.Windows.Win32;
 using Atria.Render;
 using Atria.Resources;
 
-namespace Atria;
+namespace Atria.Platform.Windows;
 
 internal static class Program
 {
     private static int Main(string[] args)
     {
+        BuildInfo.UseHostAssembly(typeof(Program).Assembly);
         try
         {
             if (args.Length > 0 && args[0] == "--upgrade-localization")
@@ -44,7 +50,7 @@ internal static class Program
 
             if (args.Length >= 3 && args[0] == "--session-probe")
             {
-                return Atria.Game.GameSession.Run(
+                return RunNativeSession(
                     Path.GetFullPath(args[1]),
                     Path.GetFullPath(args[2]),
                     args.Length > 3 ? double.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : double.PositiveInfinity,
@@ -58,8 +64,8 @@ internal static class Program
                 var bindings = ControlBindings.Parse(File.ReadAllBytes(Path.Combine(Path.GetFullPath(args[1]), "BATTLE.CFG")));
                 using var movieWindow = new NativeWindow("Atria II — native movie verification", 2560, 1440);
                 using var movieRenderer = new D3D11Presenter(movieWindow.Handle, 2560, 1440);
-                using var audio = new Atria.Audio.AudioDevice();
-                var result = Atria.Video.MoviePlayer.Play(
+                using var audio = new AudioDevice();
+                var result = MoviePlayer.Play(
                     Path.Combine(Path.GetFullPath(args[1]), args[2]),
                     movieWindow,
                     movieRenderer,
@@ -74,7 +80,7 @@ internal static class Program
 
             if (args.Length >= 2 && args[0] == "--effects-probe")
             {
-                using var audio = new Atria.Audio.AudioDevice();
+                using var audio = new AudioDevice();
                 using var waves = BinderArchive.Open(Path.Combine(Path.GetFullPath(args[1]), "AT2WAV.000"));
                 var effect = audio.LoadEffect(waves.ReadMember(waves.FindResource("MAINMENU"u8)));
                 for (int i = 0; i < 9; i++)
@@ -108,7 +114,7 @@ internal static class Program
 
             if (args.Length >= 3 && args[0] == "--menu-probe")
             {
-                return Atria.Game.GameSession.Run(
+                return RunNativeSession(
                     Path.GetFullPath(args[1]),
                     Path.GetFullPath(args[2]),
                     args.Length > 3 ? double.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 60,
@@ -118,7 +124,7 @@ internal static class Program
 
             if (args.Length >= 2 && args[0] == "--audio-probe")
             {
-                using var audio = new Atria.Audio.AudioDevice();
+                using var audio = new AudioDevice();
                 using var stream = audio.PlayFile(Path.GetFullPath(args[1]), 0);
                 Stopwatch watch = Stopwatch.StartNew();
                 double seconds = args.Length > 2 ? double.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 2;
@@ -194,6 +200,20 @@ internal static class Program
 
     private static string LocalizationDirectory => Path.Combine(AppContext.BaseDirectory, "assets", "localization");
 
+    /// <summary>Composes Windows devices and passes them to the shared session loop.</summary>
+    private static int RunNativeSession(string root, string musicRoot, double maximumSeconds, bool muted, string? controlsFile = null, string? outputDirectory = null)
+    {
+        using var window = new NativeWindow("Atria II - native session", 2560, 1440);
+        using var presenter = new D3D11Presenter(window.Handle, 2560, 1440);
+        using var audio = new AudioDevice();
+        using var transport = new FileMusicTransport(audio, musicRoot, muted ? 0 : 1);
+        var services = new GameHostServices(Path.Combine(AppContext.BaseDirectory, "assets"), new XInputDevice(),
+            (path, skip, volume, duration) => MoviePlayer.Play(path, window, presenter, audio, skip, volume, duration),
+            new DirectWriteRasterizer());
+        return Atria.Game.GameSession.RunHosted(root, outputDirectory ?? Path.Combine(AppContext.BaseDirectory, "userdata"),
+            window, presenter, audio, transport, services, maximumSeconds, muted, controlsFile);
+    }
+
     private static int RunPlaytest()
     {
         string output = Path.Combine(AppContext.BaseDirectory, "playtest-data");
@@ -228,7 +248,7 @@ internal static class Program
                 Console.WriteLine($"Atria {BuildInfo.Version}; {DateTimeOffset.Now:O}; dynamicCode={System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}");
                 Console.WriteLine($"Resources: {resources}\nMusic: {music}\nUser data: {output}");
                 Console.WriteLine("Development playtest: combat timing and full-game fidelity are not yet validated.");
-                return Atria.Game.GameSession.Run(resources, music, double.PositiveInfinity, false, outputDirectory: output);
+                return RunNativeSession(resources, music, double.PositiveInfinity, false, outputDirectory: output);
             }
             catch (Exception e)
             {

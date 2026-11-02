@@ -25,3 +25,29 @@ public interface IGamepadDevice
     PadSample Read(int slot);
     void Vibrate(int slot, ushort left, ushort right);
 }
+
+/// <summary>Provides touch controls independently of the four physical controller slots.</summary>
+public interface IVirtualGamepadSource
+{
+    /// <summary>Returns the current virtual controller sample, or a disconnected neutral sample.</summary>
+    PadSample ReadVirtualGamepad();
+}
+
+/// <summary>Names the device family that produced the latest meaningful user activity.</summary>
+public enum InputSourceKind
+{
+    Keyboard,
+    Mouse,
+    Gamepad,
+    Touch
+}
+
+/// <summary>Identifies one meaningful input activity without allocating an event object.</summary>
+public readonly record struct InputActivity(long Sequence, InputSourceKind Kind, int Identity);
+
+/// <summary>Exposes meaningful platform activity such as direct touch gestures.</summary>
+public interface IInputActivitySource
+{
+    /// <summary>Gets the latest activity; increment Sequence only for a new intentional action.</summary>
+    InputActivity LastInputActivity { get; }
+}

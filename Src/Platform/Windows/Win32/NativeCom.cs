@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Atria.Platform;
+namespace Atria.Platform.Windows.Win32;
 
 internal static unsafe class NativeCom
 {

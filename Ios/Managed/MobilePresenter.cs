@@ -2,6 +2,7 @@ using Atria.Render;
 
 namespace Atria.Ios;
 
+/// <summary>Owns copied BGRA frames and bounds the producer until the host copies the latest frame.</summary>
 public sealed class MobilePresenter : IFramePresenter, IDisposable
 {
     public const int MaximumPixels = 2560 * 1440;
@@ -34,6 +35,9 @@ public sealed class MobilePresenter : IFramePresenter, IDisposable
         // Windows Present waits for v-sync; bound this producer even while iOS is suspended.
         consumed.WaitOne(17);
     }
+
+    /// <summary>Releases a producer waiting for a consumer so session shutdown can finish.</summary>
+    public void Wake() => consumed.Set();
 
     public int CopyFrame(Span<uint> destination, out int w, out int h)
     {

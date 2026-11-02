@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Atria.Platform.Win32;
+namespace Atria.Platform.Windows.Win32;
 
 internal static partial class CommandLineConsole
 {

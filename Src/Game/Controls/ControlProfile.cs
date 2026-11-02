@@ -243,6 +243,7 @@ public static class ControlNames
             205 => GameText.Get("ui.keys.Right"),
             59 => GameText.Get("ui.keys.F1"),
             60 => GameText.Get("ui.keys.F2"),
+            61 => GameText.Get("ui.keys.F3"),
             >= 2 and <= 11 => (b.Code == 11 ? 0 : b.Code - 1).ToString(),
             >= 16 and <= 25 => "QWERTYUIOP"[b.Code - 16].ToString(),
             >= 30 and <= 38 => "ASDFGHJKL"[b.Code - 30].ToString(),

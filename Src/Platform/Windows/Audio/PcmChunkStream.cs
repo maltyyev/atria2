@@ -1,26 +1,8 @@
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 
-namespace Atria.Audio;
+using Atria.Audio;
 
-public readonly record struct PcmChunk(long Offset, int Length);
-public readonly record struct PcmAudioFormat(ushort Channels, uint SampleRate, ushort BitsPerSample)
-{
-    private const int MaximumChannelCount = 64;
-
-    public ushort BlockAlign => checked((ushort)(Channels * BitsPerSample / 8));
-    public uint ByteRate => checked(SampleRate * BlockAlign);
-
-    public void Validate()
-    {
-        if (Channels == 0 || Channels > MaximumChannelCount || SampleRate == 0 || BitsPerSample is not (8 or 16 or 24 or 32))
-        {
-            throw new InvalidDataException("Invalid integer PCM format.");
-        }
-
-        _ = BlockAlign;
-        _ = ByteRate;
-    }
-}
+namespace Atria.Platform.Windows.Audio;
 
 /// <summary>Continuous PCM read over immutable, bounded file ranges; no RIFF assumptions or extracted files.</summary>
 public sealed class PcmChunkReader : IDisposable

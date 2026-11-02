@@ -3,7 +3,6 @@ using Atria.Game.Combat;
 using Atria.Game.Controls;
 using Atria.Game.Dialogue;
 using Atria.Platform;
-using Atria.Platform.Win32;
 using Atria.Resources;
 
 namespace Atria.Game;
@@ -27,10 +26,6 @@ public sealed partial class GameSession
     {
         CheckLifetime();
         controls?.Poll(window);
-        if (controls is not null)
-        {
-            controls.ExplorationMovement = !battleActive && !dialogueActive && actions.Depth < 0 && state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon;
-        }
 
         if (controls?.FocusPauseRequested == true)
         {
@@ -42,7 +37,10 @@ public sealed partial class GameSession
             ShowPause(battleActive, currentCombat);
         }
         else if (controls is not null && !blockingControls && !battleActive && host.Focused && actions.Depth < 0 && (dialogueActive
-|| state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town or GameMode.Interior or GameMode.Inn) && (controls.Press(0, GameAction.Pause) || controls.Press(1, GameAction.Pause)))
+|| state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town or GameMode.Interior or GameMode.Inn)
+&& (state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon
+    ? controls.WorldInput.Press(0, GameAction.Pause) || controls.WorldInput.Press(1, GameAction.Pause)
+    : controls.TownInput.Press(0, GameAction.Pause) || controls.TownInput.Press(1, GameAction.Pause)))
         {
             ShowPause(false);
         }
@@ -175,13 +173,16 @@ public sealed partial class GameSession
                     rows.Add(new(move.Name, move.IsMagic ? GameText.Format("ui.units.mana", ("amount", move.Cost)) : move.IsStrategy ? GameText.Get("ui.combat.party") : ""));
                 }
 
-                done = panel.Input(controls, rows) || controls.Press(0, GameAction.Reference);
+                done = panel.Input(controls, rows) || controls.MenuInput.Press(0, GameAction.Reference);
                 background.CopyTo(host.FrameBuffer);
                 panel.Draw(
                     host.FrameBuffer,
                     GameText.Format("ui.controls.movesFor", ("character", state.HeroCatalog[party].Name)),
                     rows,
-                    GameText.Get("ui.controls.shortcutsHelp"),
+                    GameText.Format("ui.controls.shortcutsHelpDynamic",
+                        ("selector", controls.Hint(0, GameAction.Selector)),
+                        ("quick1", controls.Hint(0, GameAction.Quick1)),
+                        ("quick4", controls.Hint(0, GameAction.Quick4))),
                     GameText.Get("ui.controls.shortcutsExplanation")
                 );
             });

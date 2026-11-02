@@ -1,7 +1,6 @@
 import SwiftUI
 import UIKit
 import MetalKit
-import GameController
 import AVFoundation
 import NativeCore
 
@@ -21,18 +20,16 @@ struct AtriaApp: App {
 struct GameScreen: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> GameController { GameController() }
     func updateUIViewController(_ controller: GameController, context: Context) { }
+    static func dismantleUIViewController(_ controller: GameController, coordinator: ()) { controller.stopSession() }
 }
 
-final class GameController: UIViewController, MTKViewDelegate {
-    private let maximumPixels = 2560 * 1440
-    private var metal: MTKView!
-    private var queue: MTLCommandQueue!
-    private var pipeline: MTLRenderPipelineState!
-    private var texture: MTLTexture?
-    private var pixels: UnsafeMutablePointer<UInt32>!
-    private var lastSequence: Int32 = 0
-    private var frameWidth: Int32 = 0
-    private var frameHeight: Int32 = 0
+/// Coordinates UIKit lifecycle, touch controls and the shared game session.
+@MainActor final class GameController: UIViewController {
+    private var renderer: MetalFrameRenderer!
+    private let controllerInput = ControllerInput()
+    private let session = GameHostSession.shared
+    private let sessionOwner = UUID()
+    private var startTask: Task<Void, Never>?
     private var virtualButtons: UInt16 = 0
     private var leftTrigger: UInt8 = 0
     private var rightTrigger: UInt8 = 0
@@ -41,7 +38,7 @@ final class GameController: UIViewController, MTKViewDelegate {
     private let movieView = UIView()
     private let errorLabel = UILabel()
     private var observers: [NSObjectProtocol] = []
-    private var active = true
+    private var active = UIApplication.shared.applicationState == .active
     private var interrupted = false
 
     override func viewDidLoad() {
@@ -63,46 +60,25 @@ final class GameController: UIViewController, MTKViewDelegate {
             let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
                 appropriateFor: nil, create: true)
             let storage = try AppStorage.directory(in: support)
-            let result = resources.withCString { root in storage.withCString { output in atria_start(root, output) } }
-            AppLog.write("C# session start returned \(result); storage: \(storage).")
-            if result < 0 { showCoreError(fallback: "C# session could not start.") }
+            startTask = Task { @MainActor [weak self] in
+                guard let self, !Task.isCancelled else { return }
+                let result = await self.session.start(owner: self.sessionOwner, resources: resources, storage: storage)
+                guard !Task.isCancelled else { return }
+                AppLog.write("C# session start returned \(result); storage: \(storage).")
+                self.updateFocus()
+                if result < 0 { self.showCoreError(fallback: "C# session could not start.") }
+            }
         } catch { showError(String(describing: error)) }
         UIApplication.shared.isIdleTimerDisabled = true
     }
 
     private func setupGraphics() throws {
-        guard let device = MTLCreateSystemDefaultDevice(), let commandQueue = device.makeCommandQueue() else {
-            throw NSError(domain: "Atria", code: 1, userInfo: [NSLocalizedDescriptionKey: "Metal is unavailable."])
-        }
-        queue = commandQueue
-        metal = MTKView(frame: view.bounds, device: device)
-        metal.colorPixelFormat = .bgra8Unorm
-        metal.clearColor = MTLClearColorMake(0, 0, 0, 1)
-        metal.preferredFramesPerSecond = 60
-        metal.delegate = self
-        view.addSubview(metal)
-        metal.addGestureRecognizer(UITapGestureRecognizer(target:self,action:#selector(tapGame(_:))))
-        let shader = """
-        #include <metal_stdlib>
-        using namespace metal;
-        struct Vertex { float4 position [[position]]; float2 uv; };
-        vertex Vertex atriaFrameVertex(uint id [[vertex_id]]) {
-            const float2 p[4] = {float2(-1,1),float2(-1,-1),float2(1,1),float2(1,-1)};
-            const float2 uv[4] = {float2(0,0),float2(0,1),float2(1,0),float2(1,1)};
-            return {float4(p[id],0,1),uv[id]};
-        }
-        fragment float4 sampleFrame(Vertex v [[stage_in]], texture2d<float> image [[texture(0)]]) {
-            constexpr sampler s(coord::normalized, address::clamp_to_edge, filter::nearest);
-            return float4(image.sample(s,v.uv).rgb,1);
-        }
-        """
-        let library = try device.makeLibrary(source: shader, options: nil)
-        let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.vertexFunction = library.makeFunction(name: "atriaFrameVertex")
-        descriptor.fragmentFunction = library.makeFunction(name: "sampleFrame")
-        descriptor.colorAttachments[0].pixelFormat = metal.colorPixelFormat
-        pipeline = try device.makeRenderPipelineState(descriptor: descriptor)
-        pixels = .allocate(capacity: maximumPixels)
+        renderer = try MetalFrameRenderer(frame: view.bounds)
+        renderer.onFirstFrame = { AppLog.write("First C# frame: \($0)x\($1).") }
+        renderer.onError = { [weak self] in self?.showError($0) }
+        renderer.onFrame = { [weak self] in self?.sendInput() }
+        view.addSubview(renderer.view)
+        renderer.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapGame(_:))))
         movieView.backgroundColor = .clear
         movieView.isUserInteractionEnabled = false
         view.addSubview(movieView)
@@ -113,26 +89,33 @@ final class GameController: UIViewController, MTKViewDelegate {
         dpad.changed = { [weak self] bits in
             guard let self else { return }
             self.virtualButtons = (self.virtualButtons & ~UInt16(15)) | bits
-            self.sendPad()
+            self.sendInput()
         }
+        dpad.touched = { atria_touch_activity(0) }
         view.addSubview(dpad)
-        let definitions: [(String, UInt16)] = [("A",0x1000),("B",0x2000),("X",0x4000),("Y",0x8000),
-            ("LB",0x100),("RB",0x200),("☰",0x10),("▣",0x20),("LT",0),("RT",0)]
+        let definitions: [(String, UInt16)] = [("A", PadButton.a), ("B", PadButton.b), ("X", PadButton.x), ("Y", PadButton.y),
+            ("LB", PadButton.leftShoulder), ("RB", PadButton.rightShoulder),
+            ("☰", PadButton.menu), ("▣", PadButton.options), ("LT", 0), ("RT", 0)]
         for (title, bit) in definitions {
             let button = HoldButton(title: title)
             button.changed = { [weak self] down in
                 guard let self else { return }
+                if down { atria_touch_activity(0) }
                 if title == "LT" { self.leftTrigger = down ? 255 : 0 }
                 else if title == "RT" { self.rightTrigger = down ? 255 : 0 }
                 else if down { self.virtualButtons |= bit }
                 else { self.virtualButtons &= ~bit }
-                self.sendPad()
+                self.sendInput()
             }
             buttons[title] = button
             view.addSubview(button)
         }
         let keyboard = HoldButton(title: "⌨")
-        keyboard.changed = { [weak self] down in if down { self?.showKeyboard() } }
+        keyboard.changed = { [weak self] down in
+            guard down, let self else { return }
+            atria_touch_activity(0)
+            self.showKeyboard()
+        }
         buttons["⌨"] = keyboard
         view.addSubview(keyboard)
         errorLabel.isHidden = true
@@ -141,7 +124,7 @@ final class GameController: UIViewController, MTKViewDelegate {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        metal?.frame = view.bounds
+        renderer?.view.frame = view.bounds
         movieView.frame = view.bounds
         AppleMovies.layer?.frame = movieView.bounds
         let area = view.safeAreaLayoutGuide.layoutFrame
@@ -169,85 +152,46 @@ final class GameController: UIViewController, MTKViewDelegate {
         updateFocus()
     }
 
-    private func sendPad() {
+    private func sendInput() {
         guard active && !interrupted else { return }
-        var bits = virtualButtons
-        var lt = leftTrigger, rt = rightTrigger
-        // The existing bindings use the stick for walking and RT+D-pad for quick moves.
-        var x: Int16 = rightTrigger == 0 ? (bits & 4 != 0 ? -32767 : bits & 8 != 0 ? 32767 : 0) : 0
-        var y: Int16 = rightTrigger == 0 ? (bits & 1 != 0 ? 32767 : bits & 2 != 0 ? -32767 : 0) : 0
-        if let pad = GCController.controllers().first?.extendedGamepad {
-            let map: [(GCControllerButtonInput, UInt16)] = [(pad.dpad.up,1),(pad.dpad.down,2),(pad.dpad.left,4),(pad.dpad.right,8),
-                (pad.buttonA,0x1000),(pad.buttonB,0x2000),(pad.buttonX,0x4000),(pad.buttonY,0x8000),
-                (pad.leftShoulder,0x100),(pad.rightShoulder,0x200),(pad.buttonMenu,0x10)]
-            for (button, bit) in map where button.isPressed { bits |= bit }
-            if pad.buttonOptions?.isPressed == true { bits |= 0x20 }
-            lt = max(lt, UInt8(max(0,min(1,pad.leftTrigger.value))*255))
-            rt = max(rt, UInt8(max(0,min(1,pad.rightTrigger.value))*255))
-            if abs(pad.leftThumbstick.xAxis.value) > 0.1 { x = Int16(max(-1,min(1,pad.leftThumbstick.xAxis.value))*32767) }
-            if abs(pad.leftThumbstick.yAxis.value) > 0.1 { y = Int16(max(-1,min(1,pad.leftThumbstick.yAxis.value))*32767) }
-        }
-        atria_pad(bits,lt,rt,x,y)
-    }
-
-    func draw(in view: MTKView) {
-        sendPad()
-        guard pixels != nil else { return }
-        let sequence = atria_frame(pixels,Int32(maximumPixels),&frameWidth,&frameHeight)
-        if sequence > 0 && sequence != lastSequence {
-            if lastSequence == 0 { AppLog.write("First C# frame: \(frameWidth)x\(frameHeight).") }
-            if texture?.width != Int(frameWidth) || texture?.height != Int(frameHeight) {
-                let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm,
-                    width: Int(frameWidth),height: Int(frameHeight),mipmapped: false)
-                descriptor.storageMode = .shared
-                descriptor.usage = .shaderRead
-                texture = view.device?.makeTexture(descriptor: descriptor)
-            }
-            texture?.replace(region:MTLRegionMake2D(0,0,Int(frameWidth),Int(frameHeight)),mipmapLevel:0,
-                withBytes:pixels,bytesPerRow:Int(frameWidth)*4)
-            lastSequence = sequence
-        }
-        if let texture, let pass = view.currentRenderPassDescriptor, let drawable = view.currentDrawable,
-           let command = queue.makeCommandBuffer(), let encoder = command.makeRenderCommandEncoder(descriptor: pass) {
-            let scale = min(view.drawableSize.width / Double(texture.width),view.drawableSize.height / Double(texture.height))
-            let w = Double(texture.width)*scale, h = Double(texture.height)*scale
-            encoder.setViewport(MTLViewport(originX:(view.drawableSize.width-w)/2,originY:(view.drawableSize.height-h)/2,
-                width:w,height:h,znear:0,zfar:1))
-            encoder.setRenderPipelineState(pipeline)
-            encoder.setFragmentTexture(texture,index:0)
-            encoder.drawPrimitives(type:.triangleStrip,vertexStart:0,vertexCount:4)
-            encoder.endEncoding()
-            command.present(drawable)
-            command.commit()
-            // Do not overwrite a shared texture while the GPU still samples it.
-            command.waitUntilCompleted()
-            if command.status == .error && errorLabel.isHidden {
-                showError("Metal command failed: \(String(describing: command.error))")
-            }
+        // Touch controls travel separately; they never occupy or mask a physical controller slot.
+        let x: Int16 = rightTrigger == 0 ? (virtualButtons & PadButton.left != 0 ? -32767 : virtualButtons & PadButton.right != 0 ? 32767 : 0) : 0
+        let y: Int16 = rightTrigger == 0 ? (virtualButtons & PadButton.up != 0 ? 32767 : virtualButtons & PadButton.down != 0 ? -32767 : 0) : 0
+        atria_touch_pad(virtualButtons, leftTrigger, rightTrigger, x, y)
+        for slot in 0..<4 {
+            let pad = controllerInput.sample(slot)
+            atria_pad(pad.slot, pad.connected, pad.buttons, pad.leftTrigger, pad.rightTrigger,
+                pad.lx, pad.ly, pad.rx, pad.ry)
         }
         if errorLabel.isHidden { showCoreError() }
     }
 
     private func showCoreError(fallback: String? = nil) {
-        let count = atria_error(nil,0)
+        let count = atria_error(nil, 0)
         if count > 0 {
-            var message = [CChar](repeating:0,count:Int(count)+1)
-            _ = atria_error(&message,Int32(message.count))
-            showError(String(decoding:message.prefix(Int(count)).map { UInt8(bitPattern:$0) },as:UTF8.self))
+            var message = [CChar](repeating: 0, count: Int(count) + 1)
+            _ = atria_error(&message, Int32(message.count))
+            showError(String(decoding: message.prefix(Int(count)).map { UInt8(bitPattern: $0) }, as: UTF8.self))
         } else if let fallback { showError(fallback) }
     }
 
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) { updateFocus() }
-
     private func observeLifecycle() {
         let center = NotificationCenter.default
-        observers.append(center.addObserver(forName:UIApplication.willResignActiveNotification,object:nil,queue:.main) { [weak self] _ in
-            MainActor.assumeIsolated { AppLog.write("Application inactive."); self?.active = false; self?.updateFocus() }
+        observers.append(center.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                AppLog.write("Application inactive.")
+                self?.active = false
+                self?.updateFocus()
+            }
         })
-        observers.append(center.addObserver(forName:UIApplication.didBecomeActiveNotification,object:nil,queue:.main) { [weak self] _ in
-            MainActor.assumeIsolated { AppLog.write("Application active."); self?.active = true; self?.updateFocus() }
+        observers.append(center.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                AppLog.write("Application active.")
+                self?.active = true
+                self?.updateFocus()
+            }
         })
-        observers.append(center.addObserver(forName:AVAudioSession.interruptionNotification,object:nil,queue:.main) { [weak self] note in
+        observers.append(center.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
             let kind = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
             MainActor.assumeIsolated {
                 self?.interrupted = kind == AVAudioSession.InterruptionType.began.rawValue
@@ -260,34 +204,41 @@ final class GameController: UIViewController, MTKViewDelegate {
     private func updateFocus() {
         let focused = active && !interrupted
         if !focused {
-            virtualButtons = 0; leftTrigger = 0; rightTrigger = 0
+            virtualButtons = 0
+            leftTrigger = 0
+            rightTrigger = 0
             dpad.reset()
             for button in buttons.values { button.reset() }
+            atria_touch_pad(0, 0, 0, 0, 0)
         }
-        let size = metal?.drawableSize ?? CGSize(width:1280,height:720)
-        atria_surface(Int32(max(1,size.width)),Int32(max(1,size.height)),focused ? 1 : 0)
-        metal?.isPaused = !focused
+        let size = renderer?.view.drawableSize ?? CGSize(width: 1280, height: 720)
+        atria_surface(Int32(max(1, size.width)), Int32(max(1, size.height)), focused ? 1 : 0)
+        if focused { session.resume(owner: sessionOwner) }
+        else { session.suspend(owner: sessionOwner) }
+        renderer?.view.isPaused = !focused
         AppleAudio.setActive(focused)
         AppleMovies.focus(focused)
     }
 
     private func showKeyboard() {
-        let alert = UIAlertController(title:nil,message:nil,preferredStyle:.alert)
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .alert)
         alert.addTextField { $0.autocorrectionType = .no; $0.placeholder = "Имя / Імя" }
-        alert.addAction(UIAlertAction(title:"OK",style:.default) { _ in
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
             (alert.textFields?.first?.text ?? "").withCString { atria_text($0) }
         })
-        alert.addAction(UIAlertAction(title:"×",style:.cancel))
-        present(alert,animated:true)
+        alert.addAction(UIAlertAction(title: "×", style: .cancel))
+        present(alert, animated: true)
     }
 
     @objc private func tapGame(_ gesture: UITapGestureRecognizer) {
-        let position = gesture.location(in:metal)
+        guard let metal = renderer?.view else { return }
+        atria_touch_activity(0)
+        let position = gesture.location(in: metal)
         let scaleX = metal.drawableSize.width / metal.bounds.width
         let scaleY = metal.drawableSize.height / metal.bounds.height
         let x = Int32(position.x * scaleX), y = Int32(position.y * scaleY)
-        atria_pointer(x,y,1)
-        atria_pointer(x,y,0)
+        atria_pointer(x, y, 1)
+        atria_pointer(x, y, 0)
     }
 
     private func showError(_ text: String) {
@@ -301,9 +252,19 @@ final class GameController: UIViewController, MTKViewDelegate {
         view.addSubview(errorLabel)
     }
 
-    isolated deinit {
+    /// Releases this view's lease and asynchronously stops the final active host.
+    func stopSession() {
+        active = false
+        startTask?.cancel()
+        startTask = nil
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
-        pixels?.deallocate()
+        observers.removeAll()
+        renderer?.view.isPaused = true
+        if session.stop(owner: sessionOwner) {
+            AppleAudio.setActive(false)
+            AppleMovies.stop()
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 }
 
@@ -334,7 +295,9 @@ final class HoldButton: UIControl {
 
 final class DirectionPad: UIView {
     var changed: ((UInt16)->Void)?
+    var touched: (() -> Void)?
     private let label = UILabel()
+    private var lastBits: UInt16 = 0
     override init(frame:CGRect) {
         super.init(frame:frame)
         backgroundColor = UIColor(white:0.12,alpha:0.6)
@@ -353,15 +316,17 @@ final class DirectionPad: UIView {
         let dx = point.x-bounds.midX, dy = point.y-bounds.midY
         let deadZone = bounds.width*0.12
         var bits: UInt16 = 0
-        if dx < -deadZone { bits |= 4 }
-        if dx > deadZone { bits |= 8 }
-        if dy < -deadZone { bits |= 1 }
-        if dy > deadZone { bits |= 2 }
+        if dx < -deadZone { bits |= PadButton.left }
+        if dx > deadZone { bits |= PadButton.right }
+        if dy < -deadZone { bits |= PadButton.up }
+        if dy > deadZone { bits |= PadButton.down }
+        if bits != lastBits && bits != 0 { touched?() }
+        lastBits = bits
         changed?(bits)
     }
-    override func touchesBegan(_ touches:Set<UITouch>,with event:UIEvent?) { update(touches) }
+    override func touchesBegan(_ touches:Set<UITouch>,with event:UIEvent?) { touched?(); update(touches) }
     override func touchesMoved(_ touches:Set<UITouch>,with event:UIEvent?) { update(touches) }
     override func touchesEnded(_ touches:Set<UITouch>,with event:UIEvent?) { reset() }
     override func touchesCancelled(_ touches:Set<UITouch>,with event:UIEvent?) { reset() }
-    func reset() { changed?(0) }
+    func reset() { lastBits = 0; changed?(0) }
 }

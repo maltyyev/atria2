@@ -16,7 +16,7 @@ public static class SoundEffectTests
             }
         }
 
-        Check(SoundEffectBank.UiAttenuation.SequenceEqual(new int[] { -10000, -1500, -1000, -500, 0 }), "Native five-entry UI attenuation table.");
+        Check(SoundEffectRotation.UiAttenuation.SequenceEqual(new int[] { -10000, -1500, -1000, -500, 0 }), "Shared five-entry UI attenuation table.");
         var voices = Enumerable.Range(0, 8).Select(_ => new Voice()).ToArray();
         using var rotation = new SoundEffectRotation(voices);
         rotation.SetCurrentVolume(-600);
@@ -49,7 +49,7 @@ public static class SoundEffectTests
 
         using var archive = BinderArchive.Open(Path.Combine(resourceRoot, "at2wav.000"));
         int count = 0;
-        foreach (string member in SoundEffectBank.UiMemberNames)
+        foreach (string member in SoundEffectRotation.UiMemberNames)
         {
             int index = archive.FindResource(Encoding.ASCII.GetBytes(member));
             Check(index >= 0, $"Missing native UI effect {member}.");

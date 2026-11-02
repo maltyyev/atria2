@@ -42,7 +42,7 @@ for index in range(entries):
     if section and symbol_type & 0x0E == 0x0E:
         end = data.index(b'\0', strings + name_offset, strings + strings_size)
         defined.add(data[strings + name_offset:end].decode())
-for symbol in ('_atria_start', '_atria_frame', '_atria_pad', '_atria_surface', '_apple_text_create', '_apple_sound_create', '_apple_movie_start', '_RhInitialize', '_RhSetRuntimeInitializationCallback'):
+for symbol in ('_atria_start', '_atria_suspend', '_atria_resume', '_atria_stop', '_atria_wait_stopped', '_atria_frame', '_atria_pad', '_atria_touch_pad', '_atria_touch_activity', '_atria_surface', '_apple_text_create', '_apple_sound_create', '_apple_movie_start', '_RhInitialize', '_RhSetRuntimeInitializationCallback'):
     assert symbol in defined, f'Missing C#/NativeAOT symbol: {symbol}'
 
 import hashlib
@@ -50,6 +50,11 @@ assets = list(app.rglob('manifest.json'))
 assert len(assets) == 1
 root = assets[0].parent
 manifest = json.loads(assets[0].read_text(encoding='utf-8'))
+expected_files = set(manifest) | {'manifest.json'} | {
+    str(Path(relative).with_suffix('.sha256')).replace('\\', '/')
+    for relative in manifest if relative.startswith('movies/') and relative.endswith('.mp4')
+}
+assert {path.relative_to(root).as_posix() for path in root.rglob('*') if path.is_file()} == expected_files, 'Stale or missing bundled resources.'
 for relative, expected in manifest.items():
     with (root / relative).open('rb') as stream:
         assert hashlib.file_digest(stream, 'sha256').hexdigest() == expected, relative

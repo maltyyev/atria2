@@ -1,7 +1,7 @@
 using Atria.Platform.Input;
 using Atria.Game.Dialogue;
 using Atria.Platform;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 
 namespace Atria.Tests.Dialogue;
 

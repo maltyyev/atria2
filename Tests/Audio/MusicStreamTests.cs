@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Atria.Audio;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 
 namespace Atria.Tests.Audio;
 
@@ -171,7 +171,7 @@ public static class MusicStreamTests
 
     private static void CheckBufferOwnership()
     {
-        using var buffer = new Atria.Platform.Win32.NativePcmBuffer(8);
+        using var buffer = new Atria.Platform.Windows.Win32.NativePcmBuffer(8);
         buffer.Bytes.Fill(42);
         if (buffer.Bytes.Length != 8 || buffer.Bytes[7] != 42 || buffer.Pointer == 0)
         {

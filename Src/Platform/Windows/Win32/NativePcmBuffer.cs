@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Atria.Platform.Win32;
+namespace Atria.Platform.Windows.Win32;
 
 // XAudio2 retains sample pointers; managed arrays cannot move while playback owns them.
 internal sealed unsafe class NativePcmBuffer : IDisposable

@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="Src/Atria.Game.csproj" />
+  <Project Path="Core/Atria.Core.csproj" />
+  <Project Path="Core.Tests/Atria.Core.Tests.csproj" />
+  <Project Path="Src/Platform/Windows/Atria.Windows.csproj" />
   <Project Path="Tests/Atria.Tests.csproj" />
 </Solution>

@@ -2,7 +2,6 @@ using Atria.Audio;
 using Atria.Game.Controls;
 using Atria.Game.State;
 using Atria.Platform;
-using Atria.Platform.Win32;
 using Atria.Render;
 using Atria.Render.Codecs;
 using Atria.Resources;
@@ -168,6 +167,10 @@ public sealed class NativeDialogueFrameHost : IDialogueFrameHost
 
     public bool QueryScan(byte scan) => Controls?.LegacyMenu(scan, true) ?? scanInput.Query(scan);
     public bool IsHeld(byte scan) => Controls?.LegacyMenu(scan, false) ?? scanInput.IsHeld(scan);
+    /// <summary>Consumes a legacy world/dungeon scan using the configured movement bindings.</summary>
+    public bool QueryWorldScan(byte scan) => Controls?.WorldInput.QueryLegacyScan(scan) ?? scanInput.Query(scan);
+    /// <summary>Reads held world/dungeon movement while keeping dialogue navigation separate.</summary>
+    public bool IsWorldScanHeld(byte scan) => Controls?.WorldInput.HeldLegacyScan(scan) ?? scanInput.IsHeld(scan);
     public void ClearScanLatch(byte scan) => scanInput.ClearQueryLatch(scan);
     public bool QueryAction(DialogueInputAction action) => QueryScan(action switch
     {

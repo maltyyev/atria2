@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$packages = Join-Path $projectRoot '.packages'
+$packages = if ($env:ATRIA_PACKAGES) { $env:ATRIA_PACKAGES } else { Join-Path $projectRoot '.packages' }
 $version = '10.0.13'
 $env:DOTNET_CLI_HOME = Join-Path $projectRoot '.dotnet-home'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
@@ -12,10 +12,12 @@ try {
     $compiler = Join-Path $packages "runtime.win-x64.microsoft.dotnet.ilcompiler\$version\tools\ilc.exe"
     $references = Join-Path $packages "microsoft.netcore.app.runtime.nativeaot.ios-arm64\$version\runtimes\ios-arm64\lib\net10.0"
     $assembly = Join-Path $PSScriptRoot 'Managed\bin\Release\net10.0\Atria.Ios.dll'
+    $coreAssembly = Join-Path $projectRoot 'Core\bin\Release\net10.0\Atria.Core.dll'
     $objectPath = Join-Path $PSScriptRoot 'Game.ios-arm64.o'
     $responsePath = Join-Path $PSScriptRoot 'ilc-ios.rsp'
     $arguments = @(
         $assembly
+        ('-r:' + $coreAssembly)
         "-o:$objectPath"
         '--targetos:ios'
         '--targetarch:arm64'

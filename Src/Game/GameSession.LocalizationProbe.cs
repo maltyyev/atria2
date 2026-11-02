@@ -1,7 +1,6 @@
 using Atria.Audio;
 using Atria.Game.Dialogue;
 using Atria.Game.Persistence;
-using Atria.Platform.Win32;
 using Atria.Render;
 
 namespace Atria.Game;
@@ -9,17 +8,14 @@ namespace Atria.Game;
 public sealed partial class GameSession
 {
     // Integration harness owns a fresh output directory and only reads the supplied player save.
-    internal static string VerifyLanguageIntegration(string resourceRoot, string musicRoot, string fixture)
+    internal static string VerifyLanguageIntegration(string resourceRoot, string musicRoot, string fixture, GameSessionProbeHostFactory createHost)
     {
         string output = Path.Combine(Path.GetFullPath(Path.Combine(resourceRoot, "..")), "audit", "language-session", Guid.NewGuid().ToString("N"));
         var previous = GameText.Current;
         GameText.Use(new LocalizationCatalog(Path.Combine(AppContext.BaseDirectory, "assets", "localization")));
-        using var window = new NativeWindow("Atria language verification", 2560, 1440);
-        using var presenter = new D3D11Presenter(window.Handle, 2560, 1440);
-        using var audio = new AudioDevice();
-        using var transport = new FileMusicTransport(audio, musicRoot, 0);
-        using var faces = new FaceSpriteSource(Path.Combine(resourceRoot, "face.SPR"));
-        var session = new GameSession(resourceRoot, window, presenter, audio, transport, faces, 60, true, null, output);
+        using var probeHost = createHost(resourceRoot, musicRoot, output, 60, true);
+        var session = probeHost.Session;
+        var window = probeHost.Window;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(session.PersistenceStore.GetSlotPath(0))!);

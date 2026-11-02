@@ -1,6 +1,5 @@
 using Atria.Platform.Input;
 using Atria.Platform;
-using Atria.Platform.Win32;
 using Atria.Render;
 using Atria.Resources;
 
@@ -19,7 +18,9 @@ public sealed class InputRouter : IDisposable
     private const int PadTokenStride = 32;
     private const int DpadDirectionCount = 4;
     private const int QuickChordTokenStart = PadTokenStart + PadCount * PadTokenStride;
-    private const int InputTokenCapacity = 448;
+    private const int VirtualPadTokenStart = 448;
+    private const int VirtualQuickChordTokenStart = VirtualPadTokenStart + PadControlCount;
+    private const int InputTokenCapacity = VirtualQuickChordTokenStart + DpadDirectionCount;
     private const int DpadUp = 10;
     private const int DpadLeft = 13;
     private const int LeftTrigger = 14;
@@ -50,9 +51,27 @@ public sealed class InputRouter : IDisposable
     private readonly bool[] held = new bool[InputTokenCapacity], previous = new bool[InputTokenCapacity], pending = new bool[InputTokenCapacity], blocked = new bool[InputTokenCapacity];
     private readonly long[] repeat = new long[InputTokenCapacity], nextProbe = new long[PadCount], rumbleEnd = new long[PadCount];
     private readonly PadSample[] samples = new PadSample[PadCount];
+    private readonly PadSample[] axisActivityBaselines = new PadSample[PadCount];
+    private readonly bool[] connectedBefore = new bool[PadCount];
     private bool wasFocused = true;
+    private long externalActivitySequence;
+    private int lastWindowMouseX = int.MinValue, lastWindowMouseY = int.MinValue;
+    private (int Width, int Height) lastWindowSize;
+    private bool hasActivityCandidate;
+    private bool hasAuthoritativeActivity;
+    private PadSample previousVirtualPad;
+    private PadSample virtualAxisActivityBaseline;
+    private InputActivity activityCandidate;
     private readonly int[] contextVersions = new int[2];
     public int ContextVersion(int player) => contextVersions[player];
+    /// <summary>Gets a non-allocating menu action view over the shared input state.</summary>
+    public SceneInput MenuInput => new(this, InputScene.Menu);
+    /// <summary>Gets a non-allocating world action view over the shared input state.</summary>
+    public SceneInput WorldInput => new(this, InputScene.World);
+    /// <summary>Gets a non-allocating town action view over the shared input state.</summary>
+    public SceneInput TownInput => new(this, InputScene.Town);
+    /// <summary>Gets a non-allocating combat action view over the shared input state.</summary>
+    public CombatInput CombatInput => new(this);
     private int wheel;
     public int TakeWheel()
     {
@@ -69,15 +88,19 @@ public sealed class InputRouter : IDisposable
     {
         get; set;
     }
-    public bool LastWasPad
-    {
-        get; private set;
-    }
+    /// <summary>Gets the source that most recently produced meaningful user activity.</summary>
+    public InputActivity CurrentInputSource { get; private set; } = new(0, InputSourceKind.Keyboard, 0);
+    /// <summary>Raised once when meaningful activity changes the active input source.</summary>
+    public event Action<InputActivity>? InputSourceChanged;
+    /// <summary>Compatibility view for older callers that only distinguish gamepads.</summary>
+    public bool LastWasPad => CurrentInputSource.Kind == InputSourceKind.Gamepad;
+    /// <summary>Gets the profile-menu binding appropriate to the latest active source.</summary>
+    public string ProfileMenuHint => CurrentInputSource.Kind is InputSourceKind.Gamepad or InputSourceKind.Touch
+        ? ControlNames.Binding(InputBinding.Pad(3)) : ControlNames.Binding(InputBinding.Key(0x3c));
+    /// <summary>Gets the profile rename binding appropriate to the latest active source.</summary>
+    public string ProfileRenameHint => CurrentInputSource.Kind is InputSourceKind.Gamepad or InputSourceKind.Touch
+        ? ControlNames.Binding(InputBinding.Pad(2)) : ControlNames.Binding(InputBinding.Key(0x3d));
     public bool InBattle
-    {
-        get; set;
-    }
-    public bool ExplorationMovement
     {
         get; set;
     }
@@ -102,10 +125,27 @@ public sealed class InputRouter : IDisposable
     {
         for (int slot = 0; slot < PadCount; slot++)
             if (Take(PadTokenStart + slot * PadTokenStride + button, repeat)) return true;
-        return false;
+        return Take(VirtualPadTokenStart + button, repeat);
     }
+    /// <summary>Samples the shared window, physical devices, optional virtual pad, and activity source.</summary>
     public void Poll(IGameWindow window)
     {
+        bool mouseMoved = false;
+        if (window.Focused)
+        {
+            var clientSize = window.ClientSize;
+            mouseMoved = lastWindowMouseX != int.MinValue && clientSize == lastWindowSize && (window.MouseX != lastWindowMouseX || window.MouseY != lastWindowMouseY)
+                || window.MouseWheelDelta != 0;
+            lastWindowMouseX = window.MouseX;
+            lastWindowMouseY = window.MouseY;
+            lastWindowSize = clientSize;
+        }
+        else
+        {
+            lastWindowMouseX = lastWindowMouseY = int.MinValue;
+        }
+        InputActivity externalActivity = window is IInputActivitySource activitySource ? activitySource.LastInputActivity : default;
+
         var size = window.ClientSize;
         var v = Viewport.Fit(size.Width, size.Height);
         if (v.TryMapInput(window.MouseX, window.MouseY, out int x, out int y))
@@ -124,23 +164,53 @@ public sealed class InputRouter : IDisposable
             [window.LeftButton, window.RightButton, window.MiddleButton],
             window.Focused,
             Environment.TickCount64,
-            window.MousePressed
+            window.MousePressed,
+            window is IVirtualGamepadSource virtualPad ? virtualPad.ReadVirtualGamepad() : default,
+            mouseMoved,
+            externalActivity
         );
         if (window.Focused)
         {
             wheel += window.MouseWheelDelta;
         }
+
     }
 
+    /// <summary>Samples keyboard, mouse, physical pads, and an optional virtual touch pad at one timestamp.</summary>
     public void Poll(
         ReadOnlySpan<bool> keys,
         ReadOnlySpan<bool> pressed,
         ReadOnlySpan<bool> mouse,
         bool focused,
         long now,
-        ReadOnlySpan<bool> mousePressed = default
-    )
+        ReadOnlySpan<bool> mousePressed = default,
+        PadSample virtualPad = default
+    ) => Poll(keys, pressed, mouse, focused, now, mousePressed, virtualPad, false, default);
+
+    private void Poll(
+        ReadOnlySpan<bool> keys,
+        ReadOnlySpan<bool> pressed,
+        ReadOnlySpan<bool> mouse,
+        bool focused,
+        long now,
+        ReadOnlySpan<bool> mousePressed,
+        PadSample virtualPad,
+        bool mouseMoved,
+        InputActivity externalActivity)
     {
+        hasActivityCandidate = false;
+        hasAuthoritativeActivity = false;
+        bool resumed = !wasFocused && focused;
+        if (focused && mouseMoved) RecordInputActivity(InputSourceKind.Mouse, 0);
+        if (externalActivity.Sequence > externalActivitySequence)
+        {
+            externalActivitySequence = externalActivity.Sequence;
+            if (focused && !resumed)
+            {
+                activityCandidate = externalActivity;
+                hasActivityCandidate = hasAuthoritativeActivity = true;
+            }
+        }
         Now = now;
         Array.Copy(held, previous, held.Length);
         Array.Clear(held);
@@ -182,6 +252,14 @@ public sealed class InputRouter : IDisposable
             var s = pads.Read(slot);
             samples[slot] = s;
             nextProbe[slot] = now + ReconnectPollMilliseconds;
+            bool firstConnection = s.Connected && !connectedBefore[slot];
+            if (s.Connected) connectedBefore[slot] = true;
+            bool canReportActivity = focused && !resumed && s.Connected && (before.Connected || firstConnection);
+            bool axisActivity = false;
+            if (canReportActivity) axisActivity = HasIntentionalAxisMovement(ref axisActivityBaselines[slot], s);
+            else axisActivityBaselines[slot] = s;
+            if (canReportActivity && (HasGamepadActivity(before, s) || axisActivity))
+                RecordInputActivity(InputSourceKind.Gamepad, slot);
             if (before.Connected && !s.Connected && Profile.Players.Any(p => p.PadSlot == slot))
             {
                 FocusPauseRequested = true;
@@ -194,24 +272,18 @@ public sealed class InputRouter : IDisposable
                 continue;
             }
 
-            int at = PadTokenStart + slot * PadTokenStride;
-            for (int b = 0; b < buttonMasks.Length; b++)
-            {
-                held[at + b] = ((GamepadButtons)s.Buttons & buttonMasks[b]) != 0;
-            }
-
-            held[at + LeftTrigger] = s.LeftTrigger >= Profile.TriggerThreshold;
-            held[at + RightTrigger] = s.RightTrigger >= Profile.TriggerThreshold;
-            for (int d = 0; d < DpadDirectionCount; d++)
-            {
-                held[QuickChordTokenStart + slot * DpadDirectionCount + d] = held[at + RightTrigger] && held[at + DpadUp + d];
-            }
-
-            Axis(at + LeftStickLeft, s.LX, false);
-            Axis(at + LeftStickUp, s.LY, true);
-            Axis(at + RightStickLeft, s.RX, false);
-            Axis(at + RightStickUp, s.RY, true);
+            PollPadSample(PadTokenStart + slot * PadTokenStride, QuickChordTokenStart + slot * DpadDirectionCount, s);
         }
+
+        if (focused && virtualPad.Connected)
+        {
+            if (!previousVirtualPad.Connected || resumed) virtualAxisActivityBaseline = virtualPad;
+            if (previousVirtualPad.Connected && !resumed && HasIntentionalAxisMovement(ref virtualAxisActivityBaseline, virtualPad))
+                RecordInputActivity(InputSourceKind.Touch, hasActivityCandidate && activityCandidate.Kind == InputSourceKind.Touch ? activityCandidate.Identity : 0);
+            PollPadSample(VirtualPadTokenStart, VirtualQuickChordTokenStart, virtualPad);
+        }
+        else virtualAxisActivityBaseline = virtualPad;
+        previousVirtualPad = virtualPad;
 
         for (int i = 0; i < held.Length; i++)
         {
@@ -227,11 +299,16 @@ public sealed class InputRouter : IDisposable
             }
 
             bool tap = focused && (i < KeyCount && pressed[i] || i >= MouseTokenStart && i < KeyboardMouseTokenEnd && mousePressed.Length == MouseButtonCount && mousePressed[i - MouseTokenStart]);
-            if (held[i] && !previous[i] || tap)
+            bool edge = held[i] && !previous[i] || tap;
+            if (edge)
             {
                 pending[i] = true;
                 repeat[i] = now + InitialRepeatMilliseconds;
-                LastWasPad = i >= PadTokenStart;
+            }
+
+            if (edge && !resumed)
+            {
+                ReportTokenSource(i);
             }
 
             if (!held[i])
@@ -239,6 +316,81 @@ public sealed class InputRouter : IDisposable
                 repeat[i] = 0;
             }
         }
+
+        if (hasActivityCandidate)
+            SetInputSource(activityCandidate.Kind, activityCandidate.Identity);
+    }
+
+    private void ReportTokenSource(int token)
+    {
+        if ((uint)token < KeyCount)
+            RecordInputActivity(InputSourceKind.Keyboard, 0);
+        else if (token < KeyboardMouseTokenEnd)
+            RecordInputActivity(InputSourceKind.Mouse, 0);
+        else if (token >= VirtualPadTokenStart && token < InputTokenCapacity)
+            RecordInputActivity(InputSourceKind.Touch, hasActivityCandidate && activityCandidate.Kind == InputSourceKind.Touch ? activityCandidate.Identity : 0);
+    }
+
+    private void RecordInputActivity(InputSourceKind kind, int identity)
+    {
+        if (hasAuthoritativeActivity) return;
+        // shortcut: same-poll native sources lack per-device timestamps, use timestamped events if exact chronology is needed.
+        int priority = kind switch { InputSourceKind.Touch => 3, InputSourceKind.Gamepad => 2, InputSourceKind.Mouse => 1, _ => 0 };
+        int currentPriority = activityCandidate.Kind switch { InputSourceKind.Touch => 3, InputSourceKind.Gamepad => 2, InputSourceKind.Mouse => 1, _ => 0 };
+        if (!hasActivityCandidate || priority > currentPriority || priority == currentPriority && identity < activityCandidate.Identity)
+        {
+            activityCandidate = new(0, kind, identity);
+            hasActivityCandidate = true;
+        }
+    }
+
+    private bool HasIntentionalAxisMovement(ref PadSample baseline, PadSample after)
+    {
+        int minimum = Math.Max(AxisHysteresis, Profile.DeadZone / 4);
+        bool active = MeaningfulAxisDelta(baseline.LX, after.LX, minimum) || MeaningfulAxisDelta(baseline.LY, after.LY, minimum)
+            || MeaningfulAxisDelta(baseline.RX, after.RX, minimum) || MeaningfulAxisDelta(baseline.RY, after.RY, minimum);
+        baseline = active ? after : baseline with
+        {
+            LX = Math.Abs((int)after.LX) < Profile.DeadZone ? after.LX : baseline.LX,
+            LY = Math.Abs((int)after.LY) < Profile.DeadZone ? after.LY : baseline.LY,
+            RX = Math.Abs((int)after.RX) < Profile.DeadZone ? after.RX : baseline.RX,
+            RY = Math.Abs((int)after.RY) < Profile.DeadZone ? after.RY : baseline.RY
+        };
+        return active;
+    }
+
+    private bool MeaningfulAxisDelta(short before, short after, int minimum) =>
+        Math.Abs((int)after) >= Profile.DeadZone &&
+        (Math.Abs((int)before) < Profile.DeadZone || Math.Abs((int)after - before) >= minimum);
+
+    private bool HasGamepadActivity(PadSample before, PadSample after)
+    {
+        for (int i = 0; i < buttonMasks.Length; i++)
+            if (((GamepadButtons)after.Buttons & buttonMasks[i]) != 0 && ((GamepadButtons)before.Buttons & buttonMasks[i]) == 0)
+                return true;
+        return after.LeftTrigger >= Profile.TriggerThreshold && before.LeftTrigger < Profile.TriggerThreshold
+            || after.RightTrigger >= Profile.TriggerThreshold && before.RightTrigger < Profile.TriggerThreshold;
+    }
+
+    private void SetInputSource(InputSourceKind kind, int identity)
+    {
+        if (CurrentInputSource.Kind == kind && CurrentInputSource.Identity == identity) return;
+        CurrentInputSource = new(CurrentInputSource.Sequence + 1, kind, identity);
+        InputSourceChanged?.Invoke(CurrentInputSource);
+    }
+
+    private void PollPadSample(int tokenStart, int quickChordStart, PadSample sample)
+    {
+        for (int b = 0; b < buttonMasks.Length; b++)
+            held[tokenStart + b] = ((GamepadButtons)sample.Buttons & buttonMasks[b]) != 0;
+        held[tokenStart + LeftTrigger] = sample.LeftTrigger >= Profile.TriggerThreshold;
+        held[tokenStart + RightTrigger] = sample.RightTrigger >= Profile.TriggerThreshold;
+        for (int d = 0; d < DpadDirectionCount; d++)
+            held[quickChordStart + d] = held[tokenStart + RightTrigger] && held[tokenStart + DpadUp + d];
+        Axis(tokenStart + LeftStickLeft, sample.LX, false);
+        Axis(tokenStart + LeftStickUp, sample.LY, true);
+        Axis(tokenStart + RightStickLeft, sample.RX, false);
+        Axis(tokenStart + RightStickUp, sample.RY, true);
     }
 
     private void Axis(int at, int value, bool positiveFirst)
@@ -266,7 +418,8 @@ public sealed class InputRouter : IDisposable
         foreach (var b in row)
         {
             int t = Token(player, b);
-            if (t >= 0 && held[t] && !blocked[t])
+            if (t >= 0 && held[t] && !blocked[t]
+                || player == 0 && b.Kind == InputKind.Pad && held[VirtualPadTokenStart + b.Code] && !blocked[VirtualPadTokenStart + b.Code])
             {
                 return true;
             }
@@ -295,7 +448,7 @@ public sealed class InputRouter : IDisposable
             int token = Token(player, b);
             if (b.Kind != InputKind.Pad || b.Code is < DpadUp or > DpadLeft)
             {
-                if (Take(token))
+                if (Take(token) || player == 0 && b.Kind == InputKind.Pad && Take(VirtualPadTokenStart + b.Code))
                 {
                     return true;
                 }
@@ -303,17 +456,21 @@ public sealed class InputRouter : IDisposable
                 continue;
             }
 
-            if (token < 0)
+            if (token < 0 && player != 0)
             {
                 continue;
             }
 
             int chord = QuickChordTokenStart + Profile.Players[player].PadSlot * DpadDirectionCount + b.Code - DpadUp;
             int rt = PadTokenStart + Profile.Players[player].PadSlot * PadTokenStride + RightTrigger;
+            int virtualDirection = b.Code - DpadUp;
+            int virtualChord = VirtualQuickChordTokenStart + virtualDirection;
+            int virtualTrigger = VirtualPadTokenStart + RightTrigger;
             if (assigning)
             {
-                Take(chord);
-                if (Take(token))
+                if (token >= 0) Take(chord);
+                if (player == 0) Take(virtualChord);
+                if (Take(token) || player == 0 && Take(VirtualPadTokenStart + b.Code))
                 {
                     return true;
                 }
@@ -321,10 +478,21 @@ public sealed class InputRouter : IDisposable
                 continue;
             }
 
-            Take(token);
-            if (Take(chord))
+            if (token >= 0)
             {
-                Take(rt);
+                Take(token);
+                if (Take(chord))
+                {
+                    Take(rt);
+                    return true;
+                }
+            }
+
+            if (player == 0)
+            {
+                Take(VirtualPadTokenStart + b.Code);
+                if (!Take(virtualChord)) continue;
+                Take(virtualTrigger);
                 return true;
             }
         }
@@ -338,7 +506,8 @@ public sealed class InputRouter : IDisposable
         foreach (var b in row)
         {
             int t = Token(player, b);
-            if (Take(t, allowRepeat))
+            if (Take(t, allowRepeat)
+                || player == 0 && b.Kind == InputKind.Pad && Take(VirtualPadTokenStart + b.Code, allowRepeat))
             {
                 return true;
             }
@@ -386,7 +555,8 @@ public sealed class InputRouter : IDisposable
             _ => -1
         };
         int slot = Profile.Players[player].PadSlot;
-        return stick >= 0 && slot >= 0 && Take(PadTokenStart + slot * PadTokenStride + stick, repeat);
+        return stick >= 0 && (slot >= 0 && Take(PadTokenStart + slot * PadTokenStride + stick, repeat)
+            || player == 0 && Take(VirtualPadTokenStart + stick, repeat));
     }
 
     public bool Menu(GameAction action, bool repeat = false)
@@ -432,6 +602,8 @@ public sealed class InputRouter : IDisposable
                     return true;
                 }
             }
+
+            if (Take(VirtualPadTokenStart + stick, repeat)) return true;
         }
 
         return false;
@@ -445,11 +617,6 @@ public sealed class InputRouter : IDisposable
             {
                 if (scan == legacy[p, a])
                 {
-                    if (ExplorationMovement && a < 4)
-                    {
-                        return query ? Press(p, (GameAction)a, true) : Held(p, (GameAction)a);
-                    }
-
                     GameAction action = a switch
                     {
                         0 => GameAction.MenuLeft,
@@ -472,6 +639,27 @@ public sealed class InputRouter : IDisposable
         }
 
         return query ? Take(scan) : RawHeld(scan);
+    }
+
+    internal bool QuerySceneScan(InputScene scene, byte scan) => SceneScan(scene, scan, true);
+    internal bool HeldSceneScan(InputScene scene, byte scan) => SceneScan(scene, scan, false);
+
+    private bool SceneScan(InputScene scene, byte scan, bool query)
+    {
+        if (scene == InputScene.World)
+        {
+            for (int player = 0; player < 2; player++)
+            {
+                for (int direction = 0; direction < 4; direction++)
+                {
+                    if (scan != legacy[player, direction]) continue;
+                    GameAction movement = (GameAction)direction;
+                    return query ? Press(player, movement, true) : Held(player, movement);
+                }
+            }
+        }
+
+        return LegacyMenu(scan, query);
     }
 
     public void Clear()
@@ -522,22 +710,46 @@ public sealed class InputRouter : IDisposable
                 blocked[t] = held[t];
             }
         }
+
+        if (player == 0)
+        {
+            for (int i = VirtualPadTokenStart; i < InputTokenCapacity; i++)
+            {
+                pending[i] = false;
+                blocked[i] = held[i];
+            }
+        }
     }
 
     public InputBinding Capture(int player, InputKind kind, int? assignedPad = null)
     {
         int pad = assignedPad ?? Profile.Players[player].PadSlot;
-        if (kind == InputKind.Pad && pad < 0)
+        if (kind == InputKind.Pad && pad < 0 && player != 0)
         {
             return default;
         }
 
-        int start = kind == InputKind.Pad ? PadTokenStart + pad * PadTokenStride : 0, end = kind == InputKind.Pad ? start + PadControlCount : KeyboardMouseTokenEnd;
-        for (int i = start; i < end; i++)
+        int start = kind == InputKind.Pad ? PadTokenStart + pad * PadTokenStride : 0;
+        int end = kind == InputKind.Pad ? start + PadControlCount : KeyboardMouseTokenEnd;
+        if (kind != InputKind.Pad || pad >= 0)
         {
-            if (Take(i))
+            for (int i = start; i < end; i++)
             {
-                return i >= PadTokenStart ? new(InputKind.Pad, i - start) : i >= MouseTokenStart ? new(InputKind.Mouse, i - MouseTokenStart) : new(InputKind.Key, i);
+                if (Take(i))
+                {
+                    return i >= PadTokenStart ? new(InputKind.Pad, i - start) : i >= MouseTokenStart ? new(InputKind.Mouse, i - MouseTokenStart) : new(InputKind.Key, i);
+                }
+            }
+        }
+
+        if (kind == InputKind.Pad && player == 0)
+        {
+            for (int i = VirtualPadTokenStart; i < VirtualPadTokenStart + PadControlCount; i++)
+            {
+                if (Take(i))
+                {
+                    return new(InputKind.Pad, i - VirtualPadTokenStart);
+                }
             }
         }
 
@@ -547,8 +759,26 @@ public sealed class InputRouter : IDisposable
     public string Hint(int player, GameAction a)
     {
         var row = Profile.Players[player].Bindings[(int)a];
-        var binding = LastWasPad ? row.FirstOrDefault(b => b.Kind == InputKind.Pad) : row.FirstOrDefault(b => b.Kind is InputKind.Key or InputKind.Mouse);
+        InputKind preferred = CurrentInputSource.Kind switch
+        {
+            InputSourceKind.Mouse => InputKind.Mouse,
+            InputSourceKind.Gamepad or InputSourceKind.Touch => InputKind.Pad,
+            _ => InputKind.Key
+        };
+        var binding = row.FirstOrDefault(b => b.Kind == preferred);
+        if (binding.Kind == InputKind.None)
+            binding = row.FirstOrDefault(b => b.Kind is InputKind.Key or InputKind.Mouse or InputKind.Pad);
         return a is >= GameAction.Quick1 and <= GameAction.Quick4 ? QuickBindingHint(binding) : binding.ToString();
+    }
+
+    /// <summary>Gets the button used to assign a quick slot, without its execution chord.</summary>
+    public string QuickAssignHint(int player, int slot)
+    {
+        var row = Profile.Players[player].Bindings[(int)GameAction.Quick1 + slot];
+        InputKind preferred = CurrentInputSource.Kind is InputSourceKind.Gamepad or InputSourceKind.Touch ? InputKind.Pad : InputKind.Key;
+        var binding = row.FirstOrDefault(b => b.Kind == preferred);
+        if (binding.Kind == InputKind.None) binding = row.FirstOrDefault(b => b.Kind is InputKind.Key or InputKind.Pad or InputKind.Mouse);
+        return binding.ToString();
     }
 
     public void Rumble(int player)

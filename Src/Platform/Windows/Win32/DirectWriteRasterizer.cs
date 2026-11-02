@@ -1,9 +1,9 @@
 using Atria.Render.UI;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static Atria.Platform.NativeCom;
+using static Atria.Platform.Windows.Win32.NativeCom;
 
-namespace Atria.Platform.Win32;
+namespace Atria.Platform.Windows.Win32;
 
 
 
@@ -12,7 +12,7 @@ public sealed unsafe partial class DirectWriteRasterizer : Atria.Render.UI.IText
 {
     private const int NoInterface = unchecked((int)0x80004002);
     private const int NotImplemented = unchecked((int)0x80004001);
-    private const int Padding = 4;
+    private const int Padding = TextMask.Padding;
     private const int MaximumLayoutWidth = 4096;
     private const int MaximumLayoutHeight = 1024;
     private const uint FontWeightNormal = 400, FontWeightBold = 700, FontStyleNormal = 0, FontStretchNormal = 5;
@@ -107,7 +107,7 @@ public sealed unsafe partial class DirectWriteRasterizer : Atria.Render.UI.IText
                 }
             }
 
-            return new(width, height, advance, coverage, renderer.MissingGlyphs, (int)metrics.LineCount);
+            return new(width, height, advance, coverage, renderer.MissingGlyphs, (int)metrics.LineCount, -Padding, -Padding);
         }
         finally
         {
@@ -117,7 +117,7 @@ public sealed unsafe partial class DirectWriteRasterizer : Atria.Render.UI.IText
         }
     }
 
-    public static int MaskPadding => Padding;
+    public static int MaskPadding => TextMask.Padding;
 
     public void Dispose()
     {

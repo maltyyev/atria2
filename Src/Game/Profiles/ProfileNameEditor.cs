@@ -1,5 +1,6 @@
 using System.Globalization;
 using Atria.Game.Controls;
+using Atria.Platform.Input;
 using Atria.Render.Codecs;
 using Atria.Render.UI;
 using Atria.Resources;
@@ -88,7 +89,7 @@ internal sealed class ProfileNameEditor
         }
     }
 
-    public void Draw(Span<ushort> pixels, SpriteFile tiles, BitmapFont font)
+    public void Draw(Span<ushort> pixels, SpriteFile tiles, BitmapFont font, InputRouter? input = null)
     {
         for (int y = 24; y < 452; y++)
             pixels.Slice(y * 640 + 24, 592).Clear();
@@ -110,7 +111,12 @@ internal sealed class ProfileNameEditor
             ControlPanel.Text(font, pixels, label, x + 3, y + 9, 0xffff, 6);
         }
         ControlPanel.Text(font, pixels, Error, 48, 355, 0xffe0, 68);
-        ControlPanel.Text(font, pixels, GameText.Get("ui.profiles.typingHelp"), 48, 390, 0xbdf7, 68);
-        ControlPanel.Text(font, pixels, GameText.Get("ui.profiles.padTypingHelp"), 48, 416, 0xbdf7, 68);
+        string help = input?.CurrentInputSource.Kind switch
+        {
+            InputSourceKind.Gamepad or InputSourceKind.Touch => GameText.Get("ui.profiles.padTypingHelp"),
+            InputSourceKind.Mouse => GameText.Get("ui.profiles.mouseTypingHelp"),
+            _ => GameText.Get("ui.profiles.typingHelp")
+        };
+        ControlPanel.Text(font, pixels, help, 48, 390, 0xbdf7, 68);
     }
 }

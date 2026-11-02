@@ -15,7 +15,7 @@ public static class SettingsAudio
     };
     public static int EffectsHundredthDecibels(int level)
     {
-        var attenuation = Atria.Audio.SoundEffectBank.UiAttenuation;
+        var attenuation = Atria.Audio.SoundEffectRotation.UiAttenuation;
         if ((uint)level >= (uint)attenuation.Length)
         {
             throw new ArgumentOutOfRangeException(nameof(level));

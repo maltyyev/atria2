@@ -1,7 +1,6 @@
-using Atria.Platform.Win32;
-
 namespace Atria.Render.UI;
 
+/// <summary>Platform-owned shaping that returns a platform-neutral coverage mask.</summary>
 public interface ITextRasterizer : IDisposable
 {
     TextMask Render(string text, float size, string family, bool bold, int wrapWidth);

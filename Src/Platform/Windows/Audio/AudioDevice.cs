@@ -1,7 +1,9 @@
-using Atria.Platform.Win32;
-using static Atria.Platform.NativeCom;
+using Atria.Platform.Windows.Win32;
+using static Atria.Platform.Windows.Win32.NativeCom;
 
-namespace Atria.Audio;
+using Atria.Audio;
+
+namespace Atria.Platform.Windows.Audio;
 
 /// <summary>Native XAudio2 ownership; instantiate/dispose on the same thread.</summary>
 public sealed class AudioDevice : IGameAudio, IDisposable

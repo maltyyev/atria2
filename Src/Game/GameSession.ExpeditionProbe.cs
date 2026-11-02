@@ -6,7 +6,6 @@ using Atria.Game.Navigation;
 using Atria.Game.Persistence;
 using Atria.Game.State;
 using Atria.Localization;
-using Atria.Platform.Win32;
 using Atria.Render;
 using Atria.Resources;
 
@@ -14,15 +13,12 @@ namespace Atria.Game;
 
 public sealed partial class GameSession
 {
-    internal static string VerifyExpedition(string root, string musicRoot, string fixture, Action<string, ushort[]> capture)
+    internal static string VerifyExpedition(string root, string musicRoot, string fixture, Action<string, ushort[]> capture, GameSessionProbeHostFactory createHost)
     {
         string output = Path.GetFullPath(Path.Combine(root, "..", "audit", "expedition-0170", Guid.NewGuid().ToString("N")));
-        using var window = new NativeWindow("Atria expedition verification", 2560, 1440);
-        using var presenter = new D3D11Presenter(window.Handle, 2560, 1440);
-        using var audio = new AudioDevice();
-        using var transport = new FileMusicTransport(audio, musicRoot, 0);
-        using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
-        var session = new GameSession(root, window, presenter, audio, transport, faces, 90, true, null, output);
+        using var probeHost = createHost(root, musicRoot, output, 90, true);
+        var session = probeHost.Session;
+        var window = probeHost.Window;
         var previousLanguage = GameText.Current;
         try
         {

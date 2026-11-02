@@ -1,4 +1,4 @@
-namespace Atria.Platform;
+namespace Atria.Platform.Windows.Win32;
 
 // ABI slots are grouped by their declaring native interface. Do not renumber.
 internal static class ComSlots

@@ -1,7 +1,7 @@
 using Atria.Game.Controls;
 using Atria.Game.Settings;
 using Atria.Platform;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 using Atria.Render;
 using Atria.Resources;
 
