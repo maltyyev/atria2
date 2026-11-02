@@ -47,6 +47,7 @@ public static class UnicodeTextTests
         UnicodeText.Draw(tight, centeredPixels, 50, 50, 50, centered.X, centered.Y, 0xffff);
         Check(centeredPixels[29 * 50 + 19] == 0xffff && centeredPixels.Count(p => p == 0xffff) == 1,
             "Tight masks with positive and negative source bearings center visible ink on the plaque");
+        CheckMainMenuMaskCacheInvalidation();
 
         var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(resources, "ENG1.FNT")), true);
         ushort[] original = new ushort[640 * 480], modern = new ushort[640 * 480];
@@ -77,6 +78,36 @@ public static class UnicodeTextTests
             }
         }
         return "Unicode: native shaping/fallback, top-down masks, grapheme fitting, wrapping, clipping, cache, Russian pixel parity and 48 menu frames passed.";
+    }
+
+    private static void CheckMainMenuMaskCacheInvalidation()
+    {
+        const string text = "menu rasterizer generation";
+        var first = new CountingRasterizer(96);
+        UnicodeText.UseRasterizer(first);
+        ushort[] pixels = new ushort[80 * 40];
+        MainMenuArtwork.DrawCentered(text, pixels, 80, 40, 80, new(5, 5, 75, 35), 20, 0xffff);
+        Check(first.RenderCount == 1, "Main menu caches a label for the current text backend");
+
+        var second = new CountingRasterizer(255);
+        UnicodeText.UseRasterizer(second);
+        Array.Clear(pixels);
+        MainMenuArtwork.DrawCentered(text, pixels, 80, 40, 80, new(5, 5, 75, 35), 20, 0xffff);
+        Check(second.RenderCount == 1, "Main menu label cache is rebuilt after text backend replacement");
+        UnicodeText.UseRasterizer(new DirectWriteRasterizer());
+    }
+
+    private sealed class CountingRasterizer(byte coverage) : ITextRasterizer
+    {
+        public int RenderCount { get; private set; }
+
+        public TextMask Render(string text, float size, string family, bool bold, int wrapWidth)
+        {
+            RenderCount++;
+            return new(8, 8, 8, Enumerable.Repeat(coverage, 64).ToArray(), 0, 1);
+        }
+
+        public void Dispose() { }
     }
 
     private static void CheckMenuBounds()

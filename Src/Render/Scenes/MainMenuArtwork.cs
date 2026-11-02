@@ -9,6 +9,7 @@ public static class MainMenuArtwork
     private const string LabelFont = "Palatino Linotype";
     private static readonly string[] keys = ["ui.mainMenu.new", "ui.mainMenu.load", "ui.mainMenu.save", "ui.mainMenu.quit", "ui.mainMenu.credits", "ui.mainMenu.settings"];
     private static readonly Dictionary<(string Text, int Width, int Height, float Size), TextMask> labels = new();
+    private static long labelsRasterizerGeneration = -1;
     private const ushort Gold = 0xe653, SelectedGold = 0xff79, SelectedBorder = 0xfe4b, DisabledBronze = 0x8bc9;
 
     public static ushort[] LoadNative(string assetRoot)
@@ -59,6 +60,13 @@ public static class MainMenuArtwork
         TextMask mask;
         lock (labels)
         {
+            long generation = UnicodeText.RasterizerGeneration;
+            if (labelsRasterizerGeneration != generation)
+            {
+                labels.Clear();
+                labelsRasterizerGeneration = generation;
+            }
+
             var key = (text, maximumWidth, maximumHeight, size);
             if (!labels.TryGetValue(key, out mask!))
             {

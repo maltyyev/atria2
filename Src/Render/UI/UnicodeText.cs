@@ -10,6 +10,13 @@ public static class UnicodeText
     private static readonly object sync = new();
     private static readonly Dictionary<(string Text, float Size, string Family, bool Bold, int Wrap), TextMask> masks = new();
     private static ITextRasterizer? rasterizer;
+    private static long rasterizerGeneration;
+
+    /// <summary>Identifies the active text backend for dependent renderer caches.</summary>
+    internal static long RasterizerGeneration
+    {
+        get { lock (sync) return rasterizerGeneration; }
+    }
 
     /// <summary>Replaces the required platform text backend and drops masks made by its predecessor.</summary>
     public static void UseRasterizer(ITextRasterizer replacement)
@@ -23,6 +30,7 @@ public static class UnicodeText
             }
             var previous = rasterizer;
             rasterizer = replacement;
+            rasterizerGeneration++;
             masks.Clear();
             cacheBytes = 0;
             previous?.Dispose();
@@ -41,6 +49,7 @@ public static class UnicodeText
             }
 
             rasterizer = null;
+            rasterizerGeneration++;
             masks.Clear();
             cacheBytes = 0;
             owner.Dispose();
