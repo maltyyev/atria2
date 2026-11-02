@@ -36,8 +36,8 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
     {
         this.input = input;
         hintPlayer = player < 0 ? 0 : player;
-        SceneInput menuInput = input.MenuInput;
-        bool Menu(GameAction action, bool repeat = false) => player < 0 ? menuInput.Menu(action, repeat) : menuInput.PlayerMenu(player, action, repeat);
+        MenuInputView menuInput = input.MenuInput;
+        bool Menu(MenuAction action, bool repeat = false) => player < 0 ? menuInput.Menu(action, repeat) : menuInput.PlayerMenu(player, action, repeat);
         void Clear()
         {
             if (player < 0)
@@ -52,16 +52,16 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
 
         if (rows.Count == 0)
         {
-            return back && menuInput.Menu(GameAction.Back);
+            return back && menuInput.Menu(MenuAction.Back);
         }
 
         Selection = Math.Clamp(Selection, 0, rows.Count - 1);
-        if (Menu(GameAction.MenuUp, true))
+        if (Menu(MenuAction.Up, true))
         {
             Selection = Math.Max(0, Selection - 1);
         }
 
-        if (Menu(GameAction.MenuDown, true))
+        if (Menu(MenuAction.Down, true))
         {
             Selection = Math.Min(rows.Count - 1, Selection + 1);
         }
@@ -96,11 +96,11 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
             Scroll = Selection - RowsPerPage + 1;
         }
 
-        if (Menu(GameAction.MenuLeft, true))
+        if (Menu(MenuAction.Left, true))
         {
             rows[Selection].Adjust?.Invoke(-1);
         }
-        else if (Menu(GameAction.MenuRight, true))
+        else if (Menu(MenuAction.Right, true))
         {
             rows[Selection].Adjust?.Invoke(1);
         }
@@ -131,7 +131,7 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
 
             Clear();
         }
-        else if (Menu(GameAction.Confirm))
+        else if (Menu(MenuAction.Confirm))
         {
             if (rows[Selection].Activate is { } activate)
             {
@@ -145,7 +145,7 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
             Clear();
         }
 
-        return back && Menu(GameAction.Back);
+        return back && Menu(MenuAction.Back);
     }
 
     public void Draw(Span<ushort> pixels, string title, IReadOnlyList<ControlRow> rows, string footer, string notice = "", SpriteFile? icons = null)

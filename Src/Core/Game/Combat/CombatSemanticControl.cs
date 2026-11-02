@@ -170,8 +170,8 @@ public static class CombatSemanticControl
     /// <summary>Reads the eight semantic combat directions from the combat-scoped action view.</summary>
     public static int Direction(CombatInput input, int player, byte facing)
     {
-        int x = (input.Held(player, GameAction.Right) ? 1 : 0) - (input.Held(player, GameAction.Left) ? 1 : 0);
-        int y = (input.Held(player, GameAction.Up) ? 1 : 0) - (input.Held(player, GameAction.Down) ? 1 : 0);
+        int x = (input.Held(player, CombatAction.Right) ? 1 : 0) - (input.Held(player, CombatAction.Left) ? 1 : 0);
+        int y = (input.Held(player, CombatAction.Up) ? 1 : 0) - (input.Held(player, CombatAction.Down) ? 1 : 0);
         if (facing == 255)
         {
             x = -x;

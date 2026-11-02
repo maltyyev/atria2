@@ -99,7 +99,7 @@ public sealed partial class GameSession
         {
             GameText.Use(previousLanguage);
             session.DisposeProgression();
-            session.controls.Dispose();
+            session.DisposeInputRouter();
             session.StopAudio();
         }
 

@@ -103,7 +103,7 @@ public sealed partial class GameSession
         finally
         {
             s.DisposeProgression();
-            s.controls.Dispose();
+            s.DisposeInputRouter();
             s.StopAudio();
         }
     }
@@ -261,7 +261,7 @@ public sealed partial class GameSession
         finally
         {
             s.DisposeProgression();
-            s.controls.Dispose();
+            s.DisposeInputRouter();
             s.StopAudio();
         }
     }

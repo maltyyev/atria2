@@ -58,7 +58,7 @@ public sealed partial class GameSession
         finally
         {
             session.DisposeProgression();
-            session.controls.Dispose();
+            session.DisposeInputRouter();
             session.StopAudio();
             GameText.Use(previous);
         }

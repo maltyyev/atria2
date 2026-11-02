@@ -154,11 +154,19 @@ public static class ControlRedesignTests
         Poll();
         var worldInput = input.WorldInput;
         var combatInput = input.CombatInput;
-        Check(!worldInput.Press(0, GameAction.Attack), "world context rejects combat actions without taking their edge");
-        Check(combatInput.Press(0, GameAction.Attack), "the combat context can still consume the same physical edge");
-        Check(!worldInput.Press(0, GameAction.Attack), "a consumed combat edge cannot leak into the world context");
-        Check(!input.MenuInput.Press(0, GameAction.Attack), "menu context rejects unrelated actions");
-        Check(input.WorldInput.Held(0, GameAction.Right), "scene views preserve held movement without a blanket reset");
+        bool invalidWorldActionRejected = false;
+        try
+        {
+            worldInput.Press(0, (WorldAction)int.MaxValue);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            invalidWorldActionRejected = true;
+        }
+        Check(invalidWorldActionRejected, "invalid world action values fail at the typed context boundary");
+        Check(combatInput.Press(0, CombatAction.Attack), "the typed combat context consumes the attack edge");
+        Check(!combatInput.Press(0, CombatAction.Attack), "a consumed combat edge cannot be consumed twice");
+        Check(input.WorldInput.Held(0, WorldAction.Right), "scene views preserve held movement without a blanket reset");
         keys[32] = false;
         Poll();
         input.Clear();
@@ -669,7 +677,7 @@ public static class ControlRedesignTests
         window.VirtualPad = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
         Poll();
         Check(input.CurrentInputSource is { Kind: InputSourceKind.Touch, Identity: 9 } && !input.LastWasPad, "touch metadata survives virtual controller translation");
-        Check(input.CombatInput.Press(0, GameAction.Attack), "touch virtual control uses player-one profile mapping");
+        Check(input.CombatInput.Press(0, CombatAction.Attack), "touch virtual control uses player-one profile mapping");
         Check(input.Hint(0, GameAction.Attack) == input.Profile.Players[0].Bindings[(int)GameAction.Attack][2].ToString(), "touch activity updates virtual control hints");
         int touchChanges = changes;
         Poll();
@@ -721,20 +729,20 @@ public static class ControlRedesignTests
         Check(virtualOnly.PressQuick(0, 0), "touch RT plus D-pad reaches quick actions without a physical pad slot");
         virtualOnly.Poll(keys, pressed, mouse, true, 1, default, new(true, 0, 0, 0, 0, 0, 0, 0));
         virtualOnly.Poll(keys, pressed, mouse, true, 2, default, new(true, 0, 0, 0, 0, 20000, 0, 0));
-        Check(virtualOnly.MenuInput.Menu(GameAction.MenuUp), "touch stick reaches shared menu navigation");
+        Check(virtualOnly.MenuInput.Menu(MenuAction.Up), "touch stick reaches shared menu navigation");
         virtualOnly.Poll(keys, pressed, mouse, true, 3, default, new(true, 0, 0, 0, 0, 0, 0, 0));
         virtualOnly.Poll(keys, pressed, mouse, true, 4, default, new(true, (ushort)GamepadButtons.A, 0, 0, 0, 0, 0, 0));
         Check(virtualOnly.Capture(0, InputKind.Pad).Code == 0, "touch buttons remain capturable without a physical pad slot");
         virtualOnly.Poll(keys, pressed, mouse, true, 5, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
         virtualOnly.ClearPlayer(1);
-        Check(virtualOnly.CombatInput.Press(0, GameAction.Attack), "player two reset leaves player one touch input intact");
+        Check(virtualOnly.CombatInput.Press(0, CombatAction.Attack), "player two reset leaves player one touch input intact");
         virtualOnly.Poll(keys, pressed, mouse, true, 6, default, new(true, 0, 0, 0, 0, 0, 0, 0));
         virtualOnly.Poll(keys, pressed, mouse, true, 7, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
         virtualOnly.ClearPlayer(0);
-        Check(!virtualOnly.CombatInput.Press(0, GameAction.Attack), "player one reset clears and blocks held touch edges");
+        Check(!virtualOnly.CombatInput.Press(0, CombatAction.Attack), "player one reset clears and blocks held touch edges");
         virtualOnly.Poll(keys, pressed, mouse, true, 8, default, new(true, 0, 0, 0, 0, 0, 0, 0));
         virtualOnly.Poll(keys, pressed, mouse, true, 9, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
-        Check(virtualOnly.CombatInput.Press(0, GameAction.Attack), "released touch input rearms after player reset");
+        Check(virtualOnly.CombatInput.Press(0, CombatAction.Attack), "released touch input rearms after player reset");
 
         VerifyWorldLegacyQueries(legacy);
         VerifySlowAxisActivity(legacy);

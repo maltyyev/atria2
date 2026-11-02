@@ -8,6 +8,7 @@ using Atria.Core.Game.Dialogue;
 using Atria.Core.Presentation.Dialogue;
 using Atria.Core.Resources.Sprites;
 using Atria.Core.Runtime.Timing;
+using Atria.Core.Contracts.Input;
 using Atria.Core.Contracts.Window;
 using Atria.Core.Resources;
 using Atria.Core.Game;
@@ -30,9 +31,53 @@ public sealed partial class GameSession
 
     private void InitializeModernControls(ControlBindings original)
     {
-        controls = new(initialControlProfile ?? ControlProfile.Defaults(original), bindings, hostServices.Gamepads);
+        ReplaceInputRouter(new(initialControlProfile ?? ControlProfile.Defaults(original), bindings, hostServices.Gamepads));
         Console.WriteLine("Controls: semantic input, profiles=" + string.Join(",", controls.Profile.Players.Select(p => p.Preset)) + "; XInput enabled.");
     }
+
+    private void ReplaceInputRouter(InputRouter next)
+    {
+        var previous = controls;
+        if (previous is not null)
+            previous.InputSourceChanged -= OnInputSourceChanged;
+        controls = next;
+        host.Controls = next;
+        menuNavigation = new(bindings, next.MenuInput);
+        inputHintsDirty = true;
+        next.InputSourceChanged += OnInputSourceChanged;
+        try
+        {
+            previous?.Dispose();
+        }
+        catch
+        {
+            next.InputSourceChanged -= OnInputSourceChanged;
+            controls = null!;
+            host.Controls = null;
+            try
+            {
+                next.Dispose();
+            }
+            catch
+            {
+            }
+            throw;
+        }
+    }
+
+    private void DisposeInputRouter()
+    {
+        var current = controls;
+        controls = null!;
+        host.Controls = null;
+        if (current is null)
+            return;
+
+        current.InputSourceChanged -= OnInputSourceChanged;
+        current.Dispose();
+    }
+
+    private void OnInputSourceChanged(InputActivity _) => inputHintsDirty = true;
 
     private void PollSessionInput()
     {
@@ -51,8 +96,8 @@ public sealed partial class GameSession
         else if (controls is not null && !blockingControls && !battleActive && host.Focused && actions.Depth < 0 && (dialogueActive
 || state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town or GameMode.Interior or GameMode.Inn)
 && (state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon
-    ? controls.WorldInput.Press(0, GameAction.Pause) || controls.WorldInput.Press(1, GameAction.Pause)
-    : controls.TownInput.Press(0, GameAction.Pause) || controls.TownInput.Press(1, GameAction.Pause)))
+    ? controls.WorldInput.Press(0, WorldAction.Pause) || controls.WorldInput.Press(1, WorldAction.Pause)
+    : controls.TownInput.Press(0, TownAction.Pause) || controls.TownInput.Press(1, TownAction.Pause)))
         {
             ShowPause(false);
         }
@@ -185,7 +230,7 @@ public sealed partial class GameSession
                     rows.Add(new(move.Name, move.IsMagic ? GameText.Format("ui.units.mana", ("amount", move.Cost)) : move.IsStrategy ? GameText.Get("ui.combat.party") : ""));
                 }
 
-                done = panel.Input(controls, rows) || controls.MenuInput.Press(0, GameAction.Reference);
+                done = panel.Input(controls, rows) || controls.MenuInput.Press(0, MenuAction.Reference);
                 background.CopyTo(host.FrameBuffer);
                 panel.Draw(
                     host.FrameBuffer,

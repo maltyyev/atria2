@@ -1,4 +1,5 @@
 using Atria.Core.Contracts.Host;
+using Atria.Core.Contracts.Input;
 using Atria.Core.Game;
 using Atria.Core.Runtime;
 using Atria.Core.Game.ActionMenu;
@@ -13,6 +14,7 @@ using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
 using Atria.Core.Game.Script;
 using Atria.Core.Game.Progression;
+using Atria.Core.Runtime.Input;
 using Tests.Core.ActionMenu;
 using Tests.Core.Combat;
 using Tests.Core.Persistence;
@@ -22,11 +24,22 @@ namespace Tests.Core.Menu;
 
 public static class Feedback011Tests
 {
+    private sealed class DisconnectedGamepads : IGamepadDevice
+    {
+        public PadSample Read(int slot) => default;
+        public void Vibrate(int slot, ushort left, ushort right) { }
+    }
+
     public static string Run(string root)
     {
         var bindings = ControlBindings.Parse(File.ReadAllBytes(Path.Combine(root, "BATTLE.CFG")));
-        var pressed = new HashSet<byte>();
-        var navigation = new MenuNavigation(bindings, pressed.Remove);
+        using var input = new InputRouter(ControlProfile.Defaults(bindings), bindings, new DisconnectedGamepads());
+        var navigation = new MenuNavigation(bindings, input.MenuInput);
+        var keys = new bool[256];
+        var pressed = new bool[256];
+        var mouse = new bool[3];
+        long now = 0;
+        void Poll() => input.Poll(keys, pressed, mouse, true, now++);
         var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
         var actions = new ActionMenuController();
         actions.Open(0, 0, 5, 3, 5, messages, 420);
@@ -37,19 +50,26 @@ public static class Feedback011Tests
         }
         )
         {
-            pressed.Add(key);
+            keys[key] = true;
+            Poll();
             actions.Input(new(Next: navigation.Next()), _ =>
             {
             });
             Check(actions.Selection == 1, "down/right reaches second vertical row");
-            pressed.Add(bindings.Up);
+            keys[key] = false;
+            Poll();
+            keys[bindings.Up] = true;
+            Poll();
             actions.Input(new(Previous: navigation.Previous()), _ =>
             {
             });
             Check(actions.Selection == 0, "up returns to first row");
+            keys[bindings.Up] = false;
+            Poll();
         }
 
-        pressed.Add(bindings.Previous);
+        keys[bindings.Previous] = true;
+        Poll();
         actions.Input(new(Previous: navigation.Previous()), _ =>
         {
         });

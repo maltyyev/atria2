@@ -94,32 +94,32 @@ public sealed partial class GameSession
         if (interior.Mode == GameMode.Shop && (interior.Buying || interior.Selling))
         {
             var current = trade ?? throw new InvalidOperationException("Trade state is absent.");
-            bool confirm = Query(bindings.Confirm), cancel = !confirm && Query(bindings.Cancel);
+            bool confirm = QueryLegacyTownScan(bindings.Confirm), cancel = !confirm && QueryLegacyTownScan(bindings.Cancel);
             bool left = false, right = false, up = false, down = false, heldUp = false, heldDown = false;
             if (!confirm && !cancel)
             {
                 if (current.QuantityActive)
                 {
-                    heldUp = host.IsHeld(bindings.Up);
+                    heldUp = HeldLegacyTownScan(bindings.Up);
                     if (!heldUp)
                     {
-                        heldDown = host.IsHeld(bindings.Down);
+                        heldDown = HeldLegacyTownScan(bindings.Down);
                     }
                 }
                 else
                 {
-                    left = Query(bindings.Previous);
+                    left = QueryLegacyTownScan(bindings.Previous);
                     if (!left)
                     {
-                        right = Query(bindings.Next);
+                        right = QueryLegacyTownScan(bindings.Next);
                     }
 
                     if (!left && !right)
                     {
-                        up = Query(bindings.Up);
+                        up = QueryLegacyTownScan(bindings.Up);
                         if (!up)
                         {
-                            down = Query(bindings.Down);
+                            down = QueryLegacyTownScan(bindings.Down);
                         }
                     }
                 }
@@ -142,7 +142,7 @@ public sealed partial class GameSession
 
         //420/430 first-entry branches return before reading the confirm edge;410 continues to read it.
         bool readConfirm = !interior.FirstEntry || interior.Mode == GameMode.Interior;
-        interior.HandleInput(readConfirm && Query(bindings.Confirm), HandleInterior);
+        interior.HandleInput(readConfirm && QueryLegacyTownScan(bindings.Confirm), HandleInterior);
     }
 
     private void BeginTrade(bool buying)

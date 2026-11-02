@@ -59,7 +59,7 @@ public sealed partial class GameSession : IScriptEffects
     private readonly ControlBindings bindings;
     private readonly ModalFrameGate gate = new(new MonotonicModalClock(), 0);
     private readonly NativeDialogueFrameHost host;
-    private readonly MenuNavigation menuNavigation;
+    private MenuNavigation menuNavigation = null!;
     private readonly DialogueRuntime dialogue;
     private readonly ItemCatalog items;
     private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages;
@@ -155,13 +155,20 @@ public sealed partial class GameSession : IScriptEffects
             () => CurrentEffectsVolume,
             PollSessionInput
         );
-        InitializeModernControls(originalBindings);
-        host.Controls = controls;
-        host.PresentCustomFrame = PresentMainMenu;
-        menuNavigation = new(bindings, host.QueryScan);
         dialogue = new(DialogueCatalog.Load(Path.Combine(root, "roland.idx"), Path.Combine(root, "ROLAND.DAT")), new DialogueModalDriver(host, etc, smallFont, faces, DrawModalHud));
-        menu.Enter();
-        gate.Resume();
+        host.PresentCustomFrame = PresentMainMenu;
+        try
+        {
+            InitializeModernControls(originalBindings);
+            host.Controls = controls;
+            menu.Enter();
+            gate.Resume();
+        }
+        catch
+        {
+            DisposeInputRouter();
+            throw;
+        }
     }
 
     /// <summary>Runs the shared session with explicit platform-owned services.</summary>
@@ -198,8 +205,14 @@ public sealed partial class GameSession : IScriptEffects
         }
         finally
         {
-            DisposeProgression();
-            controls.Dispose();
+            try
+            {
+                DisposeProgression();
+            }
+            finally
+            {
+                DisposeInputRouter();
+            }
             Console.WriteLine($"Session: mode={state.Mode}, logicalFrames={logicalFrames}, presents={presents}, dialoguesCompleted={dialoguesCompleted}, introFlag={state.Globals[501]}, scriptActive={state.ScriptActive}, seconds={lifetime.Elapsed.TotalSeconds:F3}, dynamicCode={System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}.");
         }
 
@@ -243,7 +256,7 @@ public sealed partial class GameSession : IScriptEffects
                 gate.CommitScheduled();
                 host.BeginLogicalFrame(gate.LastFrameMilliseconds);
                 UpdateMusic(state);
-                gate.AdjustSpeed(Query(0x4e), Query(0x4a));
+                gate.AdjustSpeed(QueryLegacyMenuScan(0x4e), QueryLegacyMenuScan(0x4a));
                 if (BeforeModalInput(state))
                 {
                     HandleModeInput();
@@ -290,9 +303,11 @@ public sealed partial class GameSession : IScriptEffects
         }
     }
 
-    private bool Query(byte scan) => host.QueryScan(scan);
-    private bool QueryWorld(byte scan) => host.QueryWorldScan(scan);
-    private bool HeldWorld(byte scan) => host.IsWorldScanHeld(scan);
+    private bool QueryLegacyMenuScan(byte scan) => host.QueryScan(scan);
+    private bool QueryLegacyTownScan(byte scan) => controls.TownInput.QueryLegacyTownScan(scan);
+    private bool HeldLegacyTownScan(byte scan) => controls.TownInput.HeldLegacyTownScan(scan);
+    private bool QueryLegacyWorldScan(byte scan) => host.QueryWorldScan(scan);
+    private bool HeldLegacyWorldScan(byte scan) => host.IsWorldScanHeld(scan);
 
     private NarrativeScenes.Scene? PendingWorldNarrative() =>
         state.Mode == GameMode.World && exploration is { Moving: false } && state.ScriptActive == 0
@@ -308,12 +323,6 @@ public sealed partial class GameSession : IScriptEffects
 
     private bool BeforeModalInput(GameState value)
     {
-        SceneInput sceneInput = value.Mode switch
-        {
-            GameMode.World or GameMode.WorldEntry or GameMode.Dungeon => controls.WorldInput,
-            GameMode.Town or GameMode.Interior or GameMode.Inn => controls.TownInput,
-            _ => controls.MenuInput
-        };
         UpdatePointerFocus();
         if (controls.FocusPauseRequested)
         {
@@ -327,14 +336,33 @@ public sealed partial class GameSession : IScriptEffects
             return false;
         }
 
-        if (!battleActive && !dialogueActive && value.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town
-&& sceneInput.Press(0, GameAction.Status))
+        bool statusPressed = false;
+        if (!battleActive && !dialogueActive)
+        {
+            statusPressed = value.Mode switch
+            {
+                GameMode.World or GameMode.WorldEntry or GameMode.Dungeon => controls.WorldInput.Press(0, WorldAction.Status),
+                GameMode.Town => controls.TownInput.Press(0, TownAction.Status),
+                _ => false
+            };
+        }
+        if (statusPressed)
         {
             OpenScreen(UiScreen.Status);
             return false;
         }
 
-        if (!battleActive && !dialogueActive && sceneInput.Press(0, GameAction.Reference))
+        bool referencePressed = false;
+        if (!battleActive && !dialogueActive)
+        {
+            referencePressed = value.Mode switch
+            {
+                GameMode.World or GameMode.WorldEntry or GameMode.Dungeon => controls.WorldInput.Press(0, WorldAction.Reference),
+                GameMode.Town or GameMode.Interior or GameMode.Inn => controls.TownInput.Press(0, TownAction.Reference),
+                _ => controls.MenuInput.Press(0, MenuAction.Reference)
+            };
+        }
+        if (referencePressed)
         {
             ShowMoveReference(0);
             return false;
@@ -369,8 +397,8 @@ public sealed partial class GameSession : IScriptEffects
         if (actions.Depth >= 0 && actions.RenderEnabled)
         {
             bool previous = menuNavigation.Previous(), next = !previous && menuNavigation.Next();
-            bool cancel = !previous && !next && Query(bindings.Cancel);
-            bool accept = !previous && !next && !cancel && Query(bindings.Confirm);
+            bool cancel = !previous && !next && QueryLegacyMenuScan(bindings.Cancel);
+            bool accept = !previous && !next && !cancel && QueryLegacyMenuScan(bindings.Confirm);
             actions.Input(new(previous, next, cancel, accept), HandleAction);
             return false;
         }
@@ -385,10 +413,10 @@ public sealed partial class GameSession : IScriptEffects
             bool previous = false, next = false, accept = false, cancel = false;
             if (menu.Confirmation)
             {
-                previous = Query(bindings.Previous);
+                previous = QueryLegacyMenuScan(bindings.Previous);
                 if (!previous)
                 {
-                    next = Query(bindings.Next);
+                    next = QueryLegacyMenuScan(bindings.Next);
                 }
             }
             else
@@ -402,10 +430,10 @@ public sealed partial class GameSession : IScriptEffects
 
             if (!next && !previous)
             {
-                accept = Query(bindings.Confirm);
+                accept = QueryLegacyMenuScan(bindings.Confirm);
                 if (!accept)
                 {
-                    cancel = Query(bindings.Cancel);
+                    cancel = QueryLegacyMenuScan(bindings.Cancel);
                 }
             }
 
@@ -424,24 +452,24 @@ public sealed partial class GameSession : IScriptEffects
             bool next = false, previous = false, yes = false, no = false, accept = false, cancel = false;
             if (town.LeaveConfirmation)
             {
-                yes = Query(bindings.Previous);
+                yes = QueryLegacyTownScan(bindings.Previous);
                 if (!yes)
                 {
-                    no = Query(bindings.Next);
+                    no = QueryLegacyTownScan(bindings.Next);
                 }
             }
             else if (town.Scene.Count > 0)
             {
-                next = Query(bindings.Next);
-                previous = Query(bindings.Previous);
+                next = QueryLegacyTownScan(bindings.Next);
+                previous = QueryLegacyTownScan(bindings.Previous);
             }
 
             if (!yes && !no)
             {
-                accept = Query(bindings.Confirm);
+                accept = QueryLegacyTownScan(bindings.Confirm);
                 if (!accept)
                 {
-                    cancel = Query(bindings.Cancel);
+                    cancel = QueryLegacyTownScan(bindings.Cancel);
                 }
             }
 
@@ -651,7 +679,7 @@ public sealed partial class GameSession : IScriptEffects
         var result = hostServices.PlayMovie(Path.Combine(root, name), () =>
         {
             controls.Poll(window);
-            return controls.Menu(GameAction.Confirm) || controls.Menu(GameAction.Back);
+            return controls.MenuInput.Menu(MenuAction.Confirm) || controls.MenuInput.Menu(MenuAction.Back);
         }, muted ? 0 : 1, Math.Max(0, maximumSeconds - lifetime.Elapsed.TotalSeconds));
         Console.WriteLine($"Session movie {name}: {result}.");
         controls.Clear();

@@ -70,11 +70,11 @@ public sealed class InputRouter : IDisposable
     private readonly int[] contextVersions = new int[2];
     public int ContextVersion(int player) => contextVersions[player];
     /// <summary>Gets a non-allocating menu action view over the shared input state.</summary>
-    public SceneInput MenuInput => new(this, InputScene.Menu);
+    public MenuInputView MenuInput => new(this);
     /// <summary>Gets a non-allocating world action view over the shared input state.</summary>
-    public SceneInput WorldInput => new(this, InputScene.World);
+    public WorldInputView WorldInput => new(this);
     /// <summary>Gets a non-allocating town action view over the shared input state.</summary>
-    public SceneInput TownInput => new(this, InputScene.Town);
+    public TownInputView TownInput => new(this);
     /// <summary>Gets a non-allocating combat action view over the shared input state.</summary>
     public CombatInput CombatInput => new(this);
     private int wheel;
@@ -417,8 +417,8 @@ public sealed class InputRouter : IDisposable
         };
     }
 
-    public bool Held(int player, GameAction action) => Held(player, Profile.Players[player].Bindings[(int)action]);
-    public bool Held(int player, InputBinding[] row)
+    internal bool Held(int player, GameAction action) => Held(player, Profile.Players[player].Bindings[(int)action]);
+    internal bool Held(int player, InputBinding[] row)
     {
         foreach (var b in row)
         {
@@ -445,8 +445,8 @@ public sealed class InputRouter : IDisposable
         }
     }
 
-    public bool Press(int player, GameAction action, bool allowRepeat = false) => Press(player, Profile.Players[player].Bindings[(int)action], allowRepeat);
-    public bool PressQuick(int player, int slot, bool assigning = false)
+    internal bool Press(int player, GameAction action, bool allowRepeat = false) => Press(player, Profile.Players[player].Bindings[(int)action], allowRepeat);
+    internal bool PressQuick(int player, int slot, bool assigning = false)
     {
         foreach (var b in Profile.Players[player].Bindings[(int)GameAction.Quick1 + slot])
         {
@@ -506,7 +506,7 @@ public sealed class InputRouter : IDisposable
     }
 
     public static string QuickBindingHint(InputBinding binding) => binding.Kind == InputKind.Pad && binding.Code is >= DpadUp and <= DpadLeft ? "RT+" + binding : binding.ToString();
-    public bool Press(int player, InputBinding[] row, bool allowRepeat = false)
+    internal bool Press(int player, InputBinding[] row, bool allowRepeat = false)
     {
         foreach (var b in row)
         {
@@ -521,7 +521,7 @@ public sealed class InputRouter : IDisposable
         return false;
     }
 
-    public bool Take(int token, bool allowRepeat = false)
+    internal bool Take(int token, bool allowRepeat = false)
     {
         if (token < 0 || blocked[token])
         {
@@ -543,8 +543,8 @@ public sealed class InputRouter : IDisposable
         return false;
     }
 
-    public bool RawHeld(int token) => held[token] && !blocked[token];
-    public bool PlayerMenu(int player, GameAction action, bool repeat = false)
+    internal bool RawHeld(int token) => held[token] && !blocked[token];
+    internal bool PlayerMenu(int player, GameAction action, bool repeat = false)
     {
         if (Press(player, action, repeat))
         {
@@ -564,7 +564,7 @@ public sealed class InputRouter : IDisposable
             || player == 0 && Take(VirtualPadTokenStart + stick, repeat));
     }
 
-    public bool Menu(GameAction action, bool repeat = false)
+    internal bool Menu(GameAction action, bool repeat = false)
     {
         for (int p = 0; p < 2; p++)
         {
@@ -614,7 +614,10 @@ public sealed class InputRouter : IDisposable
         return false;
     }
 
-    public bool LegacyMenu(byte scan, bool query)
+    internal bool QueryLegacyMenuScan(byte scan) => LegacyMenuScan(scan, true);
+    internal bool HeldLegacyMenuScan(byte scan) => LegacyMenuScan(scan, false);
+
+    private bool LegacyMenuScan(byte scan, bool query)
     {
         for (int p = 0; p < 2; p++)
         {
@@ -646,25 +649,28 @@ public sealed class InputRouter : IDisposable
         return query ? Take(scan) : RawHeld(scan);
     }
 
-    internal bool QuerySceneScan(InputScene scene, byte scan) => SceneScan(scene, scan, true);
-    internal bool HeldSceneScan(InputScene scene, byte scan) => SceneScan(scene, scan, false);
+    internal bool QueryLegacyWorldScan(byte scan) => LegacyWorldScan(scan, true);
+    internal bool HeldLegacyWorldScan(byte scan) => LegacyWorldScan(scan, false);
 
-    private bool SceneScan(InputScene scene, byte scan, bool query)
+    private bool LegacyWorldScan(byte scan, bool query)
     {
-        if (scene == InputScene.World)
+        for (int player = 0; player < 2; player++)
         {
-            for (int player = 0; player < 2; player++)
+            for (int direction = 0; direction < 4; direction++)
             {
-                for (int direction = 0; direction < 4; direction++)
+                if (scan != legacy[player, direction]) continue;
+                GameAction movement = direction switch
                 {
-                    if (scan != legacy[player, direction]) continue;
-                    GameAction movement = (GameAction)direction;
-                    return query ? Press(player, movement, true) : Held(player, movement);
-                }
+                    0 => GameAction.Left,
+                    1 => GameAction.Right,
+                    2 => GameAction.Up,
+                    _ => GameAction.Down
+                };
+                return query ? Press(player, movement, true) : Held(player, movement);
             }
         }
 
-        return LegacyMenu(scan, query);
+        return LegacyMenuScan(scan, query);
     }
 
     public void Clear()
@@ -761,7 +767,7 @@ public sealed class InputRouter : IDisposable
         return default;
     }
 
-    public string Hint(int player, GameAction a)
+    internal string Hint(int player, GameAction a)
     {
         var row = Profile.Players[player].Bindings[(int)a];
         InputKind preferred = CurrentInputSource.Kind switch
@@ -777,7 +783,7 @@ public sealed class InputRouter : IDisposable
     }
 
     /// <summary>Gets the button used to assign a quick slot, without its execution chord.</summary>
-    public string QuickAssignHint(int player, int slot)
+    internal string QuickAssignHint(int player, int slot)
     {
         var row = Profile.Players[player].Bindings[(int)GameAction.Quick1 + slot];
         InputKind preferred = CurrentInputSource.Kind is InputSourceKind.Gamepad or InputSourceKind.Touch ? InputKind.Pad : InputKind.Key;

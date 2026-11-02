@@ -220,7 +220,7 @@ using (var router = new InputRouter(ControlProfile.Defaults(controlBindings), co
     window.SubmitVirtualPad(new PadSample(false, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
     router.Poll(window);
     Check(router.CurrentInputSource is { Kind: InputSourceKind.Touch, Identity: 0 } &&
-          router.CombatInput.Press(0, GameAction.Attack), "Touch did not reach the router through its independent virtual source.");
+          router.CombatInput.Press(0, CombatAction.Attack), "Touch did not reach the router through its independent virtual source.");
     Check(router.Hint(0, GameAction.Attack) == router.Profile.Players[0].Bindings[(int)GameAction.Attack][2].ToString(),
         "Touch activity did not select pad hints.");
     int touchChanges = sourceChanges;

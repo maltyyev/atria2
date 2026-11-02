@@ -150,7 +150,7 @@ public sealed partial class GameSession
         var controller = exploration ?? throw new InvalidOperationException("World controller not loaded.");
         if (state.Mode == GameMode.WorldEntry)
         {
-            if (QueryWorld(bindings.Previous))
+            if (QueryLegacyWorldScan(bindings.Previous))
             {
                 if (explorationRevealX > 0)
                 {
@@ -160,7 +160,7 @@ public sealed partial class GameSession
                 return;
             }
 
-            if (QueryWorld(bindings.Next))
+            if (QueryLegacyWorldScan(bindings.Next))
             {
                 if (explorationRevealX < 9)
                 {
@@ -170,7 +170,7 @@ public sealed partial class GameSession
                 return;
             }
 
-            if (QueryWorld(bindings.Up))
+            if (QueryLegacyWorldScan(bindings.Up))
             {
                 if (explorationRevealY > 0)
                 {
@@ -180,7 +180,7 @@ public sealed partial class GameSession
                 return;
             }
 
-            if (QueryWorld(bindings.Down))
+            if (QueryLegacyWorldScan(bindings.Down))
             {
                 if (explorationRevealY < 9)
                 {
@@ -190,7 +190,7 @@ public sealed partial class GameSession
                 return;
             }
 
-            if (QueryWorld(bindings.Confirm))
+            if (QueryLegacyWorldScan(bindings.Confirm))
             {
                 var current = map!;
                 if (!ExplorationRules.CanReveal(current, state.WorldX, state.WorldY, explorationRevealX, explorationRevealY))
@@ -214,7 +214,7 @@ public sealed partial class GameSession
                 return; //Even insufficient-resource message returns current mode to300.
             }
 
-            if (QueryWorld(bindings.Cancel))
+            if (QueryLegacyWorldScan(bindings.Cancel))
             {
                 FinishExplorationReveal();
             }
@@ -227,15 +227,15 @@ public sealed partial class GameSession
         if (controller.InputDelay == 0 && state.ChangedChip == 0 && !(state.DungeonEntryPending != 0 && state.ScriptActive == 0)
 && !controller.RefreshPending && !controller.Moving)
         {
-            bool left = HeldWorld(bindings.Previous), right = !left && HeldWorld(bindings.Next);
-            bool up = !left && !right && HeldWorld(bindings.Up), down = !left && !right && !up && HeldWorld(bindings.Down);
+            bool left = HeldLegacyWorldScan(bindings.Previous), right = !left && HeldLegacyWorldScan(bindings.Next);
+            bool up = !left && !right && HeldLegacyWorldScan(bindings.Up), down = !left && !right && !up && HeldLegacyWorldScan(bindings.Down);
             bool confirm = false, cancel = false;
             if (!left && !right && !up && !down)
             {
-                confirm = QueryWorld(bindings.Confirm);
+                confirm = QueryLegacyWorldScan(bindings.Confirm);
                 if (!confirm)
                 {
-                    cancel = QueryWorld(bindings.Cancel);
+                    cancel = QueryLegacyWorldScan(bindings.Cancel);
                 }
             }
 

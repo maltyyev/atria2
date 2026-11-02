@@ -79,12 +79,12 @@ public sealed partial class GameSession
             gate.RebaseSchedule();
             var selection = new CombatSelectionModal(state, host, selectionRaster, bindings, (_, target) => backdrop.Pixels.Span.CopyTo(target), () => music.Update(awardMusicTrack), name => exclusiveSound.PlayMember(Encoding.ASCII.GetBytes(name), CurrentEffectsVolume), exclusiveSound.Stop, chosen => entry.BindSelectedParty(chosen, region, gate.LastFrameMilliseconds), () =>
             {
-                if (controls.CombatInput.Press(0, GameAction.Pause) || controls.CombatInput.Press(1, GameAction.Pause))
+                if (controls.CombatInput.Press(0, CombatAction.Pause) || controls.CombatInput.Press(1, CombatAction.Pause))
                 {
                     ShowPause(true);
                 }
 
-                if (controls.CombatInput.Press(0, GameAction.Reference) || controls.CombatInput.Press(1, GameAction.Reference))
+                if (controls.CombatInput.Press(0, CombatAction.Reference) || controls.CombatInput.Press(1, CombatAction.Reference))
                 {
                     ShowMoveReference(0);
                 }
@@ -251,14 +251,14 @@ public sealed partial class GameSession
         CheckLifetime();
         if (currentCombat is not null)
         {
-            if (controls.FocusPauseRequested || controls.CombatInput.Press(0, GameAction.Pause) || controls.CombatInput.Press(1, GameAction.Pause))
+            if (controls.FocusPauseRequested || controls.CombatInput.Press(0, CombatAction.Pause) || controls.CombatInput.Press(1, CombatAction.Pause))
             {
                 ShowPause(true, currentCombat);
             }
 
             for (int p = 0; p < 2; p++)
             {
-                if (controls.CombatInput.Press(p, GameAction.Reference))
+                if (controls.CombatInput.Press(p, CombatAction.Reference))
                 {
                     int actor = combatControls!.ActorForPlayer(p);
                     ShowMoveReference(actor < 0 ? 0 : actor - currentCombat.Execution.Runtime.Scene.PartyStartIndex);

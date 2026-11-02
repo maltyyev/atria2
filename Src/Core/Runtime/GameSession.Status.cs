@@ -93,38 +93,38 @@ public sealed partial class GameSession
             return;
         }
 
-        bool cancel = Query(bindings.Cancel), accept = false, up = false, down = false, left = false, right = false, cycle = false;
+        bool cancel = QueryLegacyMenuScan(bindings.Cancel), accept = false, up = false, down = false, left = false, right = false, cycle = false;
         if (!cancel)
         {
-            accept = Query(bindings.Confirm);
+            accept = QueryLegacyMenuScan(bindings.Confirm);
         }
 
         if (!cancel && !accept)
         {
-            up = Query(bindings.Up);
+            up = QueryLegacyMenuScan(bindings.Up);
         }
 
         if (!cancel && !accept && !up)
         {
-            down = Query(bindings.Down);
+            down = QueryLegacyMenuScan(bindings.Down);
         }
 
         if (!cancel && !accept && !up && !down)
         {
-            left = Query(bindings.Previous);
+            left = QueryLegacyMenuScan(bindings.Previous);
         }
 
         if (!cancel && !accept && !up && !down && !left)
         {
-            right = Query(bindings.Next);
+            right = QueryLegacyMenuScan(bindings.Next);
         }
 
         if (!cancel && !accept && !up && !down && !left && !right)
         {
-            cycle = Query(bindings[0, 7]);
+            cycle = QueryLegacyMenuScan(bindings[0, 7]);
             if (!cycle)
             {
-                cycle = Query(0x0f);
+                cycle = QueryLegacyMenuScan(0x0f);
             }
         }
 

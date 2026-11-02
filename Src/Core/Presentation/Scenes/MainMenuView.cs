@@ -10,27 +10,62 @@ namespace Atria.Core.Presentation.Scenes;
 /// <summary>Cached full-resolution menu; drawing never advances game or menu state.</summary>
 public sealed class MainMenuView(string assetRoot)
 {
+    private static readonly RasterClip profileHintBounds = new(320, 1280, 2240, 1360);
     private readonly ushort[] background = MainMenuArtwork.LoadNative(assetRoot);
     private readonly ushort[] pixels = new ushort[MainMenuLayout.Width * MainMenuLayout.Height];
     private readonly uint[] presentation = new uint[MainMenuLayout.Width * MainMenuLayout.Height];
-    private (int Selection, bool SaveDisabled, bool Confirmation, bool Yes, bool Quit, string Profile, LocalizationCatalog Catalog)? cached;
+    private (int Selection, bool SaveDisabled, bool Confirmation, bool Yes, bool Quit, LocalizationCatalog Catalog)? cached;
+    private string? cachedProfile;
+    private bool profileHintDirty = true;
+
+    internal void InvalidateProfileHint() => profileHintDirty = true;
 
     public ReadOnlySpan<uint> Render(int selection, bool saveDisabled, bool confirmation, bool yes, bool quit, string profile = "")
     {
-        var key = (selection, saveDisabled, confirmation, yes, quit, profile, GameText.Current);
-        if (cached == key)
-            return presentation;
-        background.CopyTo(pixels, 0);
-        MainMenuArtwork.DrawLabels(selection, pixels, MainMenuLayout.Width, MainMenuLayout.Height, MainMenuLayout.Width, null, saveDisabled);
-        if (profile.Length > 0)
-            MainMenuArtwork.DrawCentered(profile, pixels, MainMenuLayout.Width, MainMenuLayout.Height, MainMenuLayout.Width,
-                new(320, 1280, 2240, 1360), 32, 0xd69a);
-        if (confirmation || quit)
-            DrawConfirmation(yes, quit);
-        for (int i = 0; i < pixels.Length; i++)
-            presentation[i] = SpriteRaster.ToBgra32(pixels[i]);
-        cached = key;
+        var key = (selection, saveDisabled, confirmation, yes, quit, GameText.Current);
+        if (cached != key)
+        {
+            background.CopyTo(pixels, 0);
+            MainMenuArtwork.DrawLabels(selection, pixels, MainMenuLayout.Width, MainMenuLayout.Height, MainMenuLayout.Width, null, saveDisabled);
+            if (confirmation || quit)
+                DrawConfirmation(yes, quit);
+            for (int i = 0; i < pixels.Length; i++)
+                presentation[i] = SpriteRaster.ToBgra32(pixels[i]);
+            cached = key;
+            cachedProfile = null;
+            profileHintDirty = true;
+        }
+
+        if (profileHintDirty || cachedProfile != profile)
+            DrawProfileHint(profile, confirmation || quit);
         return presentation;
+    }
+
+    private void DrawProfileHint(string profile, bool dimmed)
+    {
+        const int width = MainMenuLayout.Width;
+        int hintWidth = profileHintBounds.RightExclusive - profileHintBounds.Left;
+        for (int y = profileHintBounds.Top; y < profileHintBounds.BottomExclusive; y++)
+        {
+            int start = y * width + profileHintBounds.Left;
+            background.AsSpan(start, hintWidth).CopyTo(pixels.AsSpan(start, hintWidth));
+        }
+
+        if (profile.Length > 0)
+            MainMenuArtwork.DrawCentered(profile, pixels, width, MainMenuLayout.Height, width, profileHintBounds, 32, 0xd69a);
+        if (dimmed)
+            UiRaster.TintHalf(pixels, width, MainMenuLayout.Height, width, profileHintBounds.Left, profileHintBounds.Top,
+                hintWidth, profileHintBounds.BottomExclusive - profileHintBounds.Top, 0);
+
+        for (int y = profileHintBounds.Top; y < profileHintBounds.BottomExclusive; y++)
+        {
+            int start = y * width + profileHintBounds.Left;
+            for (int x = 0; x < hintWidth; x++)
+                presentation[start + x] = SpriteRaster.ToBgra32(pixels[start + x]);
+        }
+
+        cachedProfile = profile;
+        profileHintDirty = false;
     }
 
     private void DrawConfirmation(bool yes, bool quit)

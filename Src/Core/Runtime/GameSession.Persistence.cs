@@ -61,7 +61,7 @@ public sealed partial class GameSession
     {
         if (persistenceMenu.Failure is not null)
         {
-            if (Query(bindings.Confirm) || Query(bindings.Cancel))
+            if (QueryLegacyMenuScan(bindings.Confirm) || QueryLegacyMenuScan(bindings.Cancel))
             {
                 Sound(4);
                 persistenceMenu.AcknowledgeFailure();
@@ -87,27 +87,27 @@ public sealed partial class GameSession
         {
             if (persistenceMenu.Confirmation)
             {
-                left = Query(bindings.Previous);
+                left = QueryLegacyMenuScan(bindings.Previous);
                 if (!left)
                 {
-                    right = Query(bindings.Next);
+                    right = QueryLegacyMenuScan(bindings.Next);
                 }
             }
             else
             {
-                down = Query(bindings.Down);
+                down = QueryLegacyMenuScan(bindings.Down);
                 if (!down)
                 {
-                    up = Query(bindings.Up);
+                    up = QueryLegacyMenuScan(bindings.Up);
                 }
             }
 
             if (!down && !up && !left && !right)
             {
-                accept = Query(bindings.Confirm);
+                accept = QueryLegacyMenuScan(bindings.Confirm);
                 if (!accept)
                 {
-                    cancel = Query(bindings.Cancel);
+                    cancel = QueryLegacyMenuScan(bindings.Cancel);
                 }
             }
         }

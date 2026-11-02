@@ -32,7 +32,7 @@ public sealed partial class GameSession
         music.Update(musicId);
     }
 
-    private void HandleCreditsInput() => credits.Input(() => host.IsHeld(bindings.Confirm), () => Query(bindings.Cancel), () =>
+    private void HandleCreditsInput() => credits.Input(() => controls.MenuInput.HeldLegacyMenuScan(bindings.Confirm), () => QueryLegacyMenuScan(bindings.Cancel), () =>
     {
         // Native frees rows/sprite and restores text clip0..479 before popping. Managed immutable cache is reusable.
         if (!CloseScreen())

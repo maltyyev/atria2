@@ -121,7 +121,7 @@ public sealed partial class GameSession
     {
         var current = dungeon ?? throw new InvalidOperationException("Dungeon controller absent.");
         var input = new DungeonBindings(bindings.Previous, bindings.Next, bindings.Up, bindings.Down, bindings.Confirm, bindings.Cancel, bindings[0, 7]);
-        foreach (var command in current.Input(input, QueryWorld, HeldWorld))
+        foreach (var command in current.Input(input, QueryLegacyWorldScan, HeldLegacyWorldScan))
         {
             HandleDungeonCommand(command);
         }

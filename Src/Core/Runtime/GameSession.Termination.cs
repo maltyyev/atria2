@@ -24,7 +24,7 @@ public sealed partial class GameSession
     { /*42a850 already ran before429260; no extra native entry state.*/
     }
 
-    private void HandleQuitInput() => quit.Input(key => Query(key switch
+    private void HandleQuitInput() => quit.Input(key => QueryLegacyMenuScan(key switch
     {
         QuitKey.Right => bindings.Next,
         QuitKey.Left => bindings.Previous,
@@ -76,7 +76,7 @@ public sealed partial class GameSession
         music.Update(musicId);
     }
 
-    private void HandleDefeatInput() => defeat.Input(() => Query(bindings.Confirm), () =>
+    private void HandleDefeatInput() => defeat.Input(() => QueryLegacyMenuScan(bindings.Confirm), () =>
     {
         //421910->403630. Native core subset retains uninitialized/opaque bytes by design.
         InitialGameState.ResetRecoveredCore(state, items, messages);

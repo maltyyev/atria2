@@ -63,6 +63,10 @@ public sealed class CombatActorController : ICombatActorActions
 
     private readonly CombatScanInput[] semanticWalk = new CombatScanInput[2];
     private static readonly byte[] semanticDirections = [0, 1, 2, 3, 4, 5, 6, 7];
+    private static readonly CombatAction[] semanticAttackDirections = [
+        CombatAction.BackDown, CombatAction.BranchDown, CombatAction.ForwardDown, CombatAction.BranchBack,
+        CombatAction.BranchForward, CombatAction.BackUp, CombatAction.BranchUp, CombatAction.ForwardUp
+    ];
     private static readonly int[] branchDirections = [1, 2, 3, 4, 6, 7, 8, 9];
     private readonly string[] partyPrefixes;
     public bool ExecuteMove(int actorIndex, string id, uint milliseconds) => CombatSemanticControl.Execute(id, runtime, runtime.Actors[actorIndex], state, milliseconds, effects.GlobalEffectBusy, sound, rankNotice, itemNotice);
@@ -98,7 +102,15 @@ public sealed class CombatActorController : ICombatActorActions
         for (int p = 0; p < 2; p++)
         {
             int player = p;
-            semanticWalk[p] = new(scan => scan < 4 ? input.Modern!.Value.Held(player, (GameAction)scan) : scan == 4 && input.Modern!.Value.Profile.Players[player].Classic && input.Modern.Value.Held(player, GameAction.Attack));
+            semanticWalk[p] = new(scan => scan switch
+            {
+                0 => input.Modern!.Value.Held(player, CombatAction.Left),
+                1 => input.Modern!.Value.Held(player, CombatAction.Right),
+                2 => input.Modern!.Value.Held(player, CombatAction.Up),
+                3 => input.Modern!.Value.Held(player, CombatAction.Down),
+                4 => input.Modern!.Value.Profile.Players[player].Classic && input.Modern.Value.Held(player, CombatAction.Attack),
+                _ => false
+            });
         }
     }
 
@@ -178,7 +190,7 @@ public sealed class CombatActorController : ICombatActorActions
             }
         }
 
-        if (input.Modern is { } modernInput ? modernInput.Press(0, GameAction.Automation) || modernInput.Press(1, GameAction.Automation) : input.Query(30))
+        if (input.Modern is { } modernInput ? modernInput.Press(0, CombatAction.Automation) || modernInput.Press(1, CombatAction.Automation) : input.Query(30))
         {
             ToggleAutomation();
         }
@@ -201,7 +213,7 @@ public sealed class CombatActorController : ICombatActorActions
             return;
         }
 
-        if (modern.Press(player, GameAction.Switch))
+        if (modern.Press(player, CombatAction.Switch))
         {
             CombatPartyControl.Cycle(runtime.Actors, runtime.Scene.PartyStartIndex, actorIndex);
             modern.ClearPlayer(player);
@@ -223,7 +235,7 @@ public sealed class CombatActorController : ICombatActorActions
         {
             foreach (var pair in p.Direct)
             {
-                if (pair.Key.StartsWith(partyPrefixes[party], StringComparison.Ordinal) && modern.Press(player, pair.Value))
+                if (pair.Key.StartsWith(partyPrefixes[party], StringComparison.Ordinal) && modern.PressDirect(player, pair.Value))
                 {
                     request = pair.Key[(pair.Key.IndexOf('/') + 1)..];
                     break;
@@ -233,9 +245,9 @@ public sealed class CombatActorController : ICombatActorActions
 
         if (request is null)
         {
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < semanticAttackDirections.Length; i++)
             {
-                if (modern.Press(player, GameAction.BackDown + i))
+                if (modern.Press(player, semanticAttackDirections[i]))
                 {
                     request = "v:" + branchDirections[i];
                     break;
@@ -249,7 +261,7 @@ public sealed class CombatActorController : ICombatActorActions
             return;
         }
 
-        if (modern.Press(player, GameAction.Execute))
+        if (modern.Press(player, CombatAction.Execute))
         {
             string selected = SelectedMoves[player][party] ?? "";
             if (selected.Length == 0)
@@ -263,25 +275,25 @@ public sealed class CombatActorController : ICombatActorActions
 
         if (a.ActionFlags < 2)
         {
-            if (modern.Press(player, GameAction.Attack))
+            if (modern.Press(player, CombatAction.Attack))
             {
                 CombatManualControl.Attack(a, info, image.Animation!, milliseconds);
             }
-            else if (modern.Press(player, GameAction.Jump))
+            else if (modern.Press(player, CombatAction.Jump))
             {
                 if (!CombatJumpRuntime.Begin(a, info, image.Animation!, milliseconds))
                 {
-                    CombatManualControl.Walk(a, info, image.Animation!, semanticDirections, semanticWalk[player], milliseconds, p.Classic ? null : modern.Held(player, GameAction.Run));
+                    CombatManualControl.Walk(a, info, image.Animation!, semanticDirections, semanticWalk[player], milliseconds, p.Classic ? null : modern.Held(player, CombatAction.Run));
                 }
             }
             else
             {
-                CombatManualControl.Walk(a, info, image.Animation!, semanticDirections, semanticWalk[player], milliseconds, p.Classic ? null : modern.Held(player, GameAction.Run));
+                CombatManualControl.Walk(a, info, image.Animation!, semanticDirections, semanticWalk[player], milliseconds, p.Classic ? null : modern.Held(player, CombatAction.Run));
             }
         }
         else
         {
-            bool branch = p.Classic ? modern.Held(player, GameAction.Jump) : modern.Held(player, GameAction.Branch);
+            bool branch = p.Classic ? modern.Held(player, CombatAction.Jump) : modern.Held(player, CombatAction.Branch);
             if (branch)
             {
                 int d = CombatSemanticControl.Direction(modern, player, a.Facing);
@@ -290,13 +302,13 @@ public sealed class CombatActorController : ICombatActorActions
                     CombatSemanticControl.Variation(image, d, 0, milliseconds);
                 }
             }
-            else if (modern.Held(player, GameAction.Attack))
+            else if (modern.Held(player, CombatAction.Attack))
             {
                 CombatSemanticControl.AirAttack(image, milliseconds);
             }
             // Do not retain an early attack/jump press until an unrelated future legal state.
-            modern.Press(player, GameAction.Attack);
-            modern.Press(player, GameAction.Jump);
+            modern.Press(player, CombatAction.Attack);
+            modern.Press(player, CombatAction.Jump);
         }
     }
 

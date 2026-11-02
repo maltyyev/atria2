@@ -62,7 +62,7 @@ public sealed class CombatControlOverlay
         {
             for (int p = 0; p < 2; p++)
             {
-                if (input.Held(p, GameAction.Selector))
+                if (input.CombatInput.Held(p, CombatAction.Selector))
                 {
                     actor = ActorForPlayer(p);
                     if (actor < 0)
@@ -94,7 +94,7 @@ public sealed class CombatControlOverlay
             return;
         }
 
-        if (!input.Held(owner, GameAction.Selector))
+        if (!input.CombatInput.Held(owner, CombatAction.Selector))
         {
             if (panel.Selection < moves.Count)
             {
@@ -124,7 +124,7 @@ public sealed class CombatControlOverlay
         // Assign quick slots before D-pad can be interpreted as menu navigation.
         for (int q = 0; q < 4; q++)
         {
-            if (input.PressQuick(owner, q, assigning: true) && panel.Selection < moves.Count)
+            if (input.CombatInput.PressQuick(owner, q, assigning: true) && panel.Selection < moves.Count)
             {
                 input.Profile.Players[owner].Quick[party][q] = moves[panel.Selection].Id;
                 save();

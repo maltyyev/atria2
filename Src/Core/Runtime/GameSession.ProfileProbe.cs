@@ -1,4 +1,6 @@
 using Atria.Core.Contracts.Audio;
+using Atria.Core.Contracts.Input;
+using Atria.Core.Contracts.Window;
 using Atria.Core.Resources.Audio;
 using Atria.Core.Runtime.Audio;
 using Atria.Core.Persistence.Controls;
@@ -15,6 +17,7 @@ using Atria.Core.Persistence.Settings;
 using Atria.Core.Presentation.Settings;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation;
+using Atria.Core.Presentation.Scenes;
 using Atria.Core.Game;
 using Atria.Core.Resources;
 using Atria.Core.Resources.Localization;
@@ -35,6 +38,7 @@ public sealed partial class GameSession
         var window = probeHost.Window;
         try
         {
+            VerifyMainMenuHintIntegration(session);
             var first = session.playerProfiles.Active;
             string save = session.PersistenceStore.GetSlotPath(0);
             Check(File.Exists(save), "real legacy save is migrated at startup");
@@ -83,15 +87,194 @@ public sealed partial class GameSession
         }
         finally
         {
-            session.DisposeProgression();
-            session.controls.Dispose();
-            session.StopAudio();
-            GameText.Use(previous);
+            try
+            {
+                session.DisposeProgression();
+            }
+            finally
+            {
+                try
+                {
+                    var detachedRouter = session.controls;
+                    session.inputHintsDirty = false;
+                    session.DisposeInputRouter();
+                    if (detachedRouter is not null)
+                    {
+                        var finalWindow = new HintProbeWindow();
+                        finalWindow.ScanKeys[38] = true;
+                        detachedRouter.Poll(finalWindow);
+                        if (session.inputHintsDirty)
+                            throw new InvalidOperationException("Profile session: terminated input router still invalidated menu hints.");
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        session.StopAudio();
+                    }
+                    finally
+                    {
+                        GameText.Use(previous);
+                    }
+                }
+            }
         }
 
         static void Check(bool value, string message)
         {
             if (!value) throw new InvalidOperationException("Profile session: " + message);
         }
+    }
+
+    private static void VerifyMainMenuHintIntegration(GameSession session)
+    {
+        var pads = new HintProbePads();
+        pads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
+        session.ReplaceInputRouter(new(session.controls.Profile, session.bindings, pads));
+        var router = session.controls;
+        var window = new HintProbeWindow();
+
+        var expectedView = new MainMenuView(session.hostServices.InterfaceRoot);
+        void PresentAndVerify(string source)
+        {
+            if (!session.PresentMainMenu())
+                throw new InvalidOperationException($"Profile session: main menu rejected the {source} hint frame.");
+            if (session.inputHintsDirty)
+                throw new InvalidOperationException($"Profile session: presenting the {source} hint did not clear its invalidation.");
+            var view = session.mainMenuView ?? throw new InvalidOperationException("Profile session: main menu view was not created.");
+            string profile = CurrentProfileHint(session);
+            var actual = view.Render(session.menu.Selection, session.saveDisabled, session.menu.Confirmation,
+                session.menu.YesSelected, false, profile).ToArray();
+            var expected = expectedView.Render(session.menu.Selection, session.saveDisabled,
+                session.menu.Confirmation, session.menu.YesSelected, false, profile).ToArray();
+            if (!actual.AsSpan().SequenceEqual(expected))
+                throw new InvalidOperationException($"Profile session: cached pixels do not match the {source} profile hint.");
+        }
+
+        router.Poll(window);
+        PresentAndVerify("initial keyboard hint");
+        var view = session.mainMenuView!;
+        var keyboardPixels = view.Render(session.menu.Selection, session.saveDisabled, session.menu.Confirmation,
+            session.menu.YesSelected, false, CurrentProfileHint(session)).ToArray();
+
+        pads.Samples[0] = pads.Samples[0] with { Buttons = (ushort)GamepadButtons.X };
+        router.Poll(window);
+        if (router.CurrentInputSource.Kind != InputSourceKind.Gamepad || !session.inputHintsDirty)
+            throw new InvalidOperationException("Profile session: a pad press did not select its input source once.");
+        PresentAndVerify("gamepad hint");
+        var padPixels = view.Render(session.menu.Selection, session.saveDisabled, session.menu.Confirmation,
+            session.menu.YesSelected, false, CurrentProfileHint(session)).ToArray();
+        if (keyboardPixels.AsSpan().SequenceEqual(padPixels))
+            throw new InvalidOperationException("Profile session: keyboard and gamepad hint bindings rendered identically.");
+
+        pads.Samples[0] = pads.Samples[0] with { Buttons = 0 };
+        router.Poll(window);
+        window.ScanKeys[36] = true;
+        router.Poll(window);
+        if (router.CurrentInputSource.Kind != InputSourceKind.Keyboard)
+            throw new InvalidOperationException("Profile session: keyboard activity did not restore the keyboard hint.");
+        if (!session.inputHintsDirty)
+            throw new InvalidOperationException("Profile session: keyboard source change did not invalidate its cached hint strip.");
+        PresentAndVerify("keyboard hint");
+        keyboardPixels = view.Render(session.menu.Selection, session.saveDisabled, session.menu.Confirmation,
+            session.menu.YesSelected, false, CurrentProfileHint(session)).ToArray();
+
+        window.ScanKeys[36] = false;
+        router.Poll(window);
+        window.MouseX++;
+        router.Poll(window);
+        if (router.CurrentInputSource.Kind != InputSourceKind.Mouse)
+            throw new InvalidOperationException("Profile session: mouse movement did not select its input source once.");
+        if (!session.inputHintsDirty)
+            throw new InvalidOperationException("Profile session: mouse source change did not invalidate its cached hint strip.");
+        PresentAndVerify("mouse hint");
+        var mousePixels = view.Render(session.menu.Selection, session.saveDisabled, session.menu.Confirmation,
+            session.menu.YesSelected, false, CurrentProfileHint(session)).ToArray();
+        if (!keyboardPixels.AsSpan().SequenceEqual(mousePixels))
+            throw new InvalidOperationException("Profile session: keyboard and mouse should share the configured fallback hint.");
+
+        window.LastInputActivity = new(1, InputSourceKind.Touch, 7);
+        window.VirtualPad = new(true, 0, 0, 0, 0, 0, 0, 0);
+        router.Poll(window);
+        if (router.CurrentInputSource is not { Kind: InputSourceKind.Touch, Identity: 7 })
+            throw new InvalidOperationException("Profile session: touch metadata did not select its source once.");
+        if (!session.inputHintsDirty)
+            throw new InvalidOperationException("Profile session: touch source change did not invalidate its cached hint strip.");
+        PresentAndVerify("touch hint");
+        var touchPixels = view.Render(session.menu.Selection, session.saveDisabled, session.menu.Confirmation,
+            session.menu.YesSelected, false, CurrentProfileHint(session)).ToArray();
+        if (!touchPixels.AsSpan().SequenceEqual(padPixels))
+            throw new InvalidOperationException("Profile session: touch and gamepad should share the configured pad hint.");
+
+        router.Poll(window);
+        if (session.inputHintsDirty)
+            throw new InvalidOperationException("Profile session: a held input emitted an extra source-change event.");
+        PresentAndVerify("held touch hint");
+
+        // Replacing a router must attach the new source while detaching the old one.
+        var previousRouter = router;
+        var replacementPads = new HintProbePads();
+        replacementPads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
+        session.ReplaceInputRouter(new(session.controls.Profile, session.bindings, replacementPads));
+        router = session.controls;
+        if (!session.inputHintsDirty)
+            throw new InvalidOperationException("Profile session: replacing the input router did not invalidate menu hints.");
+        PresentAndVerify("replaced router keyboard hint");
+        var replacementWindow = new HintProbeWindow();
+        replacementWindow.ScanKeys[session.bindings.Down] = true;
+        router.Poll(replacementWindow);
+        if (!session.menuNavigation.Next())
+            throw new InvalidOperationException("Profile session: menu navigation retained the replaced input router.");
+        replacementWindow.ScanKeys[session.bindings.Down] = false;
+        router.Poll(replacementWindow);
+        replacementWindow.LastInputActivity = new(1, InputSourceKind.Touch, 7);
+        replacementWindow.VirtualPad = new(true, 0, 0, 0, 0, 0, 0, 0);
+        router.Poll(replacementWindow);
+        if (!session.inputHintsDirty)
+            throw new InvalidOperationException("Profile session: replacement router did not subscribe to source changes.");
+        PresentAndVerify("replacement touch hint");
+
+        var oldWindow = new HintProbeWindow();
+        oldWindow.ScanKeys[38] = true;
+        previousRouter.Poll(oldWindow);
+        if (session.inputHintsDirty)
+            throw new InvalidOperationException("Profile session: replaced router still invalidated the main menu.");
+        PresentAndVerify("replacement remains active");
+    }
+
+    private static string CurrentProfileHint(GameSession session) => GameText.Format(
+        session.CanChangeProfile ? "ui.profiles.menuHintDynamic" : "ui.profiles.menuCurrent",
+        ("name", session.playerProfiles.Active.Name), ("button", session.controls.ProfileMenuHint));
+
+    private sealed class HintProbePads : IGamepadDevice
+    {
+        public PadSample[] Samples { get; } = new PadSample[4];
+        public PadSample Read(int slot) => Samples[slot];
+        public void Vibrate(int slot, ushort left, ushort right) { }
+    }
+
+    private sealed class HintProbeWindow : IGameWindow, IInputActivitySource, IVirtualGamepadSource
+    {
+        public bool Closed { get; set; }
+        public bool Focused { get; set; } = true;
+        public (int Width, int Height) ClientSize { get; set; } = (640, 480);
+        public bool[] ScanKeys { get; } = new bool[256];
+        public bool[] ScanPressed { get; } = new bool[256];
+        public int MouseX { get; set; } = 100;
+        public int MouseY { get; set; } = 100;
+        public bool LeftButton { get; set; }
+        public bool RightButton { get; set; }
+        public bool MiddleButton { get; set; }
+        public bool[] MousePressed { get; } = new bool[3];
+        public int MouseWheelDelta { get; set; }
+        public uint InputClockMilliseconds => 0;
+        public InputActivity LastInputActivity { get; set; }
+        public PadSample VirtualPad { get; set; }
+        public PadSample ReadVirtualGamepad() => VirtualPad;
+        public void Pump() { }
+        public bool TryDequeueScanInput(out TimestampedScanInput input) { input = default; return false; }
+        public string TakeTextInput() => "";
+        public void RequestClose() => Closed = true;
     }
 }
