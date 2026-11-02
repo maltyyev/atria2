@@ -1,5 +1,5 @@
-using Atria.Core.Game.State;
 using Atria.Core.Game.Script;
+using Atria.Core.Game.State;
 
 namespace Tests.Core.Script;
 

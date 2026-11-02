@@ -1,14 +1,10 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Atria.Core.Contracts.Host;
-using Atria.Core.Game;
 using Atria.Core.Runtime;
 using Atria.Core.Resources.Localization;
 using Atria.Core.Contracts.Input;
 using Atria.Core;
-using Atria.Core.Game.Combat;
-using Atria.Core.Game.Progression;
-using Atria.Core.Resources;
 using Atria.Platforms.Ios;
 
 namespace Atria.Hosts.Ios;

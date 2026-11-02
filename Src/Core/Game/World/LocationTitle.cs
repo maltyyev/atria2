@@ -1,8 +1,8 @@
 using System.Buffers.Binary;
+using Atria.Core.Game.Dungeon;
 using Atria.Core.Game.Town;
 using Atria.Core.Presentation.Town;
 using Atria.Core.Resources;
-using Atria.Core.Game.Dungeon;
 using Atria.Core.Resources.Localization;
 
 namespace Atria.Core.Game.World;

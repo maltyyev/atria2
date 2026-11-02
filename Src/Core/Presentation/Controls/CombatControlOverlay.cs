@@ -1,9 +1,9 @@
 using Atria.Core.Game.Combat;
+using Atria.Core.Game.State;
+using Atria.Core.Persistence.Settings;
 using Atria.Core.Presentation.Combat;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
-using Atria.Core.Game.State;
-using Atria.Core.Persistence.Settings;
 using Atria.Core.Resources.Localization;
 using Atria.Core.Runtime.Input;
 

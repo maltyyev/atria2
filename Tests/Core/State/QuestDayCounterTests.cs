@@ -1,11 +1,11 @@
 using Atria.Core.Game.Exploration;
-using Atria.Core.Presentation.Exploration;
-using Atria.Core.Persistence;
-using Atria.Core.Presentation.Persistence;
-using Atria.Core.Game.State;
-using Atria.Core.Resources;
-using Atria.Core.Game.Script;
 using Atria.Core.Game.Progression;
+using Atria.Core.Game.Script;
+using Atria.Core.Game.State;
+using Atria.Core.Persistence;
+using Atria.Core.Presentation.Exploration;
+using Atria.Core.Presentation.Persistence;
+using Atria.Core.Resources;
 
 namespace Tests.Core.State;
 

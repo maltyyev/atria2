@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
-using static Atria.Platforms.Windows.Win32.NativeCom;
 using Atria.Core.Game.Combat;
 using Atria.Core.Game.Progression;
+using static Atria.Platforms.Windows.Win32.NativeCom;
 
 namespace Atria.Platforms.Windows.Win32;
 

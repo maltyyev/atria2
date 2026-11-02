@@ -1,9 +1,9 @@
 using System.Buffers.Binary;
 using Atria.Core.Game.Combat;
-using Atria.Core.Presentation.Combat;
-using Atria.Core.Game.State;
-using Atria.Core.Resources;
 using Atria.Core.Game.Progression;
+using Atria.Core.Game.State;
+using Atria.Core.Presentation.Combat;
+using Atria.Core.Resources;
 using Tests.Core;
 
 namespace Tests.Core.Resources;

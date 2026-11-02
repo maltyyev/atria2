@@ -1,11 +1,11 @@
 using Atria.Core.Game.Menu;
-using Atria.Core.Presentation.Menu;
-using Atria.Core.Game.Termination;
-using Atria.Core.Presentation.Termination;
-using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
-using Atria.Core.Resources;
 using Atria.Core.Game.State;
+using Atria.Core.Game.Termination;
+using Atria.Core.Presentation.Menu;
+using Atria.Core.Presentation.Sprites;
+using Atria.Core.Presentation.Termination;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
 using Tests.Core.Localization;
 
 namespace Tests.Core.Termination;

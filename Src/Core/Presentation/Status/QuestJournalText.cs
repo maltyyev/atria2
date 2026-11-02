@@ -1,5 +1,5 @@
-using Atria.Core.Game.State;
 using Atria.Core.Game.Progression;
+using Atria.Core.Game.State;
 using Atria.Core.Resources.Localization;
 
 namespace Atria.Core.Presentation.Status;

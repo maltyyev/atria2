@@ -1,8 +1,8 @@
 using Atria.Core.Game.Navigation;
 using Atria.Core.Presentation.Credits;
 using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
 
 namespace Atria.Core.Runtime;
 

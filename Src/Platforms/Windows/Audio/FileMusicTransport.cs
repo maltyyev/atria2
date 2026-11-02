@@ -1,7 +1,7 @@
 using Atria.Core.Contracts.Audio;
+using Atria.Core.Resources;
 using Atria.Core.Resources.Audio;
 using Atria.Core.Runtime.Audio;
-using Atria.Core.Resources;
 using Atria.Platforms.Windows.Win32;
 
 namespace Atria.Platforms.Windows.Audio;

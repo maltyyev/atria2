@@ -1,6 +1,6 @@
+using Atria.Core.Presentation.Credits;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
-using Atria.Core.Presentation.Credits;
 
 namespace Atria.Core.Presentation.Credits;
 

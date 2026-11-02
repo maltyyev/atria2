@@ -2,8 +2,8 @@ using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
-using Atria.Core.Resources;
 using Atria.Core.Game.Progression;
+using Atria.Core.Resources;
 using Tests.Core.Localization;
 
 namespace Tests.Core.Resources;

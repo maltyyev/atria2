@@ -1,9 +1,8 @@
-using Atria.Core.Resources.Localization;
-using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
 using Atria.Core.Contracts.Presentation;
+using Atria.Core.Presentation.Sprites;
 using Atria.Core.Presentation.UI;
-using Atria.Core.Game.Progression;
+using Atria.Core.Resources.Codecs;
+using Atria.Core.Resources.Localization;
 
 namespace Atria.Core.Presentation.Scenes;
 
@@ -18,6 +17,7 @@ public sealed class MainMenuView(string assetRoot)
     private string? cachedProfile;
     private bool profileHintDirty = true;
 
+    /// <summary>Forces the cached profile hint strip to redraw on the next frame.</summary>
     internal void InvalidateProfileHint() => profileHintDirty = true;
 
     public ReadOnlySpan<uint> Render(int selection, bool saveDisabled, bool confirmation, bool yes, bool quit, string profile = "")

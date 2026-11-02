@@ -1,6 +1,6 @@
 using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources.Localization;
 
 namespace Atria.Core.Game.Combat;

@@ -1,8 +1,8 @@
 using System.Buffers.Binary;
 using Atria.Core.Presentation.Sprites;
+using Atria.Core.Resources;
 using Atria.Core.Resources.Codecs;
 using Microsoft.Win32.SafeHandles;
-using Atria.Core.Resources;
 
 namespace Atria.Core.Resources.Sprites;
 

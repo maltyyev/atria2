@@ -1,23 +1,23 @@
+using System.Runtime.ExceptionServices;
 using Atria.Core.Contracts.Audio;
-using Atria.Core.Resources.Audio;
-using Atria.Core.Runtime.Audio;
 using Atria.Core.Contracts.Host;
+using Atria.Core.Contracts.Presentation;
 using Atria.Core.Game;
-using Atria.Core.Runtime;
 using Atria.Core.Game.Dialogue;
+using Atria.Core.Persistence;
+using Atria.Core.Presentation;
 using Atria.Core.Presentation.Dialogue;
+using Atria.Core.Presentation.UI;
+using Atria.Core.Resources.Audio;
 using Atria.Core.Resources.Sprites;
+using Atria.Core.Runtime;
+using Atria.Core.Runtime.Audio;
 using Atria.Core.Runtime.Input;
 using Atria.Core.Runtime.Timing;
-using Atria.Platforms.Windows.Win32;
-using Atria.Core.Contracts.Presentation;
-using Atria.Core.Presentation;
-using Atria.Core.Presentation.UI;
-using System.Runtime.ExceptionServices;
-using Atria.Core.Persistence;
 using Atria.Platforms.Windows.Audio;
 using Atria.Platforms.Windows.Render;
 using Atria.Platforms.Windows.Video;
+using Atria.Platforms.Windows.Win32;
 
 namespace Tests.Windows;
 

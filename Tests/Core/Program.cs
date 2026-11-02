@@ -1,8 +1,8 @@
 using Atria.Core.Contracts.Input;
 using Atria.Core.Game.State;
+using Atria.Core.Persistence;
 using Atria.Core.Resources;
 using Atria.Core.Runtime.Input;
-using Atria.Core.Persistence;
 
 namespace Tests.Core;
 

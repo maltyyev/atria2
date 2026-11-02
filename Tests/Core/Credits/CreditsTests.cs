@@ -1,7 +1,7 @@
 using Atria.Core.Presentation.Credits;
 using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
 using Tests.Core.Localization;
 
 namespace Tests.Core.Credits;

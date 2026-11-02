@@ -3,8 +3,8 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Microsoft.Win32.SafeHandles;
 using Atria.Core.Game.Progression;
+using Microsoft.Win32.SafeHandles;
 
 namespace Atria.Core.Resources;
 

@@ -1,9 +1,9 @@
 using System.Buffers.Binary;
 using Atria.Core.Game.State;
 using Atria.Core.Game.Status;
+using Atria.Core.Presentation.Controls;
 using Atria.Core.Presentation.Status;
 using Atria.Core.Resources;
-using Atria.Core.Presentation.Controls;
 
 namespace Tests.Core.Status;
 

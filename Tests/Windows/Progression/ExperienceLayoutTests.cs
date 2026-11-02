@@ -1,14 +1,14 @@
 using Atria.Core.Game.Progression;
-using Atria.Core.Presentation.Progression;
 using Atria.Core.Game.State;
-using Atria.Core.Resources.Localization;
+using Atria.Core.Persistence.Settings;
+using Atria.Core.Presentation.Progression;
 using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
+using Atria.Core.Resources.Localization;
+using Atria.Platforms.Windows.Win32;
 using Tests.Core.Render;
 using Tests.Windows.Render;
-using Atria.Core.Persistence.Settings;
-using Atria.Platforms.Windows.Win32;
 
 namespace Tests.Windows.Progression;
 

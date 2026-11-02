@@ -1,10 +1,10 @@
 using System.Text.Json;
+using Atria.Core.Game.Progression;
 using Atria.Core.Persistence.Controls;
 using Atria.Core.Presentation.Controls;
-using Atria.Core.Runtime.Input;
 using Atria.Core.Resources;
-using Atria.Core.Game.Progression;
 using Atria.Core.Resources.Localization;
+using Atria.Core.Runtime.Input;
 
 namespace Atria.Core.Persistence.Settings;
 

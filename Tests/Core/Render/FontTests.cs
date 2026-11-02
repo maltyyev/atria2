@@ -1,6 +1,6 @@
+using Atria.Core.Game.Progression;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
-using Atria.Core.Game.Progression;
 
 namespace Tests.Core.Render;
 

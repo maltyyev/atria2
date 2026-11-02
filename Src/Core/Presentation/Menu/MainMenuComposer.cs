@@ -1,5 +1,5 @@
-using Atria.Core.Presentation.Scenes;
 using Atria.Core.Game.Menu;
+using Atria.Core.Presentation.Scenes;
 using Atria.Core.Resources;
 
 namespace Atria.Core.Presentation.Menu;

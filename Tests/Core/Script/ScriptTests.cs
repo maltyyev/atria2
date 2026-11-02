@@ -1,8 +1,8 @@
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
-using Atria.Core.Game.Script;
 using Atria.Core.Game.Progression;
+using Atria.Core.Game.Script;
 using Atria.Core.Resources;
 
 namespace Tests.Core.Script;

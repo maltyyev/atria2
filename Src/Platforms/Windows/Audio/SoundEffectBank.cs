@@ -1,14 +1,11 @@
+using Atria.Core.Contracts.Audio;
 using Atria.Core.Contracts.Window;
+using Atria.Core.Game.Progression;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Audio;
+using Atria.Core.Runtime.Audio;
 using Atria.Core.Runtime.Timing;
 using Atria.Platforms.Windows.Win32;
-using Atria.Core.Resources;
-
-using Atria.Core.Contracts.Audio;
-
-using Atria.Core.Resources.Audio;
-
-using Atria.Core.Runtime.Audio;
-using Atria.Core.Game.Progression;
 
 namespace Atria.Platforms.Windows.Audio;
 

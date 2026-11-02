@@ -1,10 +1,10 @@
 using System.Security.Cryptography;
 using Atria.Core.Game.Combat;
-using Atria.Core.Presentation.Combat;
 using Atria.Core.Game.Progression;
-using Atria.Core.Presentation.Progression;
 using Atria.Core.Game.State;
 using Atria.Core.Game.Town;
+using Atria.Core.Presentation.Combat;
+using Atria.Core.Presentation.Progression;
 using Atria.Core.Presentation.Town;
 using Atria.Core.Resources;
 using Tests.Core;

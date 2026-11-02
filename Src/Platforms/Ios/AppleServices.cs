@@ -1,12 +1,12 @@
 using System.Runtime.InteropServices;
 using Atria.Core.Contracts.Audio;
-using Atria.Core.Resources.Audio;
-using Atria.Core.Runtime.Audio;
 using Atria.Core.Contracts.Presentation;
+using Atria.Core.Contracts.Video;
 using Atria.Core.Presentation.UI;
 using Atria.Core.Resources;
-using Atria.Core.Contracts.Video;
+using Atria.Core.Resources.Audio;
 using Atria.Core.Resources.Video;
+using Atria.Core.Runtime.Audio;
 
 namespace Atria.Platforms.Ios;
 

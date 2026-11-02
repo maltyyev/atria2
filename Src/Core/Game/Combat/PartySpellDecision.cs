@@ -1,5 +1,4 @@
 using Atria.Core.Game.Exploration;
-using Atria.Core.Presentation.Exploration;
 using Atria.Core.Game.Progression;
 using Atria.Core.Resources;
 

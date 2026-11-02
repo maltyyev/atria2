@@ -1,11 +1,8 @@
+using Atria.Core.Contracts.Audio;
+using Atria.Core.Resources.Audio;
+using Atria.Core.Runtime.Audio;
 using Atria.Platforms.Windows.Win32;
 using static Atria.Platforms.Windows.Win32.NativeCom;
-
-using Atria.Core.Contracts.Audio;
-
-using Atria.Core.Resources.Audio;
-
-using Atria.Core.Runtime.Audio;
 
 namespace Atria.Platforms.Windows.Audio;
 

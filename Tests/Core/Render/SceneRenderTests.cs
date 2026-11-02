@@ -1,9 +1,9 @@
-using Atria.Core.Resources.Localization;
-using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
-using Atria.Core.Presentation.Scenes;
-using Atria.Core.Resources;
 using Atria.Core.Game.State;
+using Atria.Core.Presentation.Scenes;
+using Atria.Core.Presentation.Sprites;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
+using Atria.Core.Resources.Localization;
 
 namespace Tests.Core.Render;
 

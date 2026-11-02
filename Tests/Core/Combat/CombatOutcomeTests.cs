@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using Atria.Core.Game.Combat;
-using Atria.Core.Presentation.Combat;
 using Atria.Core.Game.State;
+using Atria.Core.Presentation.Combat;
 using Atria.Core.Resources;
 using Tests.Core.ActionMenu;
 

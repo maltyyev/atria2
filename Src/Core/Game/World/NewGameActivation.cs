@@ -1,6 +1,6 @@
+using Atria.Core.Game.Progression;
 using Atria.Core.Game.State;
 using Atria.Core.Resources;
-using Atria.Core.Game.Progression;
 using Atria.Core.Resources.World;
 
 namespace Atria.Core.Game.World;

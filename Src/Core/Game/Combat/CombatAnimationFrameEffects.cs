@@ -1,8 +1,8 @@
 using System.Buffers.Binary;
-using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
 using Atria.Core.Game.Progression;
+using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
 
 namespace Atria.Core.Game.Combat;
 

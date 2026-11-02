@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using Atria.Core.Contracts.Audio;
+using Atria.Core.Game.Progression;
 using Atria.Core.Resources.Audio;
 using Atria.Core.Runtime.Audio;
-using Atria.Platforms.Windows.Win32;
-using Atria.Core.Game.Progression;
 using Atria.Platforms.Windows.Audio;
+using Atria.Platforms.Windows.Win32;
 using Tests.Core.Combat;
 
 namespace Tests.Windows.Audio;

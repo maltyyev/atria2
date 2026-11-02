@@ -1,6 +1,6 @@
 using System.Text;
-using Atria.Core.Game.State;
 using Atria.Core.Game.Script;
+using Atria.Core.Game.State;
 using Atria.Core.Resources;
 
 namespace Tests.Core.Script;

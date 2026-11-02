@@ -1,31 +1,32 @@
 using Atria.Core.Contracts.Audio;
 using Atria.Core.Contracts.Input;
-using Atria.Core.Contracts.Window;
-using Atria.Core.Resources.Audio;
-using Atria.Core.Runtime.Audio;
-using Atria.Core.Persistence.Controls;
-using Atria.Core.Presentation.Controls;
-using Atria.Core.Runtime.Input;
-using Atria.Core.Game.Dialogue;
-using Atria.Core.Presentation.Dialogue;
-using Atria.Core.Resources.Sprites;
-using Atria.Core.Runtime.Timing;
-using Atria.Core.Persistence.Profiles;
-using Atria.Core.Presentation.Profiles;
-using Atria.Core.Game.Settings;
-using Atria.Core.Persistence.Settings;
-using Atria.Core.Presentation.Settings;
 using Atria.Core.Contracts.Presentation;
-using Atria.Core.Presentation;
-using Atria.Core.Presentation.Scenes;
+using Atria.Core.Contracts.Window;
 using Atria.Core.Game;
+using Atria.Core.Game.Dialogue;
+using Atria.Core.Game.Settings;
+using Atria.Core.Persistence.Controls;
+using Atria.Core.Persistence.Profiles;
+using Atria.Core.Persistence.Settings;
+using Atria.Core.Presentation;
+using Atria.Core.Presentation.Controls;
+using Atria.Core.Presentation.Dialogue;
+using Atria.Core.Presentation.Profiles;
+using Atria.Core.Presentation.Scenes;
+using Atria.Core.Presentation.Settings;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Audio;
 using Atria.Core.Resources.Localization;
+using Atria.Core.Resources.Sprites;
+using Atria.Core.Runtime.Audio;
+using Atria.Core.Runtime.Input;
+using Atria.Core.Runtime.Timing;
 
 namespace Atria.Core.Runtime;
 
 public sealed partial class GameSession
 {
+    /// <summary>Checks profile isolation, save compatibility, settings, localization, and live main-menu input hints.</summary>
     internal static string VerifyProfileIntegration(string resourceRoot, string musicRoot, string fixture, GameSessionProbeHostFactory createHost)
     {
         string output = Path.Combine(Path.GetFullPath(Path.Combine(resourceRoot, "..")), "audit", "profile-session", Guid.NewGuid().ToString("N"));
@@ -127,6 +128,7 @@ public sealed partial class GameSession
         }
     }
 
+    /// <summary>Checks cached profile-hint pixels as input sources and router ownership change.</summary>
     private static void VerifyMainMenuHintIntegration(GameSession session)
     {
         var pads = new HintProbePads();
@@ -243,10 +245,12 @@ public sealed partial class GameSession
         PresentAndVerify("replacement remains active");
     }
 
+    /// <summary>Formats the active profile's localized main-menu hint for the current input route.</summary>
     private static string CurrentProfileHint(GameSession session) => GameText.Format(
         session.CanChangeProfile ? "ui.profiles.menuHintDynamic" : "ui.profiles.menuCurrent",
         ("name", session.playerProfiles.Active.Name), ("button", session.controls.ProfileMenuHint));
 
+    /// <summary>Supplies deterministic physical pad samples for the main-menu hint probe.</summary>
     private sealed class HintProbePads : IGamepadDevice
     {
         public PadSample[] Samples { get; } = new PadSample[4];
@@ -254,6 +258,7 @@ public sealed partial class GameSession
         public void Vibrate(int slot, ushort left, ushort right) { }
     }
 
+    /// <summary>Provides controllable keyboard, pointer, touch, and virtual-pad state for the profile probe.</summary>
     private sealed class HintProbeWindow : IGameWindow, IInputActivitySource, IVirtualGamepadSource
     {
         public bool Closed { get; set; }

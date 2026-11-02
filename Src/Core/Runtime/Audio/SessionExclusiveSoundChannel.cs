@@ -1,6 +1,6 @@
+using System.Runtime.ExceptionServices;
 using Atria.Core.Contracts.Audio;
 using Atria.Core.Resources;
-using System.Runtime.ExceptionServices;
 
 namespace Atria.Core.Runtime.Audio;
 

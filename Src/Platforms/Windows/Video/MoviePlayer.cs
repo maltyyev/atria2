@@ -1,18 +1,17 @@
 using System.Diagnostics;
 using Atria.Core.Contracts.Audio;
-using Atria.Core.Resources.Audio;
-using Atria.Core.Runtime.Audio;
-using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Timing;
-using Atria.Platforms.Windows.Win32;
 using Atria.Core.Contracts.Presentation;
-using Atria.Core.Presentation;
-
-using Atria.Core.Resources.Video;
 using Atria.Core.Contracts.Video;
+using Atria.Core.Contracts.Window;
+using Atria.Core.Presentation;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Audio;
+using Atria.Core.Resources.Video;
+using Atria.Core.Runtime.Audio;
+using Atria.Core.Runtime.Timing;
 using Atria.Platforms.Windows.Audio;
 using Atria.Platforms.Windows.Render;
+using Atria.Platforms.Windows.Win32;
 
 namespace Atria.Platforms.Windows.Video;
 

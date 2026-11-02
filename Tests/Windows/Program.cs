@@ -1,7 +1,7 @@
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation;
-using Atria.Platforms.Windows.Win32;
 using Atria.Core.Presentation.UI;
+using Atria.Platforms.Windows.Win32;
 
 UnicodeText.UseRasterizer(new DirectWriteRasterizer());
 Tests.Windows.WindowsSessionProbeHost.VerifyLifetimeContract();

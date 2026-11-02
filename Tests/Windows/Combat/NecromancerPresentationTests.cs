@@ -1,20 +1,20 @@
 using Atria.Core.Game.Dialogue;
+using Atria.Core.Game.State;
+using Atria.Core.Game.Status;
+using Atria.Core.Persistence.Settings;
 using Atria.Core.Presentation.Dialogue;
+using Atria.Core.Presentation.Sprites;
+using Atria.Core.Presentation.Status;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
+using Atria.Core.Resources.Localization;
 using Atria.Core.Resources.Sprites;
 using Atria.Core.Runtime.Input;
 using Atria.Core.Runtime.Timing;
-using Atria.Core.Game.State;
-using Atria.Core.Game.Status;
-using Atria.Core.Presentation.Status;
-using Atria.Core.Resources.Localization;
-using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
-using Atria.Core.Resources;
-using Tests.Core.Render;
-using Tests.Windows.Render;
-using Atria.Core.Persistence.Settings;
 using Atria.Platforms.Windows.Win32;
 using Tests.Core.Localization;
+using Tests.Core.Render;
+using Tests.Windows.Render;
 
 namespace Tests.Windows.Combat;
 

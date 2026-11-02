@@ -1,12 +1,12 @@
 using System.Text;
 using Atria.Core.Game.Interiors;
-using Atria.Core.Presentation.Interiors;
+using Atria.Core.Game.Progression;
+using Atria.Core.Game.Script;
 using Atria.Core.Game.State;
 using Atria.Core.Game.Town;
+using Atria.Core.Presentation.Interiors;
 using Atria.Core.Presentation.Town;
 using Atria.Core.Resources;
-using Atria.Core.Game.Script;
-using Atria.Core.Game.Progression;
 using Tests.Core.Persistence;
 using Tests.Core.Script;
 

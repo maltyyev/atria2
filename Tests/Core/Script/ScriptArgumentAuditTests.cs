@@ -1,8 +1,8 @@
 using System.Text;
+using Atria.Core.Game.Progression;
+using Atria.Core.Game.Script;
 using Atria.Core.Game.State;
 using Atria.Core.Resources;
-using Atria.Core.Game.Script;
-using Atria.Core.Game.Progression;
 
 namespace Tests.Core.Script;
 

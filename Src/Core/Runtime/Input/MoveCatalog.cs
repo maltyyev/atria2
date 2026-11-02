@@ -1,8 +1,8 @@
 using System.Text;
 using Atria.Core.Game.Combat;
-using Atria.Core.Presentation.Combat;
 using Atria.Core.Game.State;
 using Atria.Core.Persistence.Settings;
+using Atria.Core.Presentation.Combat;
 using Atria.Core.Resources;
 using Atria.Core.Resources.Localization;
 

@@ -1,7 +1,7 @@
 using Atria.Core.Contracts.Input;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Timing;
 using Atria.Core.Presentation.Exploration;
+using Atria.Core.Runtime.Timing;
 
 namespace Atria.Core.Runtime.Input;
 

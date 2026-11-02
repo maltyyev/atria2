@@ -1,8 +1,8 @@
 using Atria.Core.Game.Exploration;
-using Atria.Core.Presentation.Exploration;
 using Atria.Core.Game.State;
-using Atria.Core.Resources;
 using Atria.Core.Presentation.Combat;
+using Atria.Core.Presentation.Exploration;
+using Atria.Core.Resources;
 
 namespace Atria.Core.Game.Combat;
 

@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text;
-using Atria.Core.Resources;
+using Atria.Core.Contracts.Audio;
 using Atria.Core.Game.Combat;
 using Atria.Core.Presentation.Exploration;
-using Atria.Core.Contracts.Audio;
+using Atria.Core.Resources;
 
 namespace Atria.Core.Resources.Audio;
 

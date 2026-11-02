@@ -1,10 +1,10 @@
+using Atria.Core.Game.Progression;
 using Atria.Core.Game.Settings;
 using Atria.Core.Persistence.Settings;
 using Atria.Core.Presentation.Settings;
 using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
-using Atria.Core.Game.Progression;
+using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources.Localization;
 using Atria.Core.Runtime.Input;
 

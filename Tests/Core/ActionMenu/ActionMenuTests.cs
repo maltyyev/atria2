@@ -1,14 +1,14 @@
 using System.Buffers.Binary;
+using Atria.Core.Contracts.Presentation;
 using Atria.Core.Game.ActionMenu;
-using Atria.Core.Presentation.ActionMenu;
 using Atria.Core.Game.State;
 using Atria.Core.Game.World;
-using Atria.Core.Resources.World;
+using Atria.Core.Presentation.ActionMenu;
 using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
-using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation.UI;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
+using Atria.Core.Resources.World;
 
 namespace Tests.Core.ActionMenu;
 

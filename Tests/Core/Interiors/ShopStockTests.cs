@@ -1,11 +1,11 @@
 using System.Buffers.Binary;
 using Atria.Core.Game.Interiors;
-using Atria.Core.Presentation.Interiors;
-using Atria.Core.Persistence;
-using Atria.Core.Presentation.Persistence;
-using Atria.Core.Game.State;
-using Atria.Core.Resources;
 using Atria.Core.Game.Progression;
+using Atria.Core.Game.State;
+using Atria.Core.Persistence;
+using Atria.Core.Presentation.Interiors;
+using Atria.Core.Presentation.Persistence;
+using Atria.Core.Resources;
 
 namespace Tests.Core.Interiors;
 

@@ -1,6 +1,6 @@
+using Atria.Core.Game.Settings;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
-using Atria.Core.Game.Settings;
 
 namespace Atria.Core.Presentation.Settings;
 

@@ -1,14 +1,12 @@
 using System.Runtime.InteropServices;
 using System.Text;
-using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Timing;
-using static Atria.Platforms.Windows.Win32.NativeCom;
-
 using Atria.Core.Contracts.Presentation;
-
+using Atria.Core.Contracts.Window;
 using Atria.Core.Presentation;
 using Atria.Core.Resources;
+using Atria.Core.Runtime.Timing;
 using Atria.Platforms.Windows.Win32;
+using static Atria.Platforms.Windows.Win32.NativeCom;
 
 namespace Atria.Platforms.Windows.Render;
 

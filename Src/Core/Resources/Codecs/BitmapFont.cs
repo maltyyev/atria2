@@ -1,7 +1,7 @@
 using System.Text;
 using Atria.Core.Contracts.Presentation;
-using Atria.Core.Presentation.UI;
 using Atria.Core.Presentation.Sprites;
+using Atria.Core.Presentation.UI;
 using Atria.Core.Resources;
 using Atria.Core.Resources.Localization;
 

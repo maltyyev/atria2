@@ -1,9 +1,9 @@
 using System.Buffers.Binary;
 using System.Text;
+using Atria.Core.Game.ActionMenu;
 using Atria.Core.Game.State;
 using Atria.Core.Game.World;
 using Atria.Core.Resources.World;
-using Atria.Core.Game.ActionMenu;
 
 namespace Atria.Core.Game.Exploration;
 

@@ -1,18 +1,18 @@
 using System.Diagnostics;
+using Atria.Core;
 using Atria.Core.Contracts.Host;
-using Atria.Core.Game;
-using Atria.Core.Runtime;
-using Atria.Core.Resources.Localization;
+using Atria.Core.Contracts.Presentation;
 using Atria.Core.Contracts.Window;
+using Atria.Core.Game;
+using Atria.Core.Presentation;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Localization;
+using Atria.Core.Runtime;
 using Atria.Core.Runtime.Timing;
 using Atria.Platforms.Windows.Audio;
 using Atria.Platforms.Windows.Render;
 using Atria.Platforms.Windows.Video;
 using Atria.Platforms.Windows.Win32;
-using Atria.Core.Contracts.Presentation;
-using Atria.Core.Presentation;
-using Atria.Core.Resources;
-using Atria.Core;
 
 namespace Atria.Hosts.Windows;
 

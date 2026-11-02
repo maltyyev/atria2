@@ -1,18 +1,18 @@
 using Atria.Core.Contracts.Input;
-using Atria.Core.Persistence.Controls;
-using Atria.Core.Presentation.Controls;
-using Atria.Core.Runtime.Input;
-using Atria.Core.Game.Menu;
-using Atria.Core.Presentation.Menu;
-using Atria.Platforms.Windows.Win32;
 using Atria.Core.Contracts.Presentation;
+using Atria.Core.Game.Combat;
+using Atria.Core.Game.Menu;
+using Atria.Core.Persistence.Controls;
 using Atria.Core.Presentation;
-using Atria.Core.Presentation.Sprites;
+using Atria.Core.Presentation.Controls;
+using Atria.Core.Presentation.Menu;
 using Atria.Core.Presentation.Scenes;
+using Atria.Core.Presentation.Sprites;
+using Atria.Core.Presentation.UI;
 using Atria.Core.Resources;
 using Atria.Core.Resources.Localization;
-using Atria.Core.Game.Combat;
-using Atria.Core.Presentation.UI;
+using Atria.Core.Runtime.Input;
+using Atria.Platforms.Windows.Win32;
 
 namespace Tests.Windows.Menu;
 

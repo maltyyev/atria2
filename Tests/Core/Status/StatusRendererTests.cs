@@ -1,11 +1,11 @@
-using Atria.Core.Resources.Localization;
+using Atria.Core.Game.Progression;
 using Atria.Core.Game.State;
 using Atria.Core.Game.Status;
-using Atria.Core.Presentation.Status;
 using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
+using Atria.Core.Presentation.Status;
 using Atria.Core.Resources;
-using Atria.Core.Game.Progression;
+using Atria.Core.Resources.Codecs;
+using Atria.Core.Resources.Localization;
 
 namespace Tests.Core.Status;
 

@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using Atria.Core.Presentation.Sprites;
-using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
 
 namespace Atria.Core.Presentation.Scenes;
 

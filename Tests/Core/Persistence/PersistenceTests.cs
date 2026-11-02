@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
+using Atria.Core.Game.Combat;
 using Atria.Core.Persistence;
 using Atria.Core.Presentation.Persistence;
-using Atria.Core.Game.Combat;
 using Tests.Core;
 using Tests.Core.Combat;
 using Tests.Core.Localization;

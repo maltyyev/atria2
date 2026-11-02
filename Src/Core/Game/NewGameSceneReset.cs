@@ -1,7 +1,7 @@
 using Atria.Core.Game.ActionMenu;
-using Atria.Core.Presentation.ActionMenu;
 using Atria.Core.Game.State;
 using Atria.Core.Game.Town;
+using Atria.Core.Presentation.ActionMenu;
 using Atria.Core.Presentation.Town;
 
 namespace Atria.Core.Game;

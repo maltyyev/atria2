@@ -1,7 +1,7 @@
 using Atria.Core.Game.Combat;
-using Atria.Core.Presentation.Combat;
 using Atria.Core.Game.Progression;
 using Atria.Core.Game.State;
+using Atria.Core.Presentation.Combat;
 using Atria.Core.Resources;
 
 namespace Tests.Core.Combat;

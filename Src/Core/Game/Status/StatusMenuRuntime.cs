@@ -1,11 +1,11 @@
 using Atria.Core.Contracts.Presentation;
-using Atria.Core.Presentation.UI;
-using Atria.Core.Game.State;
-using Atria.Core.Resources;
 using Atria.Core.Game.Progression;
+using Atria.Core.Game.State;
 using Atria.Core.Persistence.Settings;
 using Atria.Core.Presentation.Controls;
 using Atria.Core.Presentation.Status;
+using Atria.Core.Presentation.UI;
+using Atria.Core.Resources;
 using Atria.Core.Resources.Localization;
 
 namespace Atria.Core.Game.Status;

@@ -1,11 +1,11 @@
 using System.Text;
 using Atria.Core.Game.Combat;
-using Atria.Core.Presentation.Combat;
-using Atria.Core.Persistence.Controls;
-using Atria.Core.Presentation.Controls;
-using Atria.Core.Runtime.Input;
 using Atria.Core.Game.State;
+using Atria.Core.Persistence.Controls;
+using Atria.Core.Presentation.Combat;
+using Atria.Core.Presentation.Controls;
 using Atria.Core.Resources;
+using Atria.Core.Runtime.Input;
 
 namespace Tests.Core.Combat;
 

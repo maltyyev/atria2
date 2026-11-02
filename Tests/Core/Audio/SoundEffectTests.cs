@@ -1,8 +1,8 @@
 using System.Text;
 using Atria.Core.Contracts.Audio;
+using Atria.Core.Resources;
 using Atria.Core.Resources.Audio;
 using Atria.Core.Runtime.Audio;
-using Atria.Core.Resources;
 using Tests.Core.Localization;
 using Tests.Core.Persistence;
 

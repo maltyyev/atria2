@@ -1,10 +1,10 @@
 using Atria.Core.Game.ActionMenu;
-using Atria.Core.Presentation.ActionMenu;
 using Atria.Core.Game.Interiors;
-using Atria.Core.Presentation.Interiors;
-using Atria.Core.Game.State;
-using Atria.Core.Resources;
 using Atria.Core.Game.Script;
+using Atria.Core.Game.State;
+using Atria.Core.Presentation.ActionMenu;
+using Atria.Core.Presentation.Interiors;
+using Atria.Core.Resources;
 using Tests.Core.Persistence;
 
 namespace Tests.Core.Interiors;

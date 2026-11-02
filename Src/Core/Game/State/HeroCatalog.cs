@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
-using Atria.Core.Resources;
 using Atria.Core.Game.Progression;
+using Atria.Core.Resources;
 using Atria.Core.Resources.Localization;
 
 namespace Atria.Core.Game.State;

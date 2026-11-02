@@ -1,9 +1,7 @@
 using System.Runtime.InteropServices;
-
 using Atria.Core.Contracts.Presentation;
-
-using Atria.Core.Presentation;
 using Atria.Core.Game.Progression;
+using Atria.Core.Presentation;
 using Atria.Core.Resources;
 
 namespace Atria.Platforms.Windows.Render;

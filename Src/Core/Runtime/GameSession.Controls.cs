@@ -1,22 +1,22 @@
-using Atria.Core.Game.Navigation;
-using Atria.Core.Game.Combat;
-using Atria.Core.Presentation.Combat;
-using Atria.Core.Persistence.Controls;
-using Atria.Core.Presentation.Controls;
-using Atria.Core.Runtime.Input;
-using Atria.Core.Game.Dialogue;
-using Atria.Core.Presentation.Dialogue;
-using Atria.Core.Resources.Sprites;
-using Atria.Core.Runtime.Timing;
 using Atria.Core.Contracts.Input;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Resources;
 using Atria.Core.Game;
+using Atria.Core.Game.Combat;
+using Atria.Core.Game.Dialogue;
 using Atria.Core.Game.Menu;
+using Atria.Core.Game.Navigation;
 using Atria.Core.Game.Progression;
 using Atria.Core.Game.State;
 using Atria.Core.Game.Town;
+using Atria.Core.Persistence.Controls;
+using Atria.Core.Presentation.Combat;
+using Atria.Core.Presentation.Controls;
+using Atria.Core.Presentation.Dialogue;
+using Atria.Core.Resources;
 using Atria.Core.Resources.Localization;
+using Atria.Core.Resources.Sprites;
+using Atria.Core.Runtime.Input;
+using Atria.Core.Runtime.Timing;
 
 namespace Atria.Core.Runtime;
 
@@ -35,6 +35,7 @@ public sealed partial class GameSession
         Console.WriteLine("Controls: semantic input, profiles=" + string.Join(",", controls.Profile.Players.Select(p => p.Preset)) + "; XInput enabled.");
     }
 
+    /// <summary>Installs a router and redirects session/menu input while detaching the previous router.</summary>
     private void ReplaceInputRouter(InputRouter next)
     {
         var previous = controls;
@@ -60,11 +61,13 @@ public sealed partial class GameSession
             }
             catch
             {
+                // Preserve the original disposal failure; this replacement is no longer session-owned.
             }
             throw;
         }
     }
 
+    /// <summary>Detaches input notifications and disposes the router owned by this session.</summary>
     private void DisposeInputRouter()
     {
         var current = controls;
@@ -77,6 +80,7 @@ public sealed partial class GameSession
         current.Dispose();
     }
 
+    /// <summary>Marks the cached input hint for refresh after the active input source changes.</summary>
     private void OnInputSourceChanged(InputActivity _) => inputHintsDirty = true;
 
     private void PollSessionInput()
@@ -93,11 +97,16 @@ public sealed partial class GameSession
         {
             ShowPause(battleActive, currentCombat);
         }
-        else if (controls is not null && !blockingControls && !battleActive && host.Focused && actions.Depth < 0 && (dialogueActive
-|| state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town or GameMode.Interior or GameMode.Inn)
-&& (state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon
-    ? controls.WorldInput.Press(0, WorldAction.Pause) || controls.WorldInput.Press(1, WorldAction.Pause)
-    : controls.TownInput.Press(0, TownAction.Pause) || controls.TownInput.Press(1, TownAction.Pause)))
+        else if (controls is not null
+            && !blockingControls
+            && !battleActive
+            && host.Focused
+            && actions.Depth < 0
+            && (dialogueActive
+                || state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town or GameMode.Interior or GameMode.Inn)
+            && (state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon
+                ? controls.WorldInput.Press(0, WorldAction.Pause) || controls.WorldInput.Press(1, WorldAction.Pause)
+                : controls.TownInput.Press(0, TownAction.Pause) || controls.TownInput.Press(1, TownAction.Pause)))
         {
             ShowPause(false);
         }

@@ -1,9 +1,9 @@
-using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Timing;
-using Atria.Core.Contracts.Input;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Atria.Core.Contracts.Input;
+using Atria.Core.Contracts.Window;
 using Atria.Core.Resources;
+using Atria.Core.Runtime.Timing;
 
 namespace Atria.Platforms.Windows.Win32;
 

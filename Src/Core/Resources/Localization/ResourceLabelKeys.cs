@@ -1,6 +1,6 @@
 using System.Text;
-using Atria.Core.Resources;
 using Atria.Core.Game.State;
+using Atria.Core.Resources;
 
 namespace Atria.Core.Resources.Localization;
 
