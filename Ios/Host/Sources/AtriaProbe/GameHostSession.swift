@@ -10,13 +10,17 @@ import NativeCore
 
     /// Acquires a view lease after any earlier asynchronous stop has completed.
     func start(owner: UUID, resources: String, storage: String) async -> Int32 {
+        guard !Task.isCancelled else { return -1 }
         owners.insert(owner)
         if let pendingStop = stopTask {
             let result = await pendingStop.value
             self.stopTask = nil
             if result < 0 { return result }
         }
-        guard owners.contains(owner) else { return -1 }
+        guard !Task.isCancelled, owners.contains(owner) else {
+            owners.remove(owner)
+            return -1
+        }
         if started { return 0 }
         let result = resources.withCString { root in storage.withCString { output in atria_start(root, output) } }
         started = result >= 0

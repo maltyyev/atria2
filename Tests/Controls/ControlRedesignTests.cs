@@ -722,6 +722,38 @@ public static class ControlRedesignTests
         Check(virtualOnly.CombatInput.Press(0, GameAction.Attack), "released touch input rearms after player reset");
 
         VerifyWorldLegacyQueries(legacy);
+        VerifySlowAxisActivity(legacy);
+    }
+
+    private static void VerifySlowAxisActivity(ControlBindings legacy)
+    {
+        var pads = new Pads();
+        pads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
+        var profile = ControlProfile.Defaults(legacy);
+        using var input = new InputRouter(profile, legacy, pads);
+        bool[] keys = new bool[256], pressed = new bool[256], mouse = new bool[3];
+        long now = 0;
+        void Poll() => input.Poll(keys, pressed, mouse, true, now++);
+        Poll();
+        for (short axis = 100; axis < profile.DeadZone; axis += 100)
+        {
+            pads.Samples[0] = pads.Samples[0] with { LX = axis };
+            Poll();
+            Check(input.CurrentInputSource.Kind == InputSourceKind.Keyboard, "stick motion inside the configured deadzone does not select a source");
+        }
+        pads.Samples[0] = pads.Samples[0] with { LX = (short)profile.DeadZone };
+        Poll();
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Gamepad, "a slow stick ramp selects its source when crossing the deadzone");
+        keys[36] = true;
+        Poll();
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Keyboard, "keyboard activity takes over from a held analog stick");
+        keys[36] = false;
+        for (int delta = 100; delta <= Math.Max(1800, profile.DeadZone / 4) + 100; delta += 100)
+        {
+            pads.Samples[0] = pads.Samples[0] with { LX = (short)(profile.DeadZone + delta) };
+            Poll();
+        }
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Gamepad, "cumulative slow movement outside the deadzone reselects the gamepad");
     }
 
     private static void VerifyWorldLegacyQueries(ControlBindings legacy)
@@ -739,6 +771,9 @@ public static class ControlRedesignTests
         Check(host.QueryWorldScan(legacy.Previous), "world legacy scan routes a remapped keyboard movement binding");
         Check(!host.QueryScan(legacy.Previous), "the shared legacy menu query does not consume the world movement binding");
 
+        window.ScanKeys[36] = false;
+        input.Poll(window);
+        Check(!host.IsWorldScanHeld(legacy.Previous), "world held query releases the custom keyboard binding before analog input");
         pads.Samples[0] = new(true, 0, 0, 0, -12000, 0, 0, 0);
         input.Poll(window);
         Check(host.IsWorldScanHeld(legacy.Previous), "world legacy held scan routes configured analog movement");

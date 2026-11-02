@@ -7,6 +7,7 @@ namespace Atria.Ios;
 /// <summary>Transports host input to the game thread without sharing physical and touch slots.</summary>
 public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadSource, IInputActivitySource
 {
+    /// <summary>Number of independent physical controller slots.</summary>
     public const int PadCount = 4;
     private readonly ScanInputCapture scans = new();
     private readonly ConcurrentQueue<(byte Scan, bool Down)> keys = new();
@@ -41,8 +42,10 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
     public bool[] MousePressed { get; } = new bool[3];
     public int MouseWheelDelta => 0;
     public uint InputClockMilliseconds => unchecked((uint)Environment.TickCount64);
+    /// <summary>Gets the latest sequenced direct touch interaction reported by the host.</summary>
     public InputActivity LastInputActivity { get { lock (sync) return lastInputActivity; } }
 
+    /// <summary>Updates drawable size and flushes input when the surface loses focus.</summary>
     public void SetSurface(int width, int height, bool active)
     {
         lock (sync)

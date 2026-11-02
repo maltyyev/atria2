@@ -133,6 +133,7 @@ public static unsafe class GameExports
         catch (Exception ex) { Fail(ex); return -1; }
     }
 
+    /// <summary>Queues a physical keyboard scan transition for the active session.</summary>
     [UnmanagedCallersOnly(EntryPoint = "atria_key")]
     public static void Key(byte scan, int down)
     {
@@ -140,6 +141,7 @@ public static unsafe class GameExports
         catch (Exception ex) { Fail(ex); }
     }
 
+    /// <summary>Queues a pointer button transition in drawable pixel coordinates.</summary>
     [UnmanagedCallersOnly(EntryPoint = "atria_pointer")]
     public static void Pointer(int x, int y, int down)
     {
@@ -147,6 +149,7 @@ public static unsafe class GameExports
         catch (Exception ex) { Fail(ex); }
     }
 
+    /// <summary>Copies null-terminated UTF-8 host text into the session input queue.</summary>
     [UnmanagedCallersOnly(EntryPoint = "atria_text")]
     public static void Text(byte* utf8)
     {
@@ -166,6 +169,7 @@ public static unsafe class GameExports
         catch (Exception ex) { Fail(ex); return -1; }
     }
 
+    /// <summary>Returns the UTF-8 error length, copying the error when the supplied buffer fits.</summary>
     [UnmanagedCallersOnly(EntryPoint = "atria_error")]
     public static int Error(byte* output, int capacity)
     {

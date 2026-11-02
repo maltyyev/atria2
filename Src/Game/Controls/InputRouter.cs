@@ -51,6 +51,7 @@ public sealed class InputRouter : IDisposable
     private readonly bool[] held = new bool[InputTokenCapacity], previous = new bool[InputTokenCapacity], pending = new bool[InputTokenCapacity], blocked = new bool[InputTokenCapacity];
     private readonly long[] repeat = new long[InputTokenCapacity], nextProbe = new long[PadCount], rumbleEnd = new long[PadCount];
     private readonly PadSample[] samples = new PadSample[PadCount];
+    private readonly PadSample[] axisActivityBaselines = new PadSample[PadCount];
     private readonly bool[] connectedBefore = new bool[PadCount];
     private bool wasFocused = true;
     private long externalActivitySequence;
@@ -59,6 +60,7 @@ public sealed class InputRouter : IDisposable
     private bool hasActivityCandidate;
     private bool hasAuthoritativeActivity;
     private PadSample previousVirtualPad;
+    private PadSample virtualAxisActivityBaseline;
     private InputActivity activityCandidate;
     private readonly int[] contextVersions = new int[2];
     public int ContextVersion(int player) => contextVersions[player];
@@ -252,7 +254,11 @@ public sealed class InputRouter : IDisposable
             nextProbe[slot] = now + ReconnectPollMilliseconds;
             bool firstConnection = s.Connected && !connectedBefore[slot];
             if (s.Connected) connectedBefore[slot] = true;
-            if (focused && s.Connected && (before.Connected || firstConnection) && HasGamepadActivity(before, s))
+            bool canReportActivity = focused && !resumed && s.Connected && (before.Connected || firstConnection);
+            bool axisActivity = false;
+            if (canReportActivity) axisActivity = HasIntentionalAxisMovement(ref axisActivityBaselines[slot], s);
+            else axisActivityBaselines[slot] = s;
+            if (canReportActivity && (HasGamepadActivity(before, s) || axisActivity))
                 RecordInputActivity(InputSourceKind.Gamepad, slot);
             if (before.Connected && !s.Connected && Profile.Players.Any(p => p.PadSlot == slot))
             {
@@ -271,10 +277,12 @@ public sealed class InputRouter : IDisposable
 
         if (focused && virtualPad.Connected)
         {
-            if (previousVirtualPad.Connected && HasIntentionalAxisMovement(previousVirtualPad, virtualPad))
+            if (!previousVirtualPad.Connected || resumed) virtualAxisActivityBaseline = virtualPad;
+            if (previousVirtualPad.Connected && !resumed && HasIntentionalAxisMovement(ref virtualAxisActivityBaseline, virtualPad))
                 RecordInputActivity(InputSourceKind.Touch, hasActivityCandidate && activityCandidate.Kind == InputSourceKind.Touch ? activityCandidate.Identity : 0);
             PollPadSample(VirtualPadTokenStart, VirtualQuickChordTokenStart, virtualPad);
         }
+        else virtualAxisActivityBaseline = virtualPad;
         previousVirtualPad = virtualPad;
 
         for (int i = 0; i < held.Length; i++)
@@ -336,15 +344,24 @@ public sealed class InputRouter : IDisposable
         }
     }
 
-    private bool HasIntentionalAxisMovement(PadSample before, PadSample after)
+    private bool HasIntentionalAxisMovement(ref PadSample baseline, PadSample after)
     {
         int minimum = Math.Max(AxisHysteresis, Profile.DeadZone / 4);
-        return MeaningfulAxisDelta(before.LX, after.LX, minimum) || MeaningfulAxisDelta(before.LY, after.LY, minimum)
-            || MeaningfulAxisDelta(before.RX, after.RX, minimum) || MeaningfulAxisDelta(before.RY, after.RY, minimum);
+        bool active = MeaningfulAxisDelta(baseline.LX, after.LX, minimum) || MeaningfulAxisDelta(baseline.LY, after.LY, minimum)
+            || MeaningfulAxisDelta(baseline.RX, after.RX, minimum) || MeaningfulAxisDelta(baseline.RY, after.RY, minimum);
+        baseline = active ? after : baseline with
+        {
+            LX = Math.Abs((int)after.LX) < Profile.DeadZone ? after.LX : baseline.LX,
+            LY = Math.Abs((int)after.LY) < Profile.DeadZone ? after.LY : baseline.LY,
+            RX = Math.Abs((int)after.RX) < Profile.DeadZone ? after.RX : baseline.RX,
+            RY = Math.Abs((int)after.RY) < Profile.DeadZone ? after.RY : baseline.RY
+        };
+        return active;
     }
 
     private bool MeaningfulAxisDelta(short before, short after, int minimum) =>
-        Math.Abs((int)after) >= Profile.DeadZone && Math.Abs((int)after - before) >= minimum;
+        Math.Abs((int)after) >= Profile.DeadZone &&
+        (Math.Abs((int)before) < Profile.DeadZone || Math.Abs((int)after - before) >= minimum);
 
     private bool HasGamepadActivity(PadSample before, PadSample after)
     {
@@ -352,8 +369,7 @@ public sealed class InputRouter : IDisposable
             if (((GamepadButtons)after.Buttons & buttonMasks[i]) != 0 && ((GamepadButtons)before.Buttons & buttonMasks[i]) == 0)
                 return true;
         return after.LeftTrigger >= Profile.TriggerThreshold && before.LeftTrigger < Profile.TriggerThreshold
-            || after.RightTrigger >= Profile.TriggerThreshold && before.RightTrigger < Profile.TriggerThreshold
-            || HasIntentionalAxisMovement(before, after);
+            || after.RightTrigger >= Profile.TriggerThreshold && before.RightTrigger < Profile.TriggerThreshold;
     }
 
     private void SetInputSource(InputSourceKind kind, int identity)

@@ -9,7 +9,7 @@ using Atria.Platform.Windows.Win32;
 using Atria.Render;
 using Atria.Resources;
 
-namespace Atria;
+namespace Atria.Platform.Windows;
 
 internal static class Program
 {
