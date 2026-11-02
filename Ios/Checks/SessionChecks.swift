@@ -45,6 +45,16 @@ func testStart(_ resources: UnsafePointer<CChar>?, _ storage: UnsafePointer<CCha
         let restarted = await session.start(owner: first, resources: "assets", storage: "output")
         precondition(restarted == 1 && SessionBridge.shared.startCount == 2)
         precondition(session.stop(owner: first))
+        let firstRestart = Task { @MainActor in
+            await session.start(owner: first, resources: "assets", storage: "output")
+        }
+        let secondRestart = Task { @MainActor in
+            await session.start(owner: second, resources: "assets", storage: "output")
+        }
+        let results = await [firstRestart.value, secondRestart.value]
+        precondition(results.sorted() == [0, 1] && SessionBridge.shared.startCount == 3,
+            "Concurrent views created duplicate workers while awaiting the same stop.")
+        precondition(!session.stop(owner: first) && session.stop(owner: second))
         print("Swift session checks PASS: shared leases, asynchronous stop, cancelled start and restart.")
     }
 }
