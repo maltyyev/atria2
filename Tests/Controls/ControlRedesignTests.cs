@@ -570,6 +570,17 @@ public static class ControlRedesignTests
 
     private static void VerifyInputSourceChanges(ControlBindings legacy)
     {
+        var initiallyActivePads = new Pads();
+        initiallyActivePads.Samples[0] = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
+        using (var initiallyActive = new InputRouter(ControlProfile.Defaults(legacy), legacy, initiallyActivePads))
+        {
+            int initialChanges = 0;
+            initiallyActive.InputSourceChanged += _ => initialChanges++;
+            initiallyActive.Poll(new Window());
+            Check(initiallyActive.CurrentInputSource is { Kind: InputSourceKind.Gamepad, Identity: 0 } && initialChanges == 1,
+                "a meaningful button on the first connected sample selects its controller");
+        }
+
         var pads = new Pads();
         pads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
         using var input = new InputRouter(ControlProfile.Defaults(legacy), legacy, pads);
@@ -580,6 +591,7 @@ public static class ControlRedesignTests
 
         Poll();
         Check(changes == 0 && input.CurrentInputSource.Kind == InputSourceKind.Keyboard, "startup polling does not invent source activity");
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Keyboard, "neutral first connection does not select a gamepad source");
         window.MouseX++;
         Poll();
         Check(input.CurrentInputSource.Kind == InputSourceKind.Mouse && changes == 1, "native pointer movement selects mouse");
@@ -652,6 +664,25 @@ public static class ControlRedesignTests
         Check(changes == gamepadChanges && input.CurrentInputSource.Kind == InputSourceKind.Gamepad, "held keyboard and focus-reset mouse state do not change source on resume");
         window.ScanKeys[36] = false;
         Poll();
+
+        var reconnectPads = new Pads();
+        reconnectPads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
+        using var reconnectInput = new InputRouter(ControlProfile.Defaults(legacy), legacy, reconnectPads);
+        bool[] reconnectKeys = new bool[256], reconnectPressed = new bool[256], reconnectMouse = new bool[3];
+        void PollReconnect(long now) => reconnectInput.Poll(reconnectKeys, reconnectPressed, reconnectMouse, true, now);
+        PollReconnect(0);
+        reconnectKeys[36] = true;
+        PollReconnect(1);
+        reconnectKeys[36] = false;
+        PollReconnect(2);
+        reconnectPads.Samples[0] = default;
+        PollReconnect(3);
+        reconnectPads.Samples[0] = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
+        PollReconnect(1600);
+        Check(reconnectInput.CurrentInputSource.Kind == InputSourceKind.Keyboard, "a held button on reconnection does not steal the active source");
+        reconnectPads.Samples[0] = reconnectPads.Samples[0] with { Buttons = (ushort)(GamepadButtons.X | GamepadButtons.A) };
+        PollReconnect(1601);
+        Check(reconnectInput.CurrentInputSource.Kind == InputSourceKind.Gamepad, "a new button press after reconnection selects the controller");
 
         var virtualOnlyProfile = ControlProfile.Defaults(legacy);
         virtualOnlyProfile.Players[0].PadSlot = -1;

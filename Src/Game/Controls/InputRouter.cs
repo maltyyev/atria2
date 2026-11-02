@@ -19,7 +19,7 @@ public sealed class InputRouter : IDisposable
     private const int DpadDirectionCount = 4;
     private const int QuickChordTokenStart = PadTokenStart + PadCount * PadTokenStride;
     private const int VirtualPadTokenStart = 448;
-    private const int VirtualQuickChordTokenStart = VirtualPadTokenStart + 24;
+    private const int VirtualQuickChordTokenStart = VirtualPadTokenStart + PadControlCount;
     private const int InputTokenCapacity = VirtualQuickChordTokenStart + DpadDirectionCount;
     private const int DpadUp = 10;
     private const int DpadLeft = 13;
@@ -51,6 +51,7 @@ public sealed class InputRouter : IDisposable
     private readonly bool[] held = new bool[InputTokenCapacity], previous = new bool[InputTokenCapacity], pending = new bool[InputTokenCapacity], blocked = new bool[InputTokenCapacity];
     private readonly long[] repeat = new long[InputTokenCapacity], nextProbe = new long[PadCount], rumbleEnd = new long[PadCount];
     private readonly PadSample[] samples = new PadSample[PadCount];
+    private readonly bool[] connectedBefore = new bool[PadCount];
     private bool wasFocused = true;
     private long externalActivitySequence;
     private int lastWindowMouseX = int.MinValue, lastWindowMouseY = int.MinValue;
@@ -246,7 +247,9 @@ public sealed class InputRouter : IDisposable
             var s = pads.Read(slot);
             samples[slot] = s;
             nextProbe[slot] = now + ReconnectPollMilliseconds;
-            if (focused && before.Connected && s.Connected && HasGamepadActivity(before, s))
+            bool firstConnection = s.Connected && !connectedBefore[slot];
+            if (s.Connected) connectedBefore[slot] = true;
+            if (focused && s.Connected && (before.Connected || firstConnection) && HasGamepadActivity(before, s))
                 RecordInputActivity(InputSourceKind.Gamepad, slot);
             if (before.Connected && !s.Connected && Profile.Players.Any(p => p.PadSlot == slot))
             {
@@ -701,7 +704,7 @@ public sealed class InputRouter : IDisposable
 
         if (kind == InputKind.Pad && player == 0)
         {
-            for (int i = VirtualPadTokenStart; i < VirtualPadTokenStart + 24; i++)
+            for (int i = VirtualPadTokenStart; i < VirtualPadTokenStart + PadControlCount; i++)
             {
                 if (Take(i))
                 {
