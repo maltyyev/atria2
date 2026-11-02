@@ -1,41 +1,50 @@
-"""Stage immutable game resources and iOS-readable cutscenes; never includes player data."""
+"""Stage the shared immutable asset inventory and iOS-only movie conversions."""
 import hashlib
 import json
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
+from asset_manifest import listed_files, verify_exact_inventory
 
 repo = Path(__file__).resolve().parents[1]
+assets = repo / 'Assets'
 destination = repo / 'Ios/Host/Sources/AtriaProbe/Resources/assets'
 destination.mkdir(parents=True, exist_ok=True)
+props = ET.parse(assets / 'PackageResources.props').getroot()
 manifest = {}
 
+
 def digest(path):
+    """Return a file's SHA-256 for staged-copy and conversion invalidation checks."""
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
-for source_name, target_name, patterns in (
-    ('Game', 'game', ['*']), ('Music', 'music', ['*.wav']),
-    ('Interface', 'interface', ['*.bmp', '*.spr']), ('Localization', 'localization', ['**/*.json'])
+
+for item_name, folder in (
+    ('GameResource', 'Game'), ('MusicResource', 'Music'),
+    ('InterfaceResource', 'Interface'), ('LocalizationResource', 'Localization')
 ):
-    source = repo / 'Assets' / source_name
-    for pattern in patterns:
-        for file in sorted(source.glob(pattern)):
-            if not file.is_file():
-                continue
-            relative = Path(target_name) / file.relative_to(source)
-            target = destination / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            expected = digest(file)
-            if not target.exists() or digest(target) != expected:
-                shutil.copyfile(file, target)
-            assert digest(target) == expected, relative
-            manifest[relative.as_posix()] = expected
+    source_root = assets / folder
+    files = listed_files(props, assets, item_name)
+    if item_name in ('GameResource', 'MusicResource'):
+        verify_exact_inventory(source_root, files, item_name)
+
+    for source in files:
+        relative = Path(folder.lower()) / source.relative_to(source_root)
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        expected = digest(source)
+        if not target.exists() or digest(target) != expected:
+            shutil.copyfile(source, target)
+        if digest(target) != expected:
+            raise RuntimeError(f'Staged resource hash mismatch: {relative}')
+        manifest[relative.as_posix()] = expected
 
 ffmpeg = repo / 'third_party/ffmpeg/ffmpeg-n9.0.2-33-g4cf298e66a-win64-lgpl-shared-9.0/bin/ffmpeg.exe'
 movies = destination / 'movies'
 movies.mkdir(exist_ok=True)
-for source in sorted((repo / 'Assets/Game').glob('*.jad')):
+for source in (path for path in listed_files(props, assets, 'GameResource') if path.suffix.lower() == '.jad'):
     target = movies / (source.stem + '.mp4')
     stamp = movies / (source.stem + '.sha256')
     expected = digest(source)
