@@ -21,7 +21,9 @@ public static class CombatSoundProbeTests
             {
                 expected++;
                 if (i != 0 && playable < 0)
+                {
                     playable = i;
+                }
             }
         }
 
@@ -40,18 +42,24 @@ public static class CombatSoundProbeTests
                 throw new InvalidOperationException("Actual XAudio2 numeric bank initialization differs from the resource index.");
 
             if (playable < 0)
+            {
                 throw new InvalidOperationException("No playable numeric WAV resource was found.");
+            }
 
             native.Play(playable, -10000);
             foreach (var entry in archive.Entries)
             {
                 if (int.TryParse(entry.Name, NumberStyles.None, CultureInfo.InvariantCulture, out int id) && id >= CombatSoundBank.Capacity)
+                {
                     native.Play(id, -10000);
+                }
             }
         }
 
         if (exclusiveCount == 0)
+        {
             throw new InvalidOperationException("Actual high-ID WAV coverage was not exercised.");
+        }
 
         return $"Native combat audio: {expected} entry banks and {exclusiveCount} exclusive WAV resources passed.";
     }

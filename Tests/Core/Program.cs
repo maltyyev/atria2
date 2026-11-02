@@ -68,5 +68,19 @@ public static class CoreProbeChecks
 
 internal static class Program
 {
-    private static void Main() => CoreProbeChecks.Run();
+    private static void Main(string[] args)
+    {
+        CoreProbeChecks.Run();
+        if (args.Length == 0)
+        {
+            return;
+        }
+
+        if (args.Length != 2)
+        {
+            throw new ArgumentException("Pass the original resource and music roots.");
+        }
+
+        PortableTestSuite.Run(args[0], args[1]);
+    }
 }

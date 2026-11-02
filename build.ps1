@@ -39,14 +39,14 @@ try {
         }
         'build' { & dotnet build Atria.slnx -c Release -m:1 -nr:false }
         'test' {
-            & dotnet run --project Tests/Core/Atria.Core.Tests.csproj -c Release
+            & dotnet run --project Tests/Core/Atria.Core.Tests.csproj -c Release -- "$projectRoot/Assets/Game" "$projectRoot/Assets/Music"
             if ($LASTEXITCODE -ne 0) { throw 'Core-only checks failed.' }
             & dotnet run --project Tests/Contracts/Atria.Contracts.Tests.csproj -c Release -- "$projectRoot"
             if ($LASTEXITCODE -ne 0) { throw 'Architecture and contract checks failed.' }
             & dotnet run --project Tests/Windows/Atria.Tests.csproj -c Release -- "$projectRoot/Assets/Game" "$projectRoot/Assets/Music"
         }
         'test-aot' {
-            & dotnet run --project Tests/Core/Atria.Core.Tests.csproj -c Release
+            & dotnet run --project Tests/Core/Atria.Core.Tests.csproj -c Release -- "$projectRoot/Assets/Game" "$projectRoot/Assets/Music"
             if ($LASTEXITCODE -ne 0) { throw 'Core-only checks failed.' }
             & dotnet run --project Tests/Contracts/Atria.Contracts.Tests.csproj -c Release -- "$projectRoot"
             if ($LASTEXITCODE -ne 0) { throw 'Architecture and contract checks failed.' }

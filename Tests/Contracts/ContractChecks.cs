@@ -13,6 +13,7 @@ using Atria.Platforms.Windows.Win32;
 
 namespace Tests.Contracts;
 
+/// <summary>Checks the source layout, project boundaries and preserved runtime resource identities.</summary>
 public static class ContractChecks
 {
     private static readonly string[] ProductionProjects =
@@ -53,7 +54,6 @@ public static class ContractChecks
             "Src/Platforms/Windows/Atria.Platforms.Windows.csproj",
             "Src/Hosts/Windows/Atria.Windows.csproj",
             "Tests/Core/Atria.Core.Tests.csproj",
-            "Tests/Contracts/Atria.Contracts.Tests.csproj",
         ],
         ["Tests/Ios/Checks.csproj"] = ["Src/Hosts/Ios/Atria.Ios.csproj"],
     };
@@ -71,6 +71,7 @@ public static class ContractChecks
         "Tests/Ios/Program.cs",
     };
 
+    /// <summary>Validates a repository checkout against the expected Atria source tree and public resource names.</summary>
     public static void Run(string repositoryRoot)
     {
         string root = Path.GetFullPath(repositoryRoot);
@@ -86,9 +87,7 @@ public static class ContractChecks
     private static void VerifySourceNamespaces(string root, string top, string namespaceRoot, string[] allowedTrees)
     {
         string baseDirectory = Path.Combine(root, top);
-        foreach (string file in Directory.EnumerateFiles(baseDirectory, "*.cs", SearchOption.AllDirectories)
-                     .Where(path => !Path.GetRelativePath(baseDirectory, path).Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                         .Any(segment => segment is "bin" or "obj")))
+        foreach (string file in SourceFiles(baseDirectory))
         {
             string relative = Relative(root, file);
             string? tree = allowedTrees.FirstOrDefault(candidate =>
@@ -102,7 +101,9 @@ public static class ContractChecks
                 @"(?m)^\s*namespace\s+([A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)*)\s*[;{]");
 
             if (NamespaceExemptions.Contains(relative) && declarations.Count == 0)
+            {
                 continue;
+            }
 
             Require(declarations.Count == 1, $"Expected one namespace declaration in {relative}; found {declarations.Count}.");
             Require(declarations[0].Groups[1].Value == expected,
@@ -151,7 +152,7 @@ public static class ContractChecks
 
     private static void VerifyBoundaryImports(string root)
     {
-        foreach (string file in Directory.EnumerateFiles(Path.Combine(root, "Src/Core"), "*.cs", SearchOption.AllDirectories))
+        foreach (string file in SourceFiles(Path.Combine(root, "Src/Core")))
         {
             string source = File.ReadAllText(file);
             Require(!Regex.IsMatch(source, @"\bAtria\.(?:Platforms|Hosts)\."),
@@ -162,7 +163,7 @@ public static class ContractChecks
 
         foreach (string platformTree in new[] { "Src/Platforms/Windows", "Src/Platforms/Ios" })
         {
-            foreach (string file in Directory.EnumerateFiles(Path.Combine(root, platformTree.Replace('/', Path.DirectorySeparatorChar)), "*.cs", SearchOption.AllDirectories))
+            foreach (string file in SourceFiles(Path.Combine(root, platformTree.Replace('/', Path.DirectorySeparatorChar))))
             {
                 Require(!Regex.IsMatch(File.ReadAllText(file), @"\bAtria\.Hosts\."),
                     $"Platform source references a host namespace: {Relative(root, file)}");
@@ -179,7 +180,7 @@ public static class ContractChecks
                 .Select(file => "Atria.Content.Atria2." + Path.GetFileName(file)))
             .Order(StringComparer.Ordinal)
             .ToArray();
-        string[] actual = typeof(GamepadState).Assembly.GetManifestResourceNames().Order(StringComparer.Ordinal).ToArray();
+        string[] actual = typeof(PadSample).Assembly.GetManifestResourceNames().Order(StringComparer.Ordinal).ToArray();
         Require(actual.SequenceEqual(expected, StringComparer.Ordinal),
             $"Atria.Core manifest resource identities changed. Expected [{string.Join(", ", expected)}], found [{string.Join(", ", actual)}].");
 
@@ -205,9 +206,17 @@ public static class ContractChecks
     private static string Relative(string root, string path) =>
         Path.GetRelativePath(root, path).Replace('\\', '/');
 
+    private static IEnumerable<string> SourceFiles(string directory) =>
+        Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !Path.GetRelativePath(directory, path)
+                .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Any(segment => segment is "bin" or "obj"));
+
     private static void Require(bool condition, string message)
     {
         if (!condition)
+        {
             throw new InvalidOperationException(message);
+        }
     }
 }
