@@ -283,6 +283,12 @@ public sealed partial class GameSession : IScriptEffects
 
     private bool BeforeModalInput(GameState value)
     {
+        SceneInput sceneInput = value.Mode switch
+        {
+            GameMode.World or GameMode.WorldEntry or GameMode.Dungeon => controls.WorldInput,
+            GameMode.Town or GameMode.Interior or GameMode.Inn => controls.TownInput,
+            _ => controls.MenuInput
+        };
         UpdatePointerFocus();
         if (controls.FocusPauseRequested)
         {
@@ -297,13 +303,13 @@ public sealed partial class GameSession : IScriptEffects
         }
 
         if (!battleActive && !dialogueActive && value.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town
-&& controls.Press(0, GameAction.Status))
+&& sceneInput.Press(0, GameAction.Status))
         {
             OpenScreen(UiScreen.Status);
             return false;
         }
 
-        if (!battleActive && !dialogueActive && controls.Press(0, GameAction.Reference))
+        if (!battleActive && !dialogueActive && sceneInput.Press(0, GameAction.Reference))
         {
             ShowMoveReference(0);
             return false;

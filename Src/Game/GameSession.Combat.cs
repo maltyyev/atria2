@@ -68,12 +68,12 @@ public sealed partial class GameSession
             gate.RebaseSchedule();
             var selection = new CombatSelectionModal(state, host, selectionRaster, bindings, (_, target) => backdrop.Pixels.Span.CopyTo(target), () => music.Update(awardMusicTrack), name => PlayExclusiveScenarioSound(Encoding.ASCII.GetBytes(name)), StopExclusiveScenarioSound, chosen => entry.BindSelectedParty(chosen, region, gate.LastFrameMilliseconds), () =>
             {
-                if (controls.Press(0, GameAction.Pause) || controls.Press(1, GameAction.Pause))
+                if (controls.CombatInput.Press(0, GameAction.Pause) || controls.CombatInput.Press(1, GameAction.Pause))
                 {
                     ShowPause(true);
                 }
 
-                if (controls.Press(0, GameAction.Reference) || controls.Press(1, GameAction.Reference))
+                if (controls.CombatInput.Press(0, GameAction.Reference) || controls.CombatInput.Press(1, GameAction.Reference))
                 {
                     ShowMoveReference(0);
                 }
@@ -96,7 +96,7 @@ public sealed partial class GameSession
             );
             controls.Clear();
             controls.InBattle = true;
-            transport.Input.Modern = controls;
+            transport.Input.Modern = controls.CombatInput;
             currentCombat = combat;
             combatControls = new(
                 controls,
@@ -240,14 +240,14 @@ public sealed partial class GameSession
         CheckLifetime();
         if (currentCombat is not null)
         {
-            if (controls.FocusPauseRequested || controls.Press(0, GameAction.Pause) || controls.Press(1, GameAction.Pause))
+            if (controls.FocusPauseRequested || controls.CombatInput.Press(0, GameAction.Pause) || controls.CombatInput.Press(1, GameAction.Pause))
             {
                 ShowPause(true, currentCombat);
             }
 
             for (int p = 0; p < 2; p++)
             {
-                if (controls.Press(p, GameAction.Reference))
+                if (controls.CombatInput.Press(p, GameAction.Reference))
                 {
                     int actor = combatControls!.ActorForPlayer(p);
                     ShowMoveReference(actor < 0 ? 0 : actor - currentCombat.Execution.Runtime.Scene.PartyStartIndex);
