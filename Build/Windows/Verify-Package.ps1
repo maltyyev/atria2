@@ -1,7 +1,9 @@
-param([string]$PackageRoot = (Join-Path $PSScriptRoot '../artifacts/win-x64'))
+param([string]$PackageRoot)
 
 $ErrorActionPreference = 'Stop'
-$assetRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../Assets'))
+$repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+if ([string]::IsNullOrWhiteSpace($PackageRoot)) { $PackageRoot = Join-Path $repoRoot 'artifacts/win-x64' }
+$assetRoot = Join-Path $repoRoot 'Assets'
 $PackageRoot = (Resolve-Path -LiteralPath $PackageRoot).Path
 [xml]$definition = Get-Content -LiteralPath (Join-Path $assetRoot 'PackageResources.props') -Raw
 $verified = 0

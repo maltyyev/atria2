@@ -1,16 +1,23 @@
 """Stage the shared immutable asset inventory and iOS-only movie conversions."""
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from asset_manifest import listed_files, verify_exact_inventory
+from stage_paths import ensure_no_links, is_link, resolve_stage
 
-repo = Path(__file__).resolve().parents[1]
+repo = Path(__file__).resolve().parents[2]
 assets = repo / 'Assets'
-destination = repo / 'Src/Hosts/Ios/Swift/Sources/AtriaProbe/Resources/assets'
+stage = resolve_stage(repo, os.environ.get('ATRIA_STAGE') or None)
+destination = stage / 'Resources' / 'assets'
+destination = ensure_no_links(destination, stage)
 destination.mkdir(parents=True, exist_ok=True)
+for existing in destination.rglob('*'):
+    if is_link(existing):
+        raise RuntimeError(f'Staged resources may not contain links: {existing}')
 props = ET.parse(assets / 'PackageResources.props').getroot()
 manifest = {}
 
@@ -58,4 +65,15 @@ for source in (path for path in listed_files(props, assets, 'GameResource') if p
     manifest[target.relative_to(destination).as_posix()] = digest(target)
 
 (destination / 'manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+movie_stamps = {
+    f'movies/{source.stem}.sha256'
+    for source in listed_files(props, assets, 'GameResource')
+    if source.suffix.lower() == '.jad'
+}
+expected_files = set(manifest) | {'manifest.json'} | movie_stamps
+actual_files = {path.relative_to(destination).as_posix() for path in destination.rglob('*') if path.is_file()}
+if actual_files != expected_files:
+    extra = sorted(actual_files - expected_files)
+    missing = sorted(expected_files - actual_files)
+    raise RuntimeError(f'Staged inventory mismatch; extra={extra}, missing={missing}. Existing files were preserved.')
 print(f'Verified {len(manifest)} staged resources; player data excluded.')
