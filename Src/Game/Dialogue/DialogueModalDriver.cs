@@ -167,6 +167,8 @@ public sealed class NativeDialogueFrameHost : IDialogueFrameHost
 
     public bool QueryScan(byte scan) => Controls?.LegacyMenu(scan, true) ?? scanInput.Query(scan);
     public bool IsHeld(byte scan) => Controls?.LegacyMenu(scan, false) ?? scanInput.IsHeld(scan);
+    public bool QueryWorldScan(byte scan) => Controls?.WorldInput.QueryLegacyScan(scan) ?? scanInput.Query(scan);
+    public bool IsWorldScanHeld(byte scan) => Controls?.WorldInput.HeldLegacyScan(scan) ?? scanInput.IsHeld(scan);
     public void ClearScanLatch(byte scan) => scanInput.ClearQueryLatch(scan);
     public bool QueryAction(DialogueInputAction action) => QueryScan(action switch
     {

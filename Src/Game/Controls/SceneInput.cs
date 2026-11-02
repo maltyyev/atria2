@@ -27,6 +27,12 @@ public readonly struct SceneInput
     /// <summary>Reads held state only when the action belongs to this scene.</summary>
     public bool Held(int player, GameAction action) => Allows(action) && router.Held(player, action);
 
+    /// <summary>Queries the legacy scan adapter with this scene's action meanings.</summary>
+    public bool QueryLegacyScan(byte scan) => router.QuerySceneScan(scene, scan);
+
+    /// <summary>Reads held state through this scene's legacy scan adapter.</summary>
+    public bool HeldLegacyScan(byte scan) => router.HeldSceneScan(scene, scan);
+
     /// <summary>Consumes menu navigation, confirmation, or cancellation for menu and town scenes.</summary>
     public bool Menu(GameAction action, bool allowRepeat = false) =>
         scene is InputScene.Menu or InputScene.Town && ControlProfile.IsMenu(action)

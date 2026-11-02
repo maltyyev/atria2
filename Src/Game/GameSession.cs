@@ -268,6 +268,8 @@ public sealed partial class GameSession : IScriptEffects
     }
 
     private bool Query(byte scan) => host.QueryScan(scan);
+    private bool QueryWorld(byte scan) => host.QueryWorldScan(scan);
+    private bool HeldWorld(byte scan) => host.IsWorldScanHeld(scan);
 
     private NarrativeScenes.Scene? PendingWorldNarrative() =>
         state.Mode == GameMode.World && exploration is { Moving: false } && state.ScriptActive == 0
