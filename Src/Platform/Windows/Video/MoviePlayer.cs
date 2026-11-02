@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using Atria.Audio;
 using Atria.Platform;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 using Atria.Render;
 
-namespace Atria.Video;
+using Atria.Video;
 
-public readonly record struct MoviePlaybackResult(int FramesAdvanced, int Presents, long AudioSampleFrames, bool Skipped, bool TimedOut);
+namespace Atria.Platform.Windows.Video;
+
 /// <summary>Synchronous cutscene on existing devices. The PCM sample clock owns the video timeline.</summary>
 public static class MoviePlayer
 {

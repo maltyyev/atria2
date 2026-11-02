@@ -1,4 +1,3 @@
-using Atria.Platform.Win32;
 using Atria.Render.Codecs;
 using Atria.Render.UI;
 using Atria.Resources;
@@ -64,7 +63,7 @@ public static class MainMenuArtwork
             if (!labels.TryGetValue(key, out mask!))
             {
                 mask = Tighten(UnicodeText.Layout(text, size, LabelFont));
-                while ((mask.Advance > maximumWidth || mask.Height - DirectWriteRasterizer.MaskPadding * 2 > maximumHeight) && size > 8)
+                while ((mask.Advance > maximumWidth || mask.Height - TextMask.Padding * 2 > maximumHeight) && size > 8)
                     mask = Tighten(UnicodeText.Layout(text, --size, LabelFont));
                 if (mask.Advance > maximumWidth)
                 {
@@ -76,14 +75,13 @@ public static class MainMenuArtwork
                 labels[key] = mask;
             }
         }
-        int x = box.Left + (maximumWidth - mask.Advance) / 2;
-        int y = box.Top + (maximumHeight - mask.Height) / 2 + DirectWriteRasterizer.MaskPadding;
+        var origin = CenterOrigin(mask, box);
         if (clip is { } limit)
             box = new(Math.Max(box.Left, limit.Left), Math.Max(box.Top, limit.Top), Math.Min(box.RightExclusive, limit.RightExclusive), Math.Min(box.BottomExclusive, limit.BottomExclusive));
         if (box.RightExclusive <= box.Left || box.BottomExclusive <= box.Top)
             return;
-        UnicodeText.Draw(mask, target, width, height, stride, x + 2, y + 2, 0, box);
-        UnicodeText.Draw(mask, target, width, height, stride, x, y, color, box);
+        UnicodeText.Draw(mask, target, width, height, stride, origin.X + 2, origin.Y + 2, 0, box);
+        UnicodeText.Draw(mask, target, width, height, stride, origin.X, origin.Y, color, box);
     }
 
     public static void Border(Span<ushort> target, int width, int height, int stride, RasterClip box, ushort color, int thickness, RasterClip? clip = null)
@@ -95,7 +93,8 @@ public static class MainMenuArtwork
                     target[y * stride + x] = color;
     }
     // Font line boxes include unused ascender/descender space; center the visible ink on each plaque.
-    private static TextMask Tighten(TextMask source)
+    /// <summary>Crops unused line-box space while retaining a standard padded ink mask.</summary>
+    internal static TextMask Tighten(TextMask source)
     {
         int left = source.Width, top = source.Height, right = -1, bottom = -1;
         for (int y = 0; y < source.Height; y++)
@@ -112,7 +111,7 @@ public static class MainMenuArtwork
         }
         if (right < left)
             return source;
-        int padding = DirectWriteRasterizer.MaskPadding;
+        int padding = TextMask.Padding;
         int inkWidth = right - left + 1, inkHeight = bottom - top + 1;
         int width = inkWidth + padding * 2, height = inkHeight + padding * 2;
         byte[] coverage = new byte[width * height];
@@ -120,7 +119,12 @@ public static class MainMenuArtwork
         {
             source.Coverage.AsSpan((top + y) * source.Width + left, inkWidth).CopyTo(coverage.AsSpan((y + padding) * width + padding));
         }
-        return new(width, height, inkWidth, coverage, source.MissingGlyphs, source.Lines);
+        return new(width, height, inkWidth, coverage, source.MissingGlyphs, source.Lines, -padding, -padding);
     }
+
+    /// <summary>Returns the logical origin that centers a padded tight mask's visible ink.</summary>
+    internal static (int X, int Y) CenterOrigin(TextMask mask, RasterClip box)
+        => (box.Left + ((box.RightExclusive - box.Left) - mask.Advance) / 2 - mask.OriginX - TextMask.Padding,
+            box.Top + ((box.BottomExclusive - box.Top) - (mask.Height - TextMask.Padding * 2)) / 2 - mask.OriginY - TextMask.Padding);
 
 }

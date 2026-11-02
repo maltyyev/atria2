@@ -3,22 +3,18 @@ using Atria.Game.Dialogue;
 using Atria.Game.Exploration;
 using Atria.Game.Persistence;
 using Atria.Game.State;
-using Atria.Platform.Win32;
 using Atria.Render;
 
 namespace Atria.Game;
 
 public sealed partial class GameSession
 {
-    internal static string VerifyNarrativeArrival(string root, string musicRoot, string fixture)
+    internal static string VerifyNarrativeArrival(string root, string musicRoot, string fixture, GameSessionProbeHostFactory createHost)
     {
         string output = Path.GetFullPath(Path.Combine(root, "..", "audit", "narrative-arrival", Guid.NewGuid().ToString("N")));
-        using var window = new NativeWindow("Atria narrative arrival verification", 2560, 1440);
-        using var presenter = new D3D11Presenter(window.Handle, 2560, 1440);
-        using var audio = new AudioDevice();
-        using var transport = new FileMusicTransport(audio, musicRoot, 0);
-        using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
-        var session = new GameSession(root, window, presenter, audio, transport, faces, 60, true, null, output);
+        using var probeHost = createHost(root, musicRoot, output, 60, true);
+        var session = probeHost.Session;
+        var window = probeHost.Window;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(session.PersistenceStore.GetSlotPath(0))!);

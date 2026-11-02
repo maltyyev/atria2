@@ -43,7 +43,7 @@ try {
             & dotnet publish Tests/Atria.Tests.csproj -c Release -r win-x64 -p:PublishAot=true -m:1 -nr:false -o artifacts/tests-aot
             if($LASTEXITCODE -eq 0) { & "$projectRoot/artifacts/tests-aot/Atria.Tests.exe" "$projectRoot/Assets/Game" "$projectRoot/Assets/Music" }
         }
-        'publish' { & dotnet publish Src/Atria.Game.csproj -c Release -m:1 -nr:false -o artifacts/win-x64 }
+        'publish' { & dotnet publish Src/Platform/Windows/Atria.Windows.csproj -c Release -m:1 -nr:false -o artifacts/win-x64 }
     }
     if ($LASTEXITCODE -ne 0) { throw "Action $Action failed with exit code $LASTEXITCODE" }
     if($Action -eq 'publish') {

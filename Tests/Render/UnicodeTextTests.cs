@@ -1,7 +1,7 @@
 using System.Globalization;
 using Atria.Game.Controls;
 using Atria.Localization;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 using Atria.Render.Codecs;
 using Atria.Render.Scenes;
 using Atria.Render.UI;
@@ -36,6 +36,17 @@ public static class UnicodeTextTests
         var clipped = Enumerable.Repeat((ushort)0x1234, 640 * 480).ToArray();
         UnicodeText.Draw(letter, clipped, 640, 480, 640, 4, 4, 0xffff, new(10, 10, 20, 20));
         Check(clipped.Where((_, i) => i % 640 < 10 || i % 640 >= 20 || i / 640 < 10 || i / 640 >= 20).All(p => p == 0x1234), "Clipping cannot write outside bounds");
+        ushort[] shiftedPixels = new ushort[10 * 10];
+        UnicodeText.Draw(new TextMask(2, 2, 2, [0, 255, 0, 0], 0, 1, 3, 2), shiftedPixels, 10, 10, 10, 1, 1, 0xffff);
+        Check(shiftedPixels[3 * 10 + 5] == 0xffff, "Backend layout offsets position masks independently of rasterizer type");
+        byte[] offsetInk = new byte[11 * 9];
+        offsetInk[5 * 11 + 3] = byte.MaxValue;
+        var tight = MainMenuArtwork.Tighten(new TextMask(11, 9, 7, offsetInk, 0, 1, 7, -3));
+        var centered = MainMenuArtwork.CenterOrigin(tight, new(10, 20, 30, 40));
+        ushort[] centeredPixels = new ushort[50 * 50];
+        UnicodeText.Draw(tight, centeredPixels, 50, 50, 50, centered.X, centered.Y, 0xffff);
+        Check(centeredPixels[29 * 50 + 19] == 0xffff && centeredPixels.Count(p => p == 0xffff) == 1,
+            "Tight masks with positive and negative source bearings center visible ink on the plaque");
 
         var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(resources, "ENG1.FNT")), true);
         ushort[] original = new ushort[640 * 480], modern = new ushort[640 * 480];

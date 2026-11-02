@@ -40,14 +40,14 @@ public static unsafe class GameExports
             using var log = new StreamWriter(logPath, false, new UTF8Encoding(false)) { AutoFlush = true };
             Console.SetOut(log);
             Console.SetError(log);
+            BuildInfo.UseHostAssembly(typeof(GameExports).Assembly);
             Console.WriteLine($"{DateTime.UtcNow:O} Atria {BuildInfo.Version}: managed session starting.");
             GameText.Use(new LocalizationCatalog(Path.Combine(resources, "localization")));
-            UnicodeText.UseRasterizer(new AppleText());
             using var audio = new AppleAudio();
             using var music = new AppleMusic(Path.Combine(resources, "music"));
             var movies = new AppleMovies(window, Path.Combine(resources, "movies"));
             GameSession.RunHosted(Path.Combine(resources, "game"), output, window, presenter, audio, music,
-                new GameHostServices(resources, window, movies.Play));
+                new GameHostServices(resources, window, movies.Play, new AppleText()));
         }
         catch (Exception ex)
         {

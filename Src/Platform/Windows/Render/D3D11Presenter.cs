@@ -1,6 +1,8 @@
 using System.Runtime.InteropServices;
 
-namespace Atria.Render;
+using Atria.Render;
+
+namespace Atria.Platform.Windows.Render;
 
 /// <summary>Owns presentation lifetime; a lost GPU surface does not own or destroy the game session.</summary>
 public sealed class D3D11Presenter : IFramePresenter, IDisposable

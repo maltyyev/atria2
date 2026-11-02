@@ -6,7 +6,7 @@ using Atria.Game.Dialogue;
 using Atria.Game.Settings;
 using Atria.Game.State;
 using Atria.Localization;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 using Atria.Render.Codecs;
 using Atria.Resources;
 

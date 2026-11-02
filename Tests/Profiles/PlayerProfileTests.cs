@@ -2,7 +2,7 @@ using Atria.Platform.Input;
 using Atria.Game.Controls;
 using Atria.Game.Persistence;
 using Atria.Game.Profiles;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 using Atria.Resources;
 
 namespace Atria.Tests.Profiles;

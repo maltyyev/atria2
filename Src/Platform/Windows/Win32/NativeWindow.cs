@@ -1,8 +1,9 @@
+using Atria.Platform;
 using Atria.Platform.Input;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Atria.Platform.Win32;
+namespace Atria.Platform.Windows.Win32;
 
 /// <summary>Owned Win32 window. No simulation is advanced by the message pump.</summary>
 public sealed unsafe class NativeWindow : IGameWindow, IDisposable

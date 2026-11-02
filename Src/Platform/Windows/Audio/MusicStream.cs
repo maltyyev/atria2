@@ -1,7 +1,9 @@
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 using Atria.Resources;
 
-namespace Atria.Audio;
+using Atria.Audio;
+
+namespace Atria.Platform.Windows.Audio;
 
 /// <summary>Three bounded PCM buffers, file I/O on a worker. Does not choose tracks or invent looping rules.</summary>
 public sealed class MusicStream : IDisposable

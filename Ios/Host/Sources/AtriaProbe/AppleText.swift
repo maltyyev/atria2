@@ -40,6 +40,9 @@ func textCreate(_ textPointer: UnsafePointer<CChar>?, _ familyPointer: UnsafePoi
     metrics[1] = Int32(height)
     metrics[2] = Int32(advance)
     metrics[3] = Int32(CFArrayGetCount(CTFrameGetLines(frame)))
+    // The mask's top-left is four pixels above and left of its logical layout origin.
+    metrics[4] = -Int32(padding)
+    metrics[5] = -Int32(padding)
     return data
 }
 

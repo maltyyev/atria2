@@ -1,8 +1,13 @@
 using Atria.Render;
+using Atria.Platform.Windows.Win32;
+using Atria.Render.UI;
+
+UnicodeText.UseRasterizer(new DirectWriteRasterizer());
+Atria.Tests.WindowsSessionProbeHost.VerifyLifetimeContract();
 
 if (args.Length == 4 && args[3] == "--expedition-session")
 {
-    Console.WriteLine(Atria.Game.GameSession.VerifyExpedition(args[0], args[1], args[2], Atria.Tests.Render.UnicodeTextTests.SaveBitmap));
+    Console.WriteLine(Atria.Game.GameSession.VerifyExpedition(args[0], args[1], args[2], Atria.Tests.Render.UnicodeTextTests.SaveBitmap, Atria.Tests.WindowsSessionProbeHost.Create));
     return;
 }
 
@@ -39,7 +44,7 @@ if (args.Length is 2 or 3 && args[1] == "--narrative-return")
 
 if (args.Length == 4 && args[3] == "--narrative-arrival")
 {
-    Console.WriteLine(Atria.Game.GameSession.VerifyNarrativeArrival(args[0], args[1], args[2]));
+    Console.WriteLine(Atria.Game.GameSession.VerifyNarrativeArrival(args[0], args[1], args[2], Atria.Tests.WindowsSessionProbeHost.Create));
     return;
 }
 
@@ -127,7 +132,7 @@ if (args.Length == 2 && args[1] == "--combat-balance")
 
 if (args.Length == 4 && args[3] == "--profile-session")
 {
-    Console.WriteLine(Atria.Game.GameSession.VerifyProfileIntegration(args[0], args[1], args[2]));
+    Console.WriteLine(Atria.Game.GameSession.VerifyProfileIntegration(args[0], args[1], args[2], Atria.Tests.WindowsSessionProbeHost.Create));
     return;
 }
 
@@ -173,7 +178,7 @@ if (args.Length == 2 && args[1] == "--experience-layout")
 
 if (args.Length == 4 && args[3] == "--language-session")
 {
-    Console.WriteLine(Atria.Game.GameSession.VerifyLanguageIntegration(args[0], args[1], args[2]));
+    Console.WriteLine(Atria.Game.GameSession.VerifyLanguageIntegration(args[0], args[1], args[2], Atria.Tests.WindowsSessionProbeHost.Create));
     return;
 }
 
@@ -293,7 +298,7 @@ if (args.Length == 3 && args[2] == "--ruins")
 
 if (args.Length == 4 && args[3] == "--gatha-guild-session")
 {
-    Console.WriteLine(Atria.Game.GameSession.VerifyGeographerIntegration(args[0], args[1], args[2], true));
+    Console.WriteLine(Atria.Game.GameSession.VerifyGeographerIntegration(args[0], args[1], args[2], Atria.Tests.WindowsSessionProbeHost.Create, true));
     return;
 }
 
@@ -312,7 +317,7 @@ if (args.Length == 2 && args[1] == "--gatha-guild")
 
 if (args.Length == 4 && args[3] == "--geographer-session")
 {
-    Console.WriteLine(Atria.Game.GameSession.VerifyGeographerIntegration(args[0], args[1], args[2]));
+    Console.WriteLine(Atria.Game.GameSession.VerifyGeographerIntegration(args[0], args[1], args[2], Atria.Tests.WindowsSessionProbeHost.Create));
     return;
 }
 
@@ -325,7 +330,7 @@ if (args.Length == 2 && args[1] == "--geographer")
 
 if (args.Length == 4 && args[3] == "--autosave-session")
 {
-    Console.WriteLine(Atria.Game.GameSession.VerifyPersistenceIntegration(args[0], args[1], args[2]));
+    Console.WriteLine(Atria.Game.GameSession.VerifyPersistenceIntegration(args[0], args[1], args[2], Atria.Tests.WindowsSessionProbeHost.Create));
     return;
 }
 

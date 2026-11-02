@@ -1,9 +1,11 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Atria.Platform;
-using static Atria.Platform.NativeCom;
+using static Atria.Platform.Windows.Win32.NativeCom;
 
-namespace Atria.Render;
+using Atria.Render;
+
+namespace Atria.Platform.Windows.Render;
 
 /// <summary>Nearest-neighbor GPU presentation of the original 640x480 logical framebuffer.</summary>
 internal sealed unsafe class D3D11Surface : IDisposable

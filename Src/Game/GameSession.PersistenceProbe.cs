@@ -6,7 +6,6 @@ using Atria.Game.Menu;
 using Atria.Game.Persistence;
 using Atria.Game.State;
 using Atria.Platform;
-using Atria.Platform.Win32;
 using Atria.Render;
 using Atria.Resources;
 
@@ -14,15 +13,12 @@ namespace Atria.Game;
 
 public sealed partial class GameSession
 {
-    internal static string VerifyGeographerIntegration(string root, string musicRoot, string fixture, bool guild = false)
+    internal static string VerifyGeographerIntegration(string root, string musicRoot, string fixture, GameSessionProbeHostFactory createHost, bool guild = false)
     {
         string output = Path.Combine(Path.GetFullPath(Path.Combine(root, "..")), "audit", "implementation", guild ? "gatha-guild" : "geographer", Guid.NewGuid().ToString("N"));
-        using var window = new NativeWindow("Atria geographer verification", 2560, 1440);
-        using var presenter = new D3D11Presenter(window.Handle, 2560, 1440);
-        using var audio = new AudioDevice();
-        using var transport = new FileMusicTransport(audio, musicRoot, 0);
-        using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
-        var s = new GameSession(root, window, presenter, audio, transport, faces, 30, true, null, output);
+        using var probeHost = createHost(root, musicRoot, output, 30, true);
+        var s = probeHost.Session;
+        var window = probeHost.Window;
         void Check(bool ok, string message)
         {
             if (!ok)
@@ -99,15 +95,12 @@ public sealed partial class GameSession
     }
 
     // Internal integration harness: no command exposed by the player executable; writes only to a fresh test directory.
-    internal static string VerifyPersistenceIntegration(string root, string musicRoot, string fixture)
+    internal static string VerifyPersistenceIntegration(string root, string musicRoot, string fixture, GameSessionProbeHostFactory createHost)
     {
         string output = Path.Combine(Path.GetFullPath(Path.Combine(root, "..")), "audit", "implementation", "session-autosave", Guid.NewGuid().ToString("N"));
-        using var window = new NativeWindow("Atria persistence verification", 2560, 1440);
-        using var presenter = new D3D11Presenter(window.Handle, 2560, 1440);
-        using var audio = new AudioDevice();
-        using var transport = new FileMusicTransport(audio, musicRoot, 0);
-        using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
-        var s = new GameSession(root, window, presenter, audio, transport, faces, 120, true, null, output);
+        using var probeHost = createHost(root, musicRoot, output, 120, true);
+        var s = probeHost.Session;
+        var window = probeHost.Window;
         void Check(bool ok, string message)
         {
             if (!ok)

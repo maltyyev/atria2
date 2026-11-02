@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
-using static Atria.Platform.NativeCom;
+using static Atria.Platform.Windows.Win32.NativeCom;
 
-namespace Atria.Platform.Win32;
+namespace Atria.Platform.Windows.Win32;
 
 // Windows SDK xaudio2.h ABI. Keep native signatures and defaults out of playback policy.
 internal static unsafe class XAudio2Native

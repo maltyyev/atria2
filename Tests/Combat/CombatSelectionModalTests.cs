@@ -4,7 +4,7 @@ using Atria.Game.Combat;
 using Atria.Game.Dialogue;
 using Atria.Game.State;
 using Atria.Platform;
-using Atria.Platform.Win32;
+using Atria.Platform.Windows.Win32;
 using Atria.Render.Codecs;
 using Atria.Resources;
 

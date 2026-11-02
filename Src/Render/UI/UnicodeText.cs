@@ -1,5 +1,4 @@
 using System.Globalization;
-using Atria.Platform.Win32;
 using Atria.Render.Codecs;
 
 namespace Atria.Render.UI;
@@ -12,21 +11,47 @@ public static class UnicodeText
     private static readonly Dictionary<(string Text, float Size, string Family, bool Bold, int Wrap), TextMask> masks = new();
     private static ITextRasterizer? rasterizer;
 
+    /// <summary>Replaces the required platform text backend and drops masks made by its predecessor.</summary>
     public static void UseRasterizer(ITextRasterizer replacement)
     {
         ArgumentNullException.ThrowIfNull(replacement);
         lock (sync)
         {
-            rasterizer?.Dispose();
+            if (ReferenceEquals(rasterizer, replacement))
+            {
+                return;
+            }
+            var previous = rasterizer;
             rasterizer = replacement;
             masks.Clear();
             cacheBytes = 0;
+            previous?.Dispose();
         }
     }
+
+    /// <summary>Clears cached masks and disposes the backend when its owning session ends.</summary>
+    public static void ReleaseRasterizer(ITextRasterizer owner)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+        lock (sync)
+        {
+            if (!ReferenceEquals(rasterizer, owner))
+            {
+                return;
+            }
+
+            rasterizer = null;
+            masks.Clear();
+            cacheBytes = 0;
+            owner.Dispose();
+        }
+    }
+
     private static int cacheBytes;
 
     static UnicodeText() => AppDomain.CurrentDomain.ProcessExit += (_, _) => rasterizer?.Dispose();
 
+    /// <summary>Layouts text through the host's configured rasterizer; throws when no backend is active.</summary>
     public static TextMask Layout(string text, float size, string family = "Segoe UI", bool bold = false, int wrapWidth = 4096)
     {
         lock (sync)
@@ -37,7 +62,8 @@ public static class UnicodeText
                 return cached;
             }
 
-            var result = (rasterizer ??= new DirectWriteRasterizer()).Render(text, size, family, bold, wrapWidth);
+            var backend = rasterizer ?? throw new InvalidOperationException("A text rasterizer must be configured by the host.");
+            var result = backend.Render(text, size, family, bold, wrapWidth);
             if (masks.Count >= MaximumCachedRuns || cacheBytes + result.Coverage.Length > MaximumCacheBytes)
             {
                 masks.Clear();
@@ -61,7 +87,7 @@ public static class UnicodeText
             throw new ArgumentException("Text clip is outside the destination.");
         }
 
-        int left = x - DirectWriteRasterizer.MaskPadding, top = y - DirectWriteRasterizer.MaskPadding;
+        int left = x + mask.OriginX, top = y + mask.OriginY;
         for (int row = 0; row < mask.Height; row++)
         {
             int destinationY = top + row;
@@ -69,7 +95,7 @@ public static class UnicodeText
             {
                 continue;
             }
-            ushort foreground = palette.IsEmpty ? color : palette[(phase + Math.Max(0, row - DirectWriteRasterizer.MaskPadding - 2) * 2) % palette.Length];
+            ushort foreground = palette.IsEmpty ? color : palette[(phase + Math.Max(0, row + mask.OriginY - 2) * 2) % palette.Length];
             for (int column = 0; column < mask.Width; column++)
             {
                 int destinationX = left + column;

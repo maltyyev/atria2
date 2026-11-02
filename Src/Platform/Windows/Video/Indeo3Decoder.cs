@@ -1,7 +1,9 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Atria.Video;
+using Atria.Video;
+
+namespace Atria.Platform.Windows.Video;
 
 /// <summary>Owned native IV32 codec, with no FFmpeg struct layouts exposed to managed code.</summary>
 public sealed unsafe class Indeo3Decoder : IDisposable

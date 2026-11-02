@@ -12,11 +12,11 @@ using Atria.Game.Progression;
 using Atria.Game.State;
 using Atria.Game.Town;
 using Atria.Game.World;
-using Atria.Platform.Win32;
 using Atria.Platform;
 using Atria.Render.Codecs;
 using Atria.Render.Scenes;
 using Atria.Render;
+using Atria.Render.UI;
 using Atria.Resources;
 using Atria.Script;
 using Atria.Video;
@@ -73,6 +73,7 @@ public sealed partial class GameSession : IScriptEffects
     private int selectedEquipmentActor = 0; //45ce68 BSS zero; status500 owns later selections.
     private bool saveDisabled = true, dialogueActive, menuSpriteActive = true, moviePrepared, hasFrame;
     private long logicalFrames, presents, dialoguesCompleted;
+    /// <summary>Creates a session from services selected by its platform host.</summary>
     private GameSession(
         string root,
         IGameWindow window,
@@ -84,12 +85,12 @@ public sealed partial class GameSession : IScriptEffects
         bool muted,
         string? controlsFile,
         string outputDirectory,
-        GameHostServices? services = null
+        GameHostServices services
     )
     {
         this.root = root;
-        hostServices = services ?? new GameHostServices(Path.Combine(AppContext.BaseDirectory, "assets"), new XInputDevice(),
-            (path, skip, volume, duration) => MoviePlayer.Play(path, (NativeWindow)window, (D3D11Presenter)presenter, (AudioDevice)audio, skip, volume, duration));
+        hostServices = services ?? throw new ArgumentNullException(nameof(services));
+        UnicodeText.UseRasterizer(services.TextRasterizer);
         this.window = window;
         this.presenter = presenter;
         this.audio = audio;
@@ -117,7 +118,7 @@ public sealed partial class GameSession : IScriptEffects
         leaveModal = new(etc, smallFont, text);
         actionRenderer = new(etc, smallFont);
         menuBackground = MainMenuArtwork.Load(hostServices.InterfaceRoot);
-        effects = SoundEffectBank.UiMemberNames.Select(name => audio.LoadEffect(Read("AT2WAV.000", Encoding.ASCII.GetBytes(name)))).ToArray();
+        effects = SoundEffectRotation.UiMemberNames.Select(name => audio.LoadEffect(Read("AT2WAV.000", Encoding.ASCII.GetBytes(name)))).ToArray();
         host = new(
             window,
             presenter,
@@ -140,34 +141,28 @@ public sealed partial class GameSession : IScriptEffects
         gate.Resume();
     }
 
-    public static int Run(string root, string musicRoot, double maximumSeconds, bool muted, string? controlsFile = null, string? outputDirectory = null)
+    /// <summary>Runs the shared session with explicit platform-owned services.</summary>
+    public static int RunHosted(string root, string outputDirectory, IGameWindow window, IFramePresenter presenter, IGameAudio audio,
+        IFileMusicTransport music, GameHostServices services, double maximumSeconds = double.PositiveInfinity, bool muted = false, string? controlsFile = null)
     {
-        using var window = new NativeWindow("Atria II - native session", 2560, 1440);
-        using var presenter = new D3D11Presenter(window.Handle, 2560, 1440);
-        using var audio = new AudioDevice();
-        using var transport = new FileMusicTransport(audio, musicRoot, muted ? 0 : 1);
-        using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
-        var session = new GameSession(
-            root,
-            window,
-            presenter,
-            audio,
-            transport,
-            faces,
-            maximumSeconds,
-            muted,
-            controlsFile,
-            outputDirectory ?? Path.Combine(AppContext.BaseDirectory, "userdata")
-        );
-        return session.Execute();
+        ArgumentNullException.ThrowIfNull(services);
+        UnicodeText.UseRasterizer(services.TextRasterizer);
+        try
+        {
+            using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
+            var session = new GameSession(root, window, presenter, audio, music, faces, maximumSeconds, muted, controlsFile, outputDirectory, services);
+            return session.Execute();
+        }
+        finally
+        {
+            UnicodeText.ReleaseRasterizer(services.TextRasterizer);
+        }
     }
 
-    public static int RunHosted(string root, string outputDirectory, IGameWindow window, IFramePresenter presenter, IGameAudio audio, IFileMusicTransport music, GameHostServices services)
-    {
-        using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
-        var session = new GameSession(root, window, presenter, audio, music, faces, double.PositiveInfinity, false, null, outputDirectory, services);
-        return session.Execute();
-    }
+    /// <summary>Builds a shared session for a Windows integration probe while the probe owns its devices.</summary>
+    internal static GameSession CreateProbeSession(string root, IGameWindow window, IFramePresenter presenter, IGameAudio audio,
+        IFileMusicTransport music, FaceSpriteSource faces, double maximumSeconds, bool muted, string outputDirectory, GameHostServices services)
+        => new(root, window, presenter, audio, music, faces, maximumSeconds, muted, null, outputDirectory, services);
 
     private int Execute()
     {

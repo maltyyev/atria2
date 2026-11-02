@@ -1,8 +1,10 @@
 using Atria.Audio;
 using Atria.Game;
 using Atria.Ios;
+using Atria.Ios.Checks;
 using Atria.Localization;
 using Atria.Platform.Input;
+using Atria.Render.UI;
 
 static void Check(bool condition, string description)
 {
@@ -62,7 +64,7 @@ if (args.Length == 2)
     using var frames = new MobilePresenter();
     var task = Task.Run(() => GameSession.RunHosted(Path.Combine(assets, "Game"), output,
         sessionWindow, frames, new SilentTestAudio(), new SilentTestMusic(),
-        new GameHostServices(assets, sessionWindow, (_, _, _, _) => default)));
+        new GameHostServices(assets, sessionWindow, (_, _, _, _) => default, new SmokeTextRasterizer())));
     uint[] pixels = new uint[MobilePresenter.MaximumPixels];
     var timeout = System.Diagnostics.Stopwatch.StartNew();
     bool menuSeen = false, gameSeen = false, confirmed = false;

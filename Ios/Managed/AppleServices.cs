@@ -127,7 +127,7 @@ public sealed class AppleText : ITextRasterizer
 {
     public unsafe TextMask Render(string text, float size, string family, bool bold, int wrapWidth)
     {
-        int* metrics = stackalloc int[4];
+        int* metrics = stackalloc int[6];
         nint pixels = AppleNative.TextCreate(text, family, size, bold ? 1 : 0, wrapWidth, metrics);
         if (pixels == 0) throw new InvalidOperationException("CoreText could not render text.");
         try
@@ -137,7 +137,7 @@ public sealed class AppleText : ITextRasterizer
                 throw new InvalidDataException("CoreText mask exceeds supported dimensions.");
             var coverage = new byte[count];
             Marshal.Copy(pixels, coverage, 0, count);
-            return new(metrics[0], metrics[1], metrics[2], coverage, 0, metrics[3]);
+            return new(metrics[0], metrics[1], metrics[2], coverage, 0, metrics[3], metrics[4], metrics[5]);
         }
         finally { AppleNative.TextFree(pixels); }
     }

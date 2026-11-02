@@ -2,7 +2,6 @@ using Atria.Audio;
 using Atria.Game.Controls;
 using Atria.Game.State;
 using Atria.Platform;
-using Atria.Platform.Win32;
 using Atria.Render;
 using Atria.Render.Codecs;
 using Atria.Resources;
