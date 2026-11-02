@@ -50,6 +50,11 @@ assets = list(app.rglob('manifest.json'))
 assert len(assets) == 1
 root = assets[0].parent
 manifest = json.loads(assets[0].read_text(encoding='utf-8'))
+expected_files = set(manifest) | {'manifest.json'} | {
+    str(Path(relative).with_suffix('.sha256')).replace('\\', '/')
+    for relative in manifest if relative.startswith('movies/') and relative.endswith('.mp4')
+}
+assert {path.relative_to(root).as_posix() for path in root.rglob('*') if path.is_file()} == expected_files, 'Stale or missing bundled resources.'
 for relative, expected in manifest.items():
     with (root / relative).open('rb') as stream:
         assert hashlib.file_digest(stream, 'sha256').hexdigest() == expected, relative

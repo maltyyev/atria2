@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$packages = Join-Path $projectRoot '.packages'
+$packages = if ($env:ATRIA_PACKAGES) { $env:ATRIA_PACKAGES } else { Join-Path $projectRoot '.packages' }
 $version = '10.0.13'
 $env:DOTNET_CLI_HOME = Join-Path $projectRoot '.dotnet-home'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'

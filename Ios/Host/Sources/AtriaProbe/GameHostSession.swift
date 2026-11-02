@@ -8,8 +8,7 @@ import NativeCore
     private var started = false
     private var stopTask: Task<Int32, Never>?
 
-    /// Waits for an earlier stop to finish before acquiring the shared managed session.
-    /// Acquires a view lease and starts the host if no active session exists.
+    /// Acquires a view lease after any earlier asynchronous stop has completed.
     func start(owner: UUID, resources: String, storage: String) async -> Int32 {
         owners.insert(owner)
         if let pendingStop = stopTask {
@@ -34,8 +33,7 @@ import NativeCore
         if owners.contains(owner) && started { atria_resume() }
     }
 
-    /// Releases one view's ownership and requests shutdown only after the final owner leaves.
-    /// Releases a view lease and reports whether it stopped the shared host.
+    /// Releases a view lease and requests shutdown after the final owner leaves.
     func stop(owner: UUID) -> Bool {
         owners.remove(owner)
         guard owners.isEmpty else { return false }

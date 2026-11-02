@@ -30,12 +30,13 @@ public static unsafe class GameExports
     {
         var previousOut = Console.Out;
         var previousError = Console.Error;
+        StreamWriter? log = null;
         try
         {
             Directory.CreateDirectory(output);
             string logPath = Path.Combine(output, "ios-session.log");
             if (File.Exists(logPath)) File.Move(logPath, Path.Combine(output, "ios-session.previous.log"), true);
-            using var log = new StreamWriter(logPath, false, new UTF8Encoding(false)) { AutoFlush = true };
+            log = new StreamWriter(logPath, false, new UTF8Encoding(false)) { AutoFlush = true };
             Console.SetOut(log);
             Console.SetError(log);
             BuildInfo.UseHostAssembly(typeof(GameExports).Assembly);
@@ -59,6 +60,7 @@ public static unsafe class GameExports
             catch (Exception ex) { Fail(ex); }
             Console.SetOut(previousOut);
             Console.SetError(previousError);
+            log?.Dispose();
         }
     }
 

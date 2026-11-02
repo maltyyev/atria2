@@ -75,6 +75,26 @@ window.SubmitPad(0, down);
 Check(window.Read(0).Buttons == 0 && window.Read(0) == down,
     "Controller input did not rearm after returning to neutral.");
 
+var fastHost = new MobileWindow();
+var neutralPad = new PadSample(true, 0, 0, 0, 0, 0, 0, 0);
+fastHost.SubmitPad(0, neutralPad);
+_ = fastHost.Read(0);
+for (short axis = 1; axis <= 1000; axis++)
+    fastHost.SubmitPad(0, neutralPad with { LX = axis });
+Check(fastHost.Read(0).LX == 1000, "Fast host stick sampling accumulated stale analog frames.");
+fastHost.SubmitPad(0, down);
+for (short axis = 1; axis <= 1000; axis++)
+    fastHost.SubmitPad(0, down with { LX = axis });
+fastHost.SubmitPad(0, neutralPad);
+Check(fastHost.Read(0).Buttons == down.Buttons && fastHost.Read(0).LX == 1000 && fastHost.Read(0).Buttons == 0,
+    "Analog coalescing lost a short digital press/release pair.");
+for (byte trigger = 1; trigger < 255; trigger++)
+    fastHost.SubmitPad(0, neutralPad with { LeftTrigger = trigger });
+for (int trigger = 253; trigger >= 0; trigger--)
+    fastHost.SubmitPad(0, neutralPad with { LeftTrigger = (byte)trigger });
+Check(fastHost.Read(0).LeftTrigger == 254 && fastHost.Read(0).LeftTrigger == 0,
+    "Analog coalescing lost a short trigger threshold crossing.");
+
 using (var frames = new MobilePresenter())
 {
     frames.SetFrameSize(2, 2);
@@ -137,6 +157,50 @@ if (args.Length == 2)
 Console.WriteLine("Mobile transport PASS: short taps, focus reset, key edges, frame ownership and resize.");
 
 var controlBindings = ControlBindings.Parse(new byte[64]);
+var staleTouchWindow = new MobileWindow();
+using (var staleTouchRouter = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, staleTouchWindow))
+{
+    staleTouchWindow.SubmitTouchActivity(0);
+    staleTouchWindow.SetSurface(1280, 720, false);
+    staleTouchWindow.Pump();
+    staleTouchRouter.Poll(staleTouchWindow);
+    staleTouchWindow.SetSurface(1280, 720, true);
+    staleTouchWindow.Pump();
+    staleTouchRouter.Poll(staleTouchWindow);
+    Check(staleTouchRouter.CurrentInputSource.Kind == InputSourceKind.Keyboard,
+        "A touch queued before focus loss selected its source after resume.");
+    staleTouchWindow.SubmitTouchActivity(0);
+    staleTouchRouter.Poll(staleTouchWindow);
+    Check(staleTouchRouter.CurrentInputSource.Kind == InputSourceKind.Touch,
+        "Fresh touch activity after resume was not recognized.");
+}
+var resumeWindow = new MobileWindow();
+using (var resumeRouter = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, resumeWindow))
+{
+    void PollResume(long now) => resumeRouter.Poll(resumeWindow.ScanKeys, resumeWindow.ScanPressed,
+        [false, false, false], resumeWindow.Focused, now);
+    resumeWindow.SubmitPad(0, down);
+    PollResume(0);
+    resumeWindow.SubmitKey(36, true);
+    resumeWindow.Pump();
+    PollResume(1);
+    Check(resumeRouter.CurrentInputSource.Kind == InputSourceKind.Keyboard, "Keyboard did not select the pre-suspend source.");
+    resumeWindow.SetSurface(1280, 720, false);
+    resumeWindow.Pump();
+    PollResume(2);
+    resumeWindow.SetSurface(1280, 720, true);
+    resumeWindow.Pump();
+    resumeWindow.SubmitPad(0, down);
+    PollResume(1600);
+    Check(resumeRouter.CurrentInputSource.Kind == InputSourceKind.Keyboard,
+        "A held physical pad stole the active source after real MobileWindow focus reset.");
+    resumeWindow.SubmitPad(0, neutralPad);
+    PollResume(1601);
+    resumeWindow.SubmitPad(0, down);
+    PollResume(1602);
+    Check(resumeRouter.CurrentInputSource.Kind == InputSourceKind.Gamepad,
+        "A fresh physical press after resume did not select its source.");
+}
 using (var router = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, window))
 {
     int sourceChanges = 0;
@@ -179,6 +243,23 @@ Check(lifecycle.WaitStopped(TimeSpan.FromSeconds(2)) == 0, "Restarted session di
 Check(lifecycle.Start((_, _) => throw new InvalidOperationException("lifecycle check")) == 1, "Failure case did not start.");
 Check(lifecycle.WaitStopped(TimeSpan.FromSeconds(2)) == 0 && lifecycle.Error.Contains("lifecycle check"), "Worker failure escaped lifecycle reporting.");
 Console.WriteLine("Mobile session lifecycle PASS: single owner, stop/join, restart and captured worker failure.");
+
+unsafe
+{
+    var previousOut = Console.Out;
+    var previousError = Console.Error;
+    string failureOutput = Path.Combine(Path.GetTempPath(), "atria-ios-failed-start-" + Guid.NewGuid().ToString("N"));
+    byte[] missingResources = System.Text.Encoding.UTF8.GetBytes(Path.Combine(failureOutput, "missing-assets") + '\0');
+    byte[] output = System.Text.Encoding.UTF8.GetBytes(failureOutput + '\0');
+    delegate* unmanaged<byte*, byte*, int> start = &GameExports.Start;
+    delegate* unmanaged<int> wait = &GameExports.WaitStopped;
+    fixed (byte* resources = missingResources, destination = output)
+        Check(start(resources, destination) == 1, "Failed-start session did not acquire its worker.");
+    Check(wait() == 0 && File.Exists(Path.Combine(failureOutput, "ios-error.log")), "Startup failure was not captured.");
+    Check(ReferenceEquals(Console.Out, previousOut) && ReferenceEquals(Console.Error, previousError),
+        "Startup failure did not restore console writers before disposing its session log.");
+    Console.WriteLine("Mobile failure logging PASS: captured startup failure and restored console writers.");
+}
 
 sealed class SilentTestAudio : IGameAudio
 {

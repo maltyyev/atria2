@@ -200,11 +200,14 @@ public sealed class InputRouter : IDisposable
         hasAuthoritativeActivity = false;
         bool resumed = !wasFocused && focused;
         if (focused && mouseMoved) RecordInputActivity(InputSourceKind.Mouse, 0);
-        if (focused && externalActivity.Sequence > externalActivitySequence)
+        if (externalActivity.Sequence > externalActivitySequence)
         {
             externalActivitySequence = externalActivity.Sequence;
-            activityCandidate = externalActivity;
-            hasActivityCandidate = hasAuthoritativeActivity = true;
+            if (focused && !resumed)
+            {
+                activityCandidate = externalActivity;
+                hasActivityCandidate = hasAuthoritativeActivity = true;
+            }
         }
         Now = now;
         Array.Copy(held, previous, held.Length);

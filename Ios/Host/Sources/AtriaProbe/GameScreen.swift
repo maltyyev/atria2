@@ -29,6 +29,7 @@ struct GameScreen: UIViewControllerRepresentable {
     private let controllerInput = ControllerInput()
     private let session = GameHostSession.shared
     private let sessionOwner = UUID()
+    private var startTask: Task<Void, Never>?
     private var virtualButtons: UInt16 = 0
     private var leftTrigger: UInt8 = 0
     private var rightTrigger: UInt8 = 0
@@ -37,7 +38,7 @@ struct GameScreen: UIViewControllerRepresentable {
     private let movieView = UIView()
     private let errorLabel = UILabel()
     private var observers: [NSObjectProtocol] = []
-    private var active = true
+    private var active = UIApplication.shared.applicationState == .active
     private var interrupted = false
 
     override func viewDidLoad() {
@@ -59,9 +60,10 @@ struct GameScreen: UIViewControllerRepresentable {
             let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
                 appropriateFor: nil, create: true)
             let storage = try AppStorage.directory(in: support)
-            Task { @MainActor [weak self] in
-                guard let self else { return }
+            startTask = Task { @MainActor [weak self] in
+                guard let self, !Task.isCancelled else { return }
                 let result = await self.session.start(owner: self.sessionOwner, resources: resources, storage: storage)
+                guard !Task.isCancelled else { return }
                 AppLog.write("C# session start returned \(result); storage: \(storage).")
                 self.updateFocus()
                 if result < 0 { self.showCoreError(fallback: "C# session could not start.") }
@@ -91,8 +93,9 @@ struct GameScreen: UIViewControllerRepresentable {
         }
         dpad.touched = { atria_touch_activity(0) }
         view.addSubview(dpad)
-        let definitions: [(String, UInt16)] = [("A",0x1000),("B",0x2000),("X",0x4000),("Y",0x8000),
-            ("LB",0x100),("RB",0x200),("☰",0x10),("▣",0x20),("LT",0),("RT",0)]
+        let definitions: [(String, UInt16)] = [("A", PadButton.a), ("B", PadButton.b), ("X", PadButton.x), ("Y", PadButton.y),
+            ("LB", PadButton.leftShoulder), ("RB", PadButton.rightShoulder),
+            ("☰", PadButton.menu), ("▣", PadButton.options), ("LT", 0), ("RT", 0)]
         for (title, bit) in definitions {
             let button = HoldButton(title: title)
             button.changed = { [weak self] down in
@@ -152,8 +155,8 @@ struct GameScreen: UIViewControllerRepresentable {
     private func sendInput() {
         guard active && !interrupted else { return }
         // Touch controls travel separately; they never occupy or mask a physical controller slot.
-        let x: Int16 = rightTrigger == 0 ? (virtualButtons & 4 != 0 ? -32767 : virtualButtons & 8 != 0 ? 32767 : 0) : 0
-        let y: Int16 = rightTrigger == 0 ? (virtualButtons & 1 != 0 ? 32767 : virtualButtons & 2 != 0 ? -32767 : 0) : 0
+        let x: Int16 = rightTrigger == 0 ? (virtualButtons & PadButton.left != 0 ? -32767 : virtualButtons & PadButton.right != 0 ? 32767 : 0) : 0
+        let y: Int16 = rightTrigger == 0 ? (virtualButtons & PadButton.up != 0 ? 32767 : virtualButtons & PadButton.down != 0 ? -32767 : 0) : 0
         atria_touch_pad(virtualButtons, leftTrigger, rightTrigger, x, y)
         for slot in 0..<4 {
             let pad = controllerInput.sample(slot)
@@ -201,7 +204,9 @@ struct GameScreen: UIViewControllerRepresentable {
     private func updateFocus() {
         let focused = active && !interrupted
         if !focused {
-            virtualButtons = 0; leftTrigger = 0; rightTrigger = 0
+            virtualButtons = 0
+            leftTrigger = 0
+            rightTrigger = 0
             dpad.reset()
             for button in buttons.values { button.reset() }
             atria_touch_pad(0, 0, 0, 0, 0)
@@ -249,6 +254,9 @@ struct GameScreen: UIViewControllerRepresentable {
 
     /// Releases this view's lease and asynchronously stops the final active host.
     func stopSession() {
+        active = false
+        startTask?.cancel()
+        startTask = nil
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
         observers.removeAll()
         renderer?.view.isPaused = true
@@ -308,10 +316,10 @@ final class DirectionPad: UIView {
         let dx = point.x-bounds.midX, dy = point.y-bounds.midY
         let deadZone = bounds.width*0.12
         var bits: UInt16 = 0
-        if dx < -deadZone { bits |= 4 }
-        if dx > deadZone { bits |= 8 }
-        if dy < -deadZone { bits |= 1 }
-        if dy > deadZone { bits |= 2 }
+        if dx < -deadZone { bits |= PadButton.left }
+        if dx > deadZone { bits |= PadButton.right }
+        if dy < -deadZone { bits |= PadButton.up }
+        if dy > deadZone { bits |= PadButton.down }
         if bits != lastBits && bits != 0 { touched?() }
         lastBits = bits
         changed?(bits)

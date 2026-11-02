@@ -4,6 +4,7 @@ using Atria.Platform.Input;
 
 namespace Atria.Ios;
 
+/// <summary>Transports host input to the game thread without sharing physical and touch slots.</summary>
 public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadSource, IInputActivitySource
 {
     public const int PadCount = 4;
@@ -12,8 +13,8 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
     private readonly ConcurrentQueue<string> text = new();
     private readonly ConcurrentQueue<(int X, int Y, bool Down)> pointer = new();
     private readonly object sync = new();
-    private readonly Queue<PadSample>[] padChanges = Enumerable.Range(0, PadCount).Select(_ => new Queue<PadSample>()).ToArray();
-    private readonly Queue<PadSample> virtualPadChanges = new();
+    private readonly List<PadSample>[] padChanges = Enumerable.Range(0, PadCount).Select(_ => new List<PadSample>()).ToArray();
+    private readonly List<PadSample> virtualPadChanges = new();
     private readonly PadSample[] pads = new PadSample[PadCount];
     private readonly PadSample[] lastSubmitted = new PadSample[PadCount];
     private readonly bool[] resyncPad = new bool[PadCount];
@@ -71,10 +72,7 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
         {
             if (!focused) return;
             if (sample == lastSubmitted[slot] && !resyncPad[slot]) return;
-            // Keep short press/release pairs until the game has sampled both states.
-            var changes = padChanges[slot];
-            if (changes.Count >= 128) changes.Clear();
-            changes.Enqueue(sample);
+            QueueSample(padChanges[slot], pads[slot], sample);
             resyncPad[slot] = false;
             lastSubmitted[slot] = sample;
         }
@@ -85,7 +83,11 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
         if (slot is < 0 or >= PadCount) return default;
         lock (sync)
         {
-            if (padChanges[slot].TryDequeue(out var next)) pads[slot] = next;
+            if (padChanges[slot].Count != 0)
+            {
+                pads[slot] = padChanges[slot][0];
+                padChanges[slot].RemoveAt(0);
+            }
             return pads[slot];
         }
     }
@@ -97,8 +99,7 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
         lock (sync)
         {
             if (!focused || sample == lastVirtualPad) return;
-            if (virtualPadChanges.Count >= 128) virtualPadChanges.Clear();
-            virtualPadChanges.Enqueue(sample);
+            QueueSample(virtualPadChanges, virtualPad, sample);
             lastVirtualPad = sample;
         }
     }
@@ -108,7 +109,11 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
     {
         lock (sync)
         {
-            if (virtualPadChanges.TryDequeue(out var next)) virtualPad = next;
+            if (virtualPadChanges.Count != 0)
+            {
+                virtualPad = virtualPadChanges[0];
+                virtualPadChanges.RemoveAt(0);
+            }
             return virtualPad;
         }
     }
@@ -173,6 +178,31 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
     private void RecordActivity(InputSourceKind kind, int identity)
         => lastInputActivity = new InputActivity(++inputSequence, kind, identity);
 
+    private static void QueueSample(List<PadSample> changes, PadSample consumed, PadSample sample)
+    {
+        if (changes.Count != 0)
+        {
+            var last = changes[^1];
+            var before = changes.Count > 1 ? changes[^2] : consumed;
+            // Retain digital edges and trigger extrema so any configured trigger threshold still crosses.
+            if (before.Connected == last.Connected && last.Connected == sample.Connected &&
+                before.Buttons == last.Buttons && last.Buttons == sample.Buttons &&
+                Monotonic(before.LeftTrigger, last.LeftTrigger, sample.LeftTrigger) &&
+                Monotonic(before.RightTrigger, last.RightTrigger, sample.RightTrigger))
+            {
+                changes[^1] = sample;
+                return;
+            }
+        }
+        // shortcut: retain at most 128 digital transitions; revisit if host polling can stall for seconds.
+        if (changes.Count == 128) changes.RemoveAt(0);
+        changes.Add(sample);
+    }
+
+    private static bool Monotonic(byte before, byte last, byte next)
+        => before <= last && last <= next || before >= last && last >= next;
+
+    // Touch controls are digital full-scale values; physical deadzones remain in InputRouter.
     private static bool Neutral(PadSample sample)
         => sample.Buttons == 0 && sample.LeftTrigger <= 32 && sample.RightTrigger <= 32 &&
             Math.Abs((int)sample.LX) <= 1800 && Math.Abs((int)sample.LY) <= 1800 &&

@@ -1,6 +1,24 @@
 import Foundation
 import GameController
 
+/// Shared button bits match the managed gamepad contract for physical and touch controls.
+enum PadButton {
+    static let up: UInt16 = 0x0001
+    static let down: UInt16 = 0x0002
+    static let left: UInt16 = 0x0004
+    static let right: UInt16 = 0x0008
+    static let menu: UInt16 = 0x0010
+    static let options: UInt16 = 0x0020
+    static let leftThumb: UInt16 = 0x0040
+    static let rightThumb: UInt16 = 0x0080
+    static let leftShoulder: UInt16 = 0x0100
+    static let rightShoulder: UInt16 = 0x0200
+    static let a: UInt16 = 0x1000
+    static let b: UInt16 = 0x2000
+    static let x: UInt16 = 0x4000
+    static let y: UInt16 = 0x8000
+}
+
 /// Contains one controller's identity, complete controls, and physical slot.
 struct PhysicalPadSample {
     let slot: Int32
@@ -44,20 +62,20 @@ struct PhysicalPadSample {
         }
         guard let pad = slotControllers[slot]?.extendedGamepad else { return disconnected(slot) }
         var buttons: UInt16 = 0
-        if pad.dpad.up.isPressed { buttons |= 0x0001 }
-        if pad.dpad.down.isPressed { buttons |= 0x0002 }
-        if pad.dpad.left.isPressed { buttons |= 0x0004 }
-        if pad.dpad.right.isPressed { buttons |= 0x0008 }
-        if pad.buttonMenu.isPressed { buttons |= 0x0010 }
-        if pad.buttonOptions?.isPressed == true { buttons |= 0x0020 }
-        if pad.leftThumbstickButton?.isPressed == true { buttons |= 0x0040 }
-        if pad.rightThumbstickButton?.isPressed == true { buttons |= 0x0080 }
-        if pad.leftShoulder.isPressed { buttons |= 0x0100 }
-        if pad.rightShoulder.isPressed { buttons |= 0x0200 }
-        if pad.buttonA.isPressed { buttons |= 0x1000 }
-        if pad.buttonB.isPressed { buttons |= 0x2000 }
-        if pad.buttonX.isPressed { buttons |= 0x4000 }
-        if pad.buttonY.isPressed { buttons |= 0x8000 }
+        if pad.dpad.up.isPressed { buttons |= PadButton.up }
+        if pad.dpad.down.isPressed { buttons |= PadButton.down }
+        if pad.dpad.left.isPressed { buttons |= PadButton.left }
+        if pad.dpad.right.isPressed { buttons |= PadButton.right }
+        if pad.buttonMenu.isPressed { buttons |= PadButton.menu }
+        if pad.buttonOptions?.isPressed == true { buttons |= PadButton.options }
+        if pad.leftThumbstickButton?.isPressed == true { buttons |= PadButton.leftThumb }
+        if pad.rightThumbstickButton?.isPressed == true { buttons |= PadButton.rightThumb }
+        if pad.leftShoulder.isPressed { buttons |= PadButton.leftShoulder }
+        if pad.rightShoulder.isPressed { buttons |= PadButton.rightShoulder }
+        if pad.buttonA.isPressed { buttons |= PadButton.a }
+        if pad.buttonB.isPressed { buttons |= PadButton.b }
+        if pad.buttonX.isPressed { buttons |= PadButton.x }
+        if pad.buttonY.isPressed { buttons |= PadButton.y }
         return PhysicalPadSample(slot: Int32(slot), connected: 1, buttons: buttons,
             leftTrigger: trigger(pad.leftTrigger.value), rightTrigger: trigger(pad.rightTrigger.value),
             lx: axis(pad.leftThumbstick.xAxis.value), ly: axis(pad.leftThumbstick.yAxis.value),
