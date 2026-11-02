@@ -54,4 +54,3 @@ public sealed partial class ExplorationController
         RefreshPending = value.RefreshPending;
     }
 }
-
