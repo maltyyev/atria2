@@ -3,10 +3,11 @@
 import PackageDescription
 import Foundation
 
-let iosRoot = URL(fileURLWithPath: #filePath)
+let stageRoot = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent().deletingLastPathComponent().path
-let runtimeRoot = ProcessInfo.processInfo.environment["ATRIA_NATIVEAOT_ROOT"]
-    ?? iosRoot + "/../.packages/microsoft.netcore.app.runtime.nativeaot.ios-arm64/10.0.13/runtimes/ios-arm64/native"
+guard let runtimeRoot = ProcessInfo.processInfo.environment["ATRIA_NATIVEAOT_ROOT"] else {
+    fatalError("Run Build/Ios/Build-Host.sh with ATRIA_NATIVEAOT_ROOT set to the iOS NativeAOT native package.")
+}
 
 let package = Package(
     name: "AtriaProbe",
@@ -33,7 +34,7 @@ let package = Package(
             linkerSettings: [
                 // Match NativeAOT's Apple runtime/bootstrap libraries; no unresolved-symbol fallback.
                 .unsafeFlags([
-                    "-Xlinker", iosRoot + "/Game.ios-arm64.o",
+                    "-Xlinker", stageRoot + "/Game.ios-arm64.o",
                     "-Xlinker", runtimeRoot + "/libbootstrapperdll.o",
                     "-Xlinker", runtimeRoot + "/libSystem.Native.a",
                     "-Xlinker", runtimeRoot + "/libSystem.IO.Compression.Native.a",

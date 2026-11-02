@@ -7,7 +7,7 @@ obj/
 /Tests/**/probe/
 # Integration probes place disposable evidence beside the resource root.
 /Assets/audit/
-# Download with tools/video/fetch_codec.ps1; keep dependencies out of Git history.
+# Download with Build/Windows/Video/Fetch-Codec.ps1; keep dependencies out of Git history.
 /third_party/
 
 # Local IDE state
@@ -36,13 +36,5 @@ playtest-data/
 Thumbs.db
 .DS_Store
 
-# Reproducible iOS staging, compiler output and xtool signing products.
-/Src/Hosts/Ios/Swift/.build/
-/Src/Hosts/Ios/Swift/.bsp/
-/Src/Hosts/Ios/Swift/.swiftpm/
-/Src/Hosts/Ios/Swift/xtool/
-/Src/Hosts/Ios/Swift/Sources/AtriaProbe/Resources/
-/Ios/*.o
-/Ios/*.rsp
-/Ios/**/__pycache__/
-/Ios/DeviceLogs/
+# All platform staging, compiler output, package products and diagnostics.
+/Build/Ios/__pycache__/

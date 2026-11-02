@@ -1,9 +1,11 @@
 """Read only AtriaProbe diagnostics through the existing paired Apple Devices relay (WSL)."""
 import ctypes as c
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 import plistlib
 import sys
+from stage_paths import ensure_no_links, resolve_stage
 
 lib = c.CDLL('libimobiledevice-1.0.so.6')
 plist = c.CDLL('libplist-2.0.so.4')
@@ -42,7 +44,9 @@ def check(code, operation):
 
 device, house, afc, result, xml = (Pointer() for _ in range(5))
 timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
-output = Path(__file__).resolve().parent / 'DeviceLogs' / timestamp
+repo = Path(__file__).resolve().parents[2]
+stage = resolve_stage(repo, os.environ.get('ATRIA_STAGE') or None)
+output = ensure_no_links(stage / 'DeviceLogs' / timestamp, stage)
 try:
     check(lib.idevice_new(c.byref(device), None), 'Connect to paired USB device')
     check(lib.house_arrest_client_start_service(device, c.byref(house), b'AtriaLogRead'), 'Open app service')
