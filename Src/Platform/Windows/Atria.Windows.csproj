@@ -13,6 +13,10 @@
     <ProjectReference Include="../../../Core/Atria.Core.csproj" />
   </ItemGroup>
   <Import Project="../../../Assets/PackageResources.props" />
+  <ItemGroup>
+    <Content Include="@(GameResource)" Link="assets/game/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="@(MusicResource)" Link="assets/music/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   <Import Project="../../../Assets/LocalizationResources.props" />
   <Import Project="../../../Assets/InterfaceResources.props" />
   <ItemGroup>

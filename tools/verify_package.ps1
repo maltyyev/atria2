@@ -6,15 +6,29 @@ $PackageRoot = (Resolve-Path -LiteralPath $PackageRoot).Path
 [xml]$definition = Get-Content -LiteralPath (Join-Path $assetRoot 'PackageResources.props') -Raw
 $verified = 0
 
+function Get-ManifestFiles([string]$itemName) {
+    $item = $definition.Project.ItemGroup.SelectSingleNode($itemName)
+    $files = @()
+    foreach ($entry in $item.Include.Split(';', [StringSplitOptions]::RemoveEmptyEntries)) {
+        $relative = $entry.Trim().Replace('$(MSBuildThisFileDirectory)', '')
+        if ($relative.Contains('*')) {
+            $rootName = ($relative -split '[\\/]')[0]
+            $filter = Split-Path -Leaf $relative
+            $files += Get-ChildItem -LiteralPath (Join-Path $assetRoot $rootName) -Recurse -File -Filter $filter
+        } else {
+            $files += Get-Item -LiteralPath (Join-Path $assetRoot $relative)
+        }
+    }
+    return $files
+}
+
 foreach ($group in @('Game', 'Music')) {
-    $item = $definition.Project.ItemGroup.SelectSingleNode("${group}Resource")
+    $sources = Get-ManifestFiles "${group}Resource"
     $expectedNames = @()
     $destination = Join-Path $PackageRoot ('assets/' + $group.ToLowerInvariant())
 
-    foreach ($entry in $item.Include.Split(';', [StringSplitOptions]::RemoveEmptyEntries)) {
-        $relativePath = $entry.Trim().Replace('$(MSBuildThisFileDirectory)', '')
-        $source = Join-Path $assetRoot $relativePath
-        $name = Split-Path -Leaf $source
+    foreach ($source in $sources) {
+        $name = Split-Path -Leaf $source.FullName
         $expectedNames += $name
         $deployed = Join-Path $destination $name
 
@@ -22,7 +36,7 @@ foreach ($group in @('Game', 'Music')) {
             throw "Missing packaged resource: $deployed"
         }
 
-        if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash -ne
+        if ((Get-FileHash -LiteralPath $source.FullName -Algorithm SHA256).Hash -ne
             (Get-FileHash -LiteralPath $deployed -Algorithm SHA256).Hash) {
             throw "Packaged resource differs from the project asset: $deployed"
         }
@@ -44,7 +58,7 @@ foreach ($name in @('Atria.exe', 'atria_video.dll', 'avcodec-63.dll', 'avutil-61
     }
 }
 
-foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Localization') -Recurse -File -Filter '*.json') {
+foreach ($source in Get-ManifestFiles 'LocalizationResource') {
     $relative = [IO.Path]::GetRelativePath((Join-Path $assetRoot 'Localization'), $source.FullName)
     $deployed = Join-Path $PackageRoot ('assets/localization/' + $relative)
     if (!(Test-Path -LiteralPath $deployed -PathType Leaf)) {
@@ -52,7 +66,7 @@ foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Localizati
     }
 }
 
-foreach ($source in Get-ChildItem -LiteralPath (Join-Path $assetRoot 'Interface') -Recurse -File | Where-Object Extension -In '.bmp', '.spr') {
+foreach ($source in Get-ManifestFiles 'InterfaceResource') {
     $relative = [IO.Path]::GetRelativePath((Join-Path $assetRoot 'Interface'), $source.FullName)
     $deployed = Join-Path $PackageRoot ('assets/interface/' + $relative)
     if (!(Test-Path -LiteralPath $deployed -PathType Leaf) -or

@@ -1,5 +1,5 @@
 <Project>
-  <!-- Explicit inputs make an incomplete local asset set fail the build. No legacy executables or player data. -->
+  <!-- This is the shared source inventory; iOS staging reads the same items. -->
   <ItemGroup>
     <GameResource Include="
       $(MSBuildThisFileDirectory)Game/ANI.000;
@@ -63,11 +63,24 @@
       $(MSBuildThisFileDirectory)Music/Track26.wav;
       $(MSBuildThisFileDirectory)Music/Track27.wav;
       $(MSBuildThisFileDirectory)Music/Track28.wav" />
-    <Content Include="@(GameResource)" Link="assets/game/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="@(MusicResource)" Link="assets/music/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <InterfaceResource Include="$(MSBuildThisFileDirectory)Interface/**/*.bmp;$(MSBuildThisFileDirectory)Interface/**/*.spr" />
+    <LocalizationResource Include="$(MSBuildThisFileDirectory)Localization/**/*.json" />
   </ItemGroup>
+
   <Target Name="ValidatePackageResources" BeforeTargets="PrepareForBuild">
     <Error Condition="!Exists('%(GameResource.Identity)')" Text="Missing game resource: %(GameResource.Identity). Install Git LFS and run git lfs pull." />
     <Error Condition="!Exists('%(MusicResource.Identity)')" Text="Missing music resource: %(MusicResource.Identity). Install Git LFS and run git lfs pull." />
+    <ItemGroup>
+      <_ActualGame Include="$(MSBuildThisFileDirectory)Game/**/*" />
+      <_ActualMusic Include="$(MSBuildThisFileDirectory)Music/**/*" />
+      <_UnexpectedGame Include="@(_ActualGame)" Exclude="@(GameResource)" />
+      <_UnexpectedMusic Include="@(_ActualMusic)" Exclude="@(MusicResource)" />
+      <_MissingGame Include="@(GameResource)" Exclude="@(_ActualGame)" />
+      <_MissingMusic Include="@(MusicResource)" Exclude="@(_ActualMusic)" />
+    </ItemGroup>
+    <Error Condition="'@(_UnexpectedGame)' != ''" Text="Unlisted game assets found: @(_UnexpectedGame). Add immutable resources to PackageResources.props." />
+    <Error Condition="'@(_UnexpectedMusic)' != ''" Text="Unlisted music assets found: @(_UnexpectedMusic). Add immutable resources to PackageResources.props." />
+    <Error Condition="'@(_MissingGame)' != ''" Text="Listed game assets are missing: @(_MissingGame). Install Git LFS and run git lfs pull." />
+    <Error Condition="'@(_MissingMusic)' != ''" Text="Listed music assets are missing: @(_MissingMusic). Install Git LFS and run git lfs pull." />
   </Target>
 </Project>

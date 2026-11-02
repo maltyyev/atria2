@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Atria.Core.Tests</AssemblyName>
+    <RootNamespace>Atria.Core.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Core/Atria.Core.csproj" />
+  </ItemGroup>
+</Project>

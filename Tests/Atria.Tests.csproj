@@ -4,6 +4,7 @@
     <AssemblyName>Atria.Tests</AssemblyName>
     <RootNamespace>Atria.Tests</RootNamespace>
   </PropertyGroup>
+  <Import Project="../Assets/PackageResources.props" />
   <Import Project="../Assets/LocalizationResources.props" />
   <Import Project="../Assets/InterfaceResources.props" />
   <ItemGroup>
