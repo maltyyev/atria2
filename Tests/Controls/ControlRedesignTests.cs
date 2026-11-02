@@ -38,6 +38,30 @@ public static class ControlRedesignTests
         }
     }
 
+    private sealed class Window : IGameWindow, IVirtualGamepadSource, IInputActivitySource
+    {
+        public bool Closed { get; set; }
+        public bool Focused { get; set; } = true;
+        public (int Width, int Height) ClientSize { get; set; } = (640, 480);
+        public bool[] ScanKeys { get; } = new bool[256];
+        public bool[] ScanPressed { get; } = new bool[256];
+        public int MouseX { get; set; } = 100;
+        public int MouseY { get; set; } = 100;
+        public bool LeftButton { get; set; }
+        public bool RightButton { get; set; }
+        public bool MiddleButton { get; set; }
+        public bool[] MousePressed { get; } = new bool[3];
+        public int MouseWheelDelta { get; set; }
+        public uint InputClockMilliseconds => 0;
+        public InputActivity LastInputActivity { get; set; }
+        public PadSample VirtualPad { get; set; }
+        public PadSample ReadVirtualGamepad() => VirtualPad;
+        public void Pump() { }
+        public bool TryDequeueScanInput(out TimestampedScanInput input) { input = default; return false; }
+        public string TakeTextInput() => "";
+        public void RequestClose() => Closed = true;
+    }
+
     private sealed class Effects : ICombatControlEffects
     {
         public bool GlobalEffectBusy => false;
@@ -90,6 +114,24 @@ public static class ControlRedesignTests
         Poll();
         Check(input.Press(0, GameAction.Attack), "J attacks");
         Check(!input.Press(0, GameAction.Attack), "holding cannot queue repeats");
+        pressed[36] = true; // A release and repress can occur between physical samples.
+        Poll();
+        Check(input.Press(0, GameAction.Attack), "timestamped press survives release and repress between polls");
+        input.Clear();
+        keys[36] = false;
+        keys[32] = true;
+        Poll();
+        keys[36] = true;
+        Poll();
+        var worldInput = input.WorldInput;
+        var combatInput = input.CombatInput;
+        Check(!worldInput.Press(0, GameAction.Attack), "world context rejects combat actions without taking their edge");
+        Check(combatInput.Press(0, GameAction.Attack), "the combat context can still consume the same physical edge");
+        Check(!worldInput.Press(0, GameAction.Attack), "a consumed combat edge cannot leak into the world context");
+        Check(!input.MenuInput.Press(0, GameAction.Attack), "menu context rejects unrelated actions");
+        Check(input.WorldInput.Held(0, GameAction.Right), "scene views preserve held movement without a blanket reset");
+        keys[32] = false;
+        Poll();
         input.Clear();
         Check(!input.Held(0, GameAction.Attack), "held input blocked across context");
         keys[36] = false;
@@ -158,6 +200,7 @@ public static class ControlRedesignTests
         Check(!input.Held(0, GameAction.Left) && input.FocusPauseRequested, "focus loss clears movement");
         Array.Clear(keys);
         Poll();
+        VerifyInputSourceChanges(legacy);
         profile.Players[0].Quick[0][0] = "v:1:32";
         profile.Players[0].Direct["0/p:6"] = [InputBinding.Key(34), default, InputBinding.Pad(15)];
         var decoded = ControlProfileStore.Decode(ControlProfileStore.Encode(profile));
@@ -472,7 +515,7 @@ public static class ControlRedesignTests
         using var live = new InputRouter(liveProfile, legacy, livePads);
         var adapter = new CombatScanInput(_ => false)
         {
-            Modern = live
+            Modern = live.CombatInput
         };
         var controller = new CombatActorController(combat, state, legacy, adapter, new Effects(), () => 1);
         int index = combat.Scene.PartyStartIndex;
@@ -523,5 +566,145 @@ public static class ControlRedesignTests
         controller.Process(index, 601);
         Check(hero.Animation.SequenceIndex != hero.Binding!.Info.Attacks[0].Animation && I(hero.State, 0xad) != 32, "RT+D-pad immediately starts variation through actual controller");
         return $"Controls: physical/chord edges, controller lifecycle, profiles, pause clock, 30 real INF forms; {variants} directed transitions AND immediate quick moves from rest (both facings), rejected states, aerial/A sequences and {commands} MP commands verified against legacy handlers.";
+    }
+
+    private static void VerifyInputSourceChanges(ControlBindings legacy)
+    {
+        var initiallyActivePads = new Pads();
+        initiallyActivePads.Samples[0] = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
+        using (var initiallyActive = new InputRouter(ControlProfile.Defaults(legacy), legacy, initiallyActivePads))
+        {
+            int initialChanges = 0;
+            initiallyActive.InputSourceChanged += _ => initialChanges++;
+            initiallyActive.Poll(new Window());
+            Check(initiallyActive.CurrentInputSource is { Kind: InputSourceKind.Gamepad, Identity: 0 } && initialChanges == 1,
+                "a meaningful button on the first connected sample selects its controller");
+        }
+
+        var pads = new Pads();
+        pads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
+        using var input = new InputRouter(ControlProfile.Defaults(legacy), legacy, pads);
+        var window = new Window();
+        int changes = 0;
+        input.InputSourceChanged += _ => changes++;
+        void Poll() => input.Poll(window);
+
+        Poll();
+        Check(changes == 0 && input.CurrentInputSource.Kind == InputSourceKind.Keyboard, "startup polling does not invent source activity");
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Keyboard, "neutral first connection does not select a gamepad source");
+        window.MouseX++;
+        Poll();
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Mouse && changes == 1, "native pointer movement selects mouse");
+        window.MouseWheelDelta = 120;
+        Poll();
+        window.MouseWheelDelta = 0;
+        window.LeftButton = true;
+        window.MousePressed[0] = true;
+        Poll();
+        window.LeftButton = false;
+        window.MousePressed[0] = false;
+        Check(changes == 1 && input.Hint(0, GameAction.Attack) == input.Profile.Players[0].Bindings[(int)GameAction.Attack][1].ToString(), "wheel keeps mouse hint active without duplicate events");
+
+        pads.Samples[0] = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
+        Poll();
+        Check(input.CurrentInputSource is { Kind: InputSourceKind.Gamepad, Identity: 0 } && input.LastWasPad, "physical slot identity selects gamepad");
+        Check(input.Hint(0, GameAction.Attack) == input.Profile.Players[0].Bindings[(int)GameAction.Attack][2].ToString(), "gamepad activity updates action hints");
+        int heldChanges = changes;
+        Poll();
+        pads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
+        Poll();
+        Check(changes == heldChanges, "held polls and releases do not change the active source");
+
+        window.ScanKeys[36] = true;
+        Poll();
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Keyboard && !input.LastWasPad, "keyboard press selects keyboard");
+        Check(input.Hint(0, GameAction.Attack) == input.Profile.Players[0].Bindings[(int)GameAction.Attack][0].ToString(), "keyboard activity updates action hints");
+        window.ScanKeys[36] = false;
+        Poll();
+
+        pads.Samples[0] = new(true, 0, 0, 0, 9000, 0, 0, 0);
+        Poll();
+        window.ScanKeys[36] = true;
+        Poll();
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Keyboard, "keyboard input remains current while an active stick moves within the noise band");
+        pads.Samples[0] = pads.Samples[0] with { LX = 10000 };
+        Poll();
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Keyboard, "small active-axis deltas do not flap the input source");
+        pads.Samples[0] = pads.Samples[0] with { LX = 12000 };
+        Poll();
+        Check(input.CurrentInputSource is { Kind: InputSourceKind.Gamepad, Identity: 0 }, "intentional analog movement selects its physical controller");
+        window.ScanKeys[36] = false;
+        Poll();
+
+        window.LastInputActivity = new(1, InputSourceKind.Touch, 9);
+        window.VirtualPad = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
+        Poll();
+        Check(input.CurrentInputSource is { Kind: InputSourceKind.Touch, Identity: 9 } && !input.LastWasPad, "touch metadata survives virtual controller translation");
+        Check(input.CombatInput.Press(0, GameAction.Attack), "touch virtual control uses player-one profile mapping");
+        Check(input.Hint(0, GameAction.Attack) == input.Profile.Players[0].Bindings[(int)GameAction.Attack][2].ToString(), "touch activity updates virtual control hints");
+        int touchChanges = changes;
+        Poll();
+        window.VirtualPad = default;
+        Poll();
+        Check(changes == touchChanges, "unchanged touch and release do not re-emit source changes");
+
+        pads.Samples[0] = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
+        Poll();
+        Check(input.CurrentInputSource.Kind == InputSourceKind.Gamepad && changes == touchChanges + 1, "physical gamepad activity switches back from touch");
+        int gamepadChanges = changes;
+        window.ClientSize = (800, 600);
+        window.MouseX++;
+        Poll();
+        Check(changes == gamepadChanges, "resize coordinate remapping does not look like mouse activity");
+        window.Focused = false;
+        window.ScanKeys[36] = true;
+        Poll();
+        window.Focused = true;
+        Poll();
+        Check(changes == gamepadChanges && input.CurrentInputSource.Kind == InputSourceKind.Gamepad, "held keyboard and focus-reset mouse state do not change source on resume");
+        window.ScanKeys[36] = false;
+        Poll();
+
+        var reconnectPads = new Pads();
+        reconnectPads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
+        using var reconnectInput = new InputRouter(ControlProfile.Defaults(legacy), legacy, reconnectPads);
+        bool[] reconnectKeys = new bool[256], reconnectPressed = new bool[256], reconnectMouse = new bool[3];
+        void PollReconnect(long now) => reconnectInput.Poll(reconnectKeys, reconnectPressed, reconnectMouse, true, now);
+        PollReconnect(0);
+        reconnectKeys[36] = true;
+        PollReconnect(1);
+        reconnectKeys[36] = false;
+        PollReconnect(2);
+        reconnectPads.Samples[0] = default;
+        PollReconnect(3);
+        reconnectPads.Samples[0] = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
+        PollReconnect(1600);
+        Check(reconnectInput.CurrentInputSource.Kind == InputSourceKind.Keyboard, "a held button on reconnection does not steal the active source");
+        reconnectPads.Samples[0] = reconnectPads.Samples[0] with { Buttons = (ushort)(GamepadButtons.X | GamepadButtons.A) };
+        PollReconnect(1601);
+        Check(reconnectInput.CurrentInputSource.Kind == InputSourceKind.Gamepad, "a new button press after reconnection selects the controller");
+
+        var virtualOnlyProfile = ControlProfile.Defaults(legacy);
+        virtualOnlyProfile.Players[0].PadSlot = -1;
+        using var virtualOnly = new InputRouter(virtualOnlyProfile, legacy, new Pads());
+        bool[] keys = new bool[256], pressed = new bool[256], mouse = new bool[3];
+        virtualOnly.Poll(keys, pressed, mouse, true, 0, default, new(true, (ushort)GamepadButtons.DpadUp, 0, 255, 0, 0, 0, 0));
+        Check(virtualOnly.PressQuick(0, 0), "touch RT plus D-pad reaches quick actions without a physical pad slot");
+        virtualOnly.Poll(keys, pressed, mouse, true, 1, default, new(true, 0, 0, 0, 0, 0, 0, 0));
+        virtualOnly.Poll(keys, pressed, mouse, true, 2, default, new(true, 0, 0, 0, 0, 20000, 0, 0));
+        Check(virtualOnly.MenuInput.Menu(GameAction.MenuUp), "touch stick reaches shared menu navigation");
+        virtualOnly.Poll(keys, pressed, mouse, true, 3, default, new(true, 0, 0, 0, 0, 0, 0, 0));
+        virtualOnly.Poll(keys, pressed, mouse, true, 4, default, new(true, (ushort)GamepadButtons.A, 0, 0, 0, 0, 0, 0));
+        Check(virtualOnly.Capture(0, InputKind.Pad).Code == 0, "touch buttons remain capturable without a physical pad slot");
+        virtualOnly.Poll(keys, pressed, mouse, true, 5, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
+        virtualOnly.ClearPlayer(1);
+        Check(virtualOnly.CombatInput.Press(0, GameAction.Attack), "player two reset leaves player one touch input intact");
+        virtualOnly.Poll(keys, pressed, mouse, true, 6, default, new(true, 0, 0, 0, 0, 0, 0, 0));
+        virtualOnly.Poll(keys, pressed, mouse, true, 7, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
+        virtualOnly.ClearPlayer(0);
+        Check(!virtualOnly.CombatInput.Press(0, GameAction.Attack), "player one reset clears and blocks held touch edges");
+        virtualOnly.Poll(keys, pressed, mouse, true, 8, default, new(true, 0, 0, 0, 0, 0, 0, 0));
+        virtualOnly.Poll(keys, pressed, mouse, true, 9, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
+        Check(virtualOnly.CombatInput.Press(0, GameAction.Attack), "released touch input rearms after player reset");
     }
 }

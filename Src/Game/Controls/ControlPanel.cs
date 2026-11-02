@@ -18,6 +18,8 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
 
     public const int RowsPerPage = 12;
     private int lastX = -1, lastY = -1;
+    private InputRouter? input;
+    private int hintPlayer;
     public void Reset()
     {
         Selection = Scroll = 0;
@@ -26,7 +28,10 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
 
     public bool Input(InputRouter input, IReadOnlyList<ControlRow> rows, bool back = true, int player = -1)
     {
-        bool Menu(GameAction action, bool repeat = false) => player < 0 ? input.Menu(action, repeat) : input.PlayerMenu(player, action, repeat);
+        this.input = input;
+        hintPlayer = player < 0 ? 0 : player;
+        SceneInput menuInput = input.MenuInput;
+        bool Menu(GameAction action, bool repeat = false) => player < 0 ? menuInput.Menu(action, repeat) : menuInput.PlayerMenu(player, action, repeat);
         void Clear()
         {
             if (player < 0)
@@ -41,7 +46,7 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
 
         if (rows.Count == 0)
         {
-            return back && input.Menu(GameAction.Back);
+            return back && menuInput.Menu(GameAction.Back);
         }
 
         Selection = Math.Clamp(Selection, 0, rows.Count - 1);
@@ -172,7 +177,11 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
             }
         }
 
-        Text(pixels, GameText.Format("ui.controls.rowSelection", ("selected", Selection + 1), ("count", rows.Count)), 48, 352, 0x9cf3, 68);
+        string rowHint = input is null
+            ? GameText.Format("ui.controls.rowSelection", ("selected", Selection + 1), ("count", rows.Count))
+            : GameText.Format("ui.controls.rowSelectionDynamic", ("selected", Selection + 1), ("count", rows.Count),
+                ("up", input.Hint(hintPlayer, GameAction.MenuUp)), ("down", input.Hint(hintPlayer, GameAction.MenuDown)));
+        Text(pixels, rowHint, 48, 352, 0x9cf3, 68);
         if (icons is not null && rows.Count > 0 && rows[Selection].Icon is int icon && icon >= 0 && icon < icons.Frames.Length)
         {
             SpriteRaster.Draw565(icons.Frames[icon], pixels, 640, 480, 640, 568, 346);
@@ -192,7 +201,11 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
             Text(pixels, ">", 572, 402, 0xffe0);
         }
 
-        Text(pixels, GameText.Get("ui.controls.acceptBack"), 48, 426, 0xbdf7, 68);
+        string footerHints = input is null ? GameText.Get("ui.controls.acceptBack") : GameText.Format(
+            "ui.controls.acceptBackDynamic",
+            ("confirm", input.Hint(hintPlayer, GameAction.Confirm)),
+            ("back", input.Hint(hintPlayer, GameAction.Back)));
+        Text(pixels, footerHints, 48, 426, 0xbdf7, 68);
     }
 
     public static void Text(BitmapFont font, Span<ushort> pixels, string text, int x, int y, ushort color, int max = 72)

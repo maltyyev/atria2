@@ -93,7 +93,7 @@ public sealed class CombatActorController : ICombatActorActions
         for (int p = 0; p < 2; p++)
         {
             int player = p;
-            semanticWalk[p] = new(scan => scan < 4 ? input.Modern!.Held(player, (GameAction)scan) : scan == 4 && input.Modern!.Profile.Players[player].Classic && input.Modern.Held(player, GameAction.Attack));
+            semanticWalk[p] = new(scan => scan < 4 ? input.Modern!.Value.Held(player, (GameAction)scan) : scan == 4 && input.Modern!.Value.Profile.Players[player].Classic && input.Modern.Value.Held(player, GameAction.Attack));
         }
     }
 
@@ -179,7 +179,7 @@ public sealed class CombatActorController : ICombatActorActions
         }
     }
 
-    private void ProcessSemantic(int actorIndex, CombatActorImage image, InputRouter modern, uint milliseconds)
+    private void ProcessSemantic(int actorIndex, CombatActorImage image, CombatInput modern, uint milliseconds)
     {
         int player = image.ControlPlayer;
         if ((uint)player >= 2)
@@ -295,7 +295,7 @@ public sealed class CombatActorController : ICombatActorActions
         }
     }
 
-    private void RequestSemanticMove(int actorIndex, int player, string id, InputRouter input, uint now)
+    private void RequestSemanticMove(int actorIndex, int player, string id, CombatInput input, uint now)
     {
         bool result = ExecuteMove(actorIndex, id, now);
         if (!result && id.StartsWith("v:", StringComparison.Ordinal))

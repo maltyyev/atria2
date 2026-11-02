@@ -301,7 +301,7 @@ public sealed class ControlSettingsMenu
             {
                 capture = row;
                 captureId = null;
-                notice = GameText.Get("ui.settings.captureHint");
+                notice = CaptureHelp("ui.settings.captureHintDynamic");
                 input.Clear();
             }, d => column = (column + d + 3) % 3);
         }
@@ -326,7 +326,7 @@ public sealed class ControlSettingsMenu
             {
                 capture = row;
                 captureId = key;
-                notice = GameText.Get("ui.settings.assignHint");
+                notice = CaptureHelp("ui.settings.assignHintDynamic");
                 input.Clear();
             }, d => column = (column + d + 3) % 3);
         }
@@ -340,8 +340,13 @@ public sealed class ControlSettingsMenu
             pixels,
             title,
             rows,
-            GameText.Get("ui.settings.columnHint"),
-            capture is null ? notice : GameText.Get("ui.settings.capturePrompt")
+            GameText.Format("ui.settings.columnHintDynamic", ("left", input.Hint(0, GameAction.MenuLeft)), ("right", input.Hint(0, GameAction.MenuRight))),
+            capture is null ? notice : CaptureHelp("ui.settings.capturePromptDynamic")
         );
     }
+
+    private string CaptureHelp(string key) => GameText.Format(key,
+        ("target", GameText.Get(column == 2
+            ? player == 0 ? "ui.settings.captureControllerTouch" : "ui.settings.captureController"
+            : "ui.settings.captureKeyboardMouse")));
 }

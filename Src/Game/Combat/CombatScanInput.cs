@@ -7,7 +7,8 @@ public readonly record struct CombatJoystickState(int X, int Y, bool Button0, bo
 /// <summary>4046d0 held input and4048c0's per-query persistent edge latch.</summary>
 public sealed class CombatScanInput
 {
-    public Atria.Game.Controls.InputRouter? Modern
+    /// <summary>Optional scene-scoped semantic view; legacy scan queries remain available when unset.</summary>
+    public Atria.Game.Controls.CombatInput? Modern
     {
         get; set;
     }

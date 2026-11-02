@@ -158,7 +158,11 @@ public sealed class CombatControlOverlay
                 pixels,
                 GameText.Format("ui.combat.playerCharacter", ("player", owner + 1), ("character", runtime.Scene.HeroCatalog[party].Name)),
                 rows,
-                GameText.Get("ui.combat.bindHint"),
+                GameText.Format("ui.combat.bindHintDynamic",
+                    ("assignFirst", input.QuickAssignHint(owner, 0)),
+                    ("assignLast", input.QuickAssignHint(owner, 3)),
+                    ("executeFirst", input.Hint(owner, GameAction.Quick1)),
+                    ("executeLast", input.Hint(owner, GameAction.Quick4))),
                 notice.Length > 0 ? notice : requirement,
                 icons
             );
