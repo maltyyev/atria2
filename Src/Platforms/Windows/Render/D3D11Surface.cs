@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
+using Atria.Core.Runtime.Timing;
 using static Atria.Platforms.Windows.Win32.NativeCom;
 
 using Atria.Core.Contracts.Presentation;

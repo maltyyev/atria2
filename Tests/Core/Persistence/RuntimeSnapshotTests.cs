@@ -17,6 +17,7 @@ using Atria.Core.Resources.World;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Scripts;
 using Atria.Core.Game.Script;
 using Atria.Core.Game.Progression;
 using Atria.Core.Game.Termination;
@@ -289,7 +290,7 @@ internal static class RuntimeSnapshotTests
         var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng1.fnt")), true);
         var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
         var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
-        var loader = new SessionSnapshotLoader(root, liveState, new LegacyRandom(1), font, messages, items, _ => { });
+        var loader = new SessionSnapshotLoader(root, liveState, new LegacyRandom(1), font, messages, items, new ScenarioProgramCatalog(root), _ => { });
         byte[] source = GameResources.Read(root, "SCRIPT.000", snapshot.ScriptMember);
         var checkpoint = new ScriptCheckpoint("32_LIBRA", "enter", Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source)), 0, GameMode.Interior, []);
         var metadata = LegacySlotMetadata.Empty([]).WithCurrent("Library"u8, "Tiger Castle"u8, GameMode.Interior, 0, 32, 1, []);

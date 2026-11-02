@@ -15,6 +15,7 @@ using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
 using Atria.Core.Game.Script;
+using Atria.Core.Resources.Scripts;
 using Tests.Core.Combat;
 
 namespace Tests.Core.Persistence;
@@ -40,7 +41,7 @@ internal static class ScriptOnlyAdmissionTests
         var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG1.FNT")), true);
         var live = new GameState();
         byte[] liveBefore = NativeGameStateCodec.Encode(live);
-        var loader = new SessionSnapshotLoader(root, live, new LegacyRandom(1), font, messages, items, _ => { });
+        var loader = new SessionSnapshotLoader(root, live, new LegacyRandom(1), font, messages, items, new ScenarioProgramCatalog(root), _ => { });
         int checkpoints = 0;
         foreach (string member in new[] { "44CORE", "NAR0004", "NAR0008" })
         {
@@ -56,6 +57,22 @@ internal static class ScriptOnlyAdmissionTests
             };
             var context = SessionRuntimeCodec.Encode(pending);
             CheckPrepared(context);
+
+            if (member == "44CORE")
+            {
+                var invalidHash = pending with { Script = point with { SourceHash = new string('0', 64) } };
+                bool rejected = false;
+                try
+                {
+                    loader.Prepare(SessionRuntimeCodec.Encode(invalidHash), image.State);
+                }
+                catch (InvalidDataException exception) when (exception.Message == "Saved scenario source changed.")
+                {
+                    rejected = true;
+                }
+
+                Check(rejected, "saved continuation rejects a source whose raw hash no longer matches");
+            }
 
             // Recreate the old temporary-target/source layout, not merely the old version number.
             var legacy = JsonNode.Parse(context.Payload.Span)!.AsObject();

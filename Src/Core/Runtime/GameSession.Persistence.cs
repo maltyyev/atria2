@@ -338,7 +338,7 @@ public sealed partial class GameSession
 
             var image = content.Native!;
             PreparedSession? prepared = null;
-            var loader = new SessionSnapshotLoader(root, state, random, smallFont, messages, items, musicTransport.ValidateTrack);
+            var loader = new SessionSnapshotLoader(root, state, random, smallFont, messages, items, scenarioPrograms, musicTransport.ValidateTrack);
             // Do not initialize live shops as a side effect of a rejected load.
             var targetShops = shopStocks ?? new ShopStock[30];
             image.CommitStorage(state, areas, targetShops, (context, savedState) =>
@@ -391,7 +391,7 @@ public sealed partial class GameSession
         retainedBattleVisualDetail = saved.RetainedBattleVisualDetail;
         retainedBattleRenderPeriod = saved.RetainedBattleRenderPeriod;
         // Asset preparation and validation are complete. Audio/UI resources are transient and restart from the recovered track identity.
-        StopExclusiveScenarioSound();
+        exclusiveSound.Stop();
         StopAudio();
         // Preferences belong to the selected player profile, not to the age of the loaded save.
         ApplySettingsAudio();

@@ -9,6 +9,7 @@ using Atria.Core.Presentation.Exploration;
 using Atria.Core.Persistence;
 using Atria.Core.Presentation.Persistence;
 using Atria.Core.Game.State;
+using Atria.Core.Resources.Scripts;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
@@ -27,7 +28,7 @@ internal static class SessionMigrationTests
         var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
         var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
         var font = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "ENG1.FNT")), true);
-        var loader = new SessionSnapshotLoader(root, new GameState(), new LegacyRandom(1), font, messages, items, _ => { });
+        var loader = new SessionSnapshotLoader(root, new GameState(), new LegacyRandom(1), font, messages, items, new ScenarioProgramCatalog(root), _ => { });
         var files = Directory.GetFiles(fixtureDirectory, "*.sav", SearchOption.TopDirectoryOnly);
         Check(files.Length > 0, "old-save fixtures are required");
         NativeSaveImage? town = null, world = null;

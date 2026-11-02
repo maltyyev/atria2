@@ -4,7 +4,6 @@ using Atria.Core.Resources.Sprites;
 using Atria.Core.Runtime.Input;
 using Atria.Core.Runtime.Timing;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
 using Atria.Core.Game.Progression;
 using Atria.Core.Presentation.Exploration;
 

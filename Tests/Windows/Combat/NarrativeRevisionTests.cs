@@ -14,6 +14,7 @@ using Atria.Core.Resources.Localization;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Scripts;
 using Atria.Core.Game.Script;
 using Tests.Core.Render;
 using Tests.Windows.Render;
@@ -228,7 +229,7 @@ internal static class NarrativeRevisionTests
         if (manualSave is not null)
         {
             var image = NativeSaveImage.Parse(File.ReadAllBytes(manualSave));
-            var loader = new SessionSnapshotLoader(root, new GameState(), new LegacyRandom(1), font, messages, items, _ => { });
+            var loader = new SessionSnapshotLoader(root, new GameState(), new LegacyRandom(1), font, messages, items, new ScenarioProgramCatalog(root), _ => { });
             _ = loader.Prepare(image.Context, image.State);
             Check(NarrativeScenes.After(image.State, "43SALIN", "enter")?.Id == "NAR0001", "actual manual save precedes the opening");
             var snapshot = SessionRuntimeCodec.Decode(image.Context);

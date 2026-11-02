@@ -14,7 +14,6 @@ using Atria.Core.Persistence;
 using Atria.Core.Presentation.Persistence;
 using Atria.Core.Game.State;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation;
 using Atria.Core.Resources;

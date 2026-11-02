@@ -17,8 +17,6 @@ public sealed partial class GameSession
     // Native59ce0 is BSS zero until408570 selects a battle reward track.
     // It is independent of the current menu/town musicId.
     private int awardMusicTrack = 0;
-    private IBufferedSoundEffect? exclusiveScenarioSound;
-    private bool exclusiveScenarioSoundOwned;
     private void InitializeProgression()
     {
         if (pendingExperience is not null)
@@ -29,7 +27,7 @@ public sealed partial class GameSession
         var assets = new ExperienceAssets(root, audio, ExperienceAssetContext.Exploration);
         try
         {
-            var noticeSound = new SessionExperienceNoticeSound(this, assets.LevelUp);
+            var noticeSound = new SessionExperienceNoticeSound(exclusiveSound, assets.LevelUp);
             experienceModal = new NativeExperienceModalEffects(
                 state,
                 host,
@@ -40,7 +38,7 @@ public sealed partial class GameSession
                 host.IsHeld,
                 DrawExperienceBackdrop,
                 () => music.Update(awardMusicTrack),
-                StopExclusiveScenarioSound,
+                exclusiveSound.Stop,
                 () => CurrentEffectsVolume,
                 () => true
             );
@@ -106,68 +104,19 @@ public sealed partial class GameSession
         background.CopyTo(target);
     }
 
-    //42ed90/42ee00 own one WAV.000 channel. Neither music nor AT2WAV UI banks belong to it.
-    // Replacing a channel stops/releases its prior sound; an initially null channel is verified BSS state.
-    private void ReplaceExclusiveScenarioSound(IBufferedSoundEffect sound, bool owned, int attenuation)
-    {
-        StopExclusiveScenarioSound();
-        exclusiveScenarioSound = sound;
-        exclusiveScenarioSoundOwned = owned;
-        sound.SetCurrentVolume(attenuation);
-        sound.Play();
-    }
-
-    private void PlayExclusiveScenarioSound(ReadOnlySpan<byte> resourceName)
-    {
-        using var archive = BinderArchive.Open(Path.Combine(root, "WAV.000"));
-        int index = archive.FindResource(resourceName);
-        if (index < 0)
-        {
-            throw new FileNotFoundException("Exclusive scenario WAV resource is missing.");
-        }
-
-        var sound = audio.LoadEffect(archive.ReadMember(index));
-        try
-        {
-            ReplaceExclusiveScenarioSound(sound, true, CurrentEffectsVolume);
-        }
-        catch
-        {
-            sound.Dispose();
-            throw;
-        }
-    }
-
-    private void StopExclusiveScenarioSound()
-    {
-        if (exclusiveScenarioSound is not { } sound)
-        {
-            return;
-        }
-
-        sound.StopAll();
-        if (exclusiveScenarioSoundOwned)
-        {
-            sound.Dispose();
-        }
-
-        exclusiveScenarioSound = null;
-        exclusiveScenarioSoundOwned = false;
-    }
-
     private void DisposeProgression()
     {
         experienceModal?.Dispose();
-        StopExclusiveScenarioSound();
+        exclusiveSound.Stop();
         experienceAssets?.Dispose();
         experienceModal = null;
         experienceAssets = null;
         pendingExperience = null;
     }
 
-    private sealed class SessionExperienceNoticeSound(GameSession session, IBufferedSoundEffect sound) : IExperienceNoticeSound
+    private sealed class SessionExperienceNoticeSound(SessionExclusiveSoundChannel channel, IBufferedSoundEffect sound) : IExperienceNoticeSound
     {
-        public void Play(int attenuation) => session.ReplaceExclusiveScenarioSound(sound, false, attenuation);
-        public void Stop() => session.StopExclusiveScenarioSound();
+        public void Play(int attenuation) => channel.PlayBorrowed(sound, attenuation);
+        public void Stop() => channel.Stop();
     }
 }

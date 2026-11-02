@@ -27,7 +27,6 @@ using Atria.Core.Presentation.Town;
 using Atria.Core.Game.World;
 using Atria.Core.Resources.World;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
 using Atria.Core.Presentation.Scenes;
@@ -40,6 +39,7 @@ using Atria.Core.Resources.Video;
 using Atria.Core.Contracts.Host;
 using Atria.Core.Game;
 using Atria.Core.Resources.Localization;
+using Atria.Core.Resources.Scripts;
 
 namespace Atria.Core.Runtime;
 
@@ -52,6 +52,7 @@ public sealed partial class GameSession : IScriptEffects
     private readonly IGameWindow window;
     private readonly IFramePresenter presenter;
     private readonly IGameAudio audio;
+    private readonly SessionExclusiveSoundChannel exclusiveSound;
     private readonly IFileMusicTransport musicTransport;
     private readonly MusicController music;
     private readonly IBufferedSoundEffect[] effects;
@@ -81,7 +82,7 @@ public sealed partial class GameSession : IScriptEffects
     };
 
     private readonly WorldAreaStore areas = new();
-    private readonly Dictionary<(string Member, string SourceHash), ScriptProgram> programs = new();
+    private readonly ScenarioProgramCatalog scenarioPrograms;
     private readonly Stopwatch lifetime = Stopwatch.StartNew();
     private readonly double maximumSeconds;
     private readonly bool muted;
@@ -109,11 +110,13 @@ public sealed partial class GameSession : IScriptEffects
     )
     {
         this.root = root;
+        scenarioPrograms = new(root);
         hostServices = services ?? throw new ArgumentNullException(nameof(services));
         UnicodeText.UseRasterizer(services.TextRasterizer);
         this.window = window;
         this.presenter = presenter;
         this.audio = audio;
+        exclusiveSound = new(root, audio);
         sessionOutputDirectory = Path.GetFullPath(outputDirectory);
         this.musicTransport = musicTransport;
         this.maximumSeconds = maximumSeconds;
@@ -869,13 +872,10 @@ public sealed partial class GameSession : IScriptEffects
             member = Encoding.ASCII.GetBytes(replacement.Id);
             handler = "run"u8;
         }
-        byte[] source = GameResources.Read(root, "SCRIPT.000", member, replay?.SourceHash);
-        string name = Path.GetFileNameWithoutExtension(Encoding.ASCII.GetString(member)).ToUpperInvariant();
-        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source));
-        if (!programs.TryGetValue((name, hash), out var program))
-        {
-            programs.Add((name, hash), program = ScriptProgram.Parse(name, source));
-        }
+        ScenarioSource source = scenarioPrograms.LoadSource(member, replay?.SourceHash);
+        string name = source.Member;
+        string hash = source.SourceHash;
+        ScriptProgram program = scenarioPrograms.GetProgram(source);
 
         string function = Encoding.ASCII.GetString(handler);
         Console.WriteLine($"Scenario started: {name}/{function}.");

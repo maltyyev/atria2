@@ -1,5 +1,5 @@
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
+using Atria.Core.Runtime.Timing;
 using Atria.Core.Game.Progression;
 using Atria.Core.Resources;
 

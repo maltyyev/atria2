@@ -47,7 +47,7 @@ public sealed partial class GameSession
         Check(world ? exploration!.CaptureRuntime() == movingWorld : dungeon!.Motion.CaptureRuntime() == movingDungeon!.Motion,
             "saving does not finish or restart live movement");
 
-        var loader = new SessionSnapshotLoader(root, state, random, smallFont, messages, items, musicTransport.ValidateTrack);
+        var loader = new SessionSnapshotLoader(root, state, random, smallFont, messages, items, scenarioPrograms, musicTransport.ValidateTrack);
         uint deadline = world ? movingWorld!.MovementDeadline : movingDungeon!.Motion.Deadline;
         foreach (uint resumedClock in new uint[] { 0, 50000 })
         {

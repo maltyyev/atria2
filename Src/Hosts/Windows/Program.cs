@@ -4,7 +4,7 @@ using Atria.Core.Game;
 using Atria.Core.Runtime;
 using Atria.Core.Resources.Localization;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
+using Atria.Core.Runtime.Timing;
 using Atria.Platforms.Windows.Audio;
 using Atria.Platforms.Windows.Render;
 using Atria.Platforms.Windows.Video;

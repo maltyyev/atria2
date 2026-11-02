@@ -17,6 +17,7 @@ using Atria.Core.Resources.Localization;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Scripts;
 using Atria.Core.Game.Progression;
 using Atria.Core.Persistence.Settings;
 using Tests.Core.Combat;
@@ -136,7 +137,7 @@ internal static class SaveLocalizationTests
 
             var loader = new SessionSnapshotLoader(root, new GameState(), new LegacyRandom(1), small,
                 LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat"))),
-                ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT"))), _ => { });
+                ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT"))), new ScenarioProgramCatalog(root), _ => { });
             var saved = store.ReadSlot(3)!.Native!;
             Check(loader.Prepare(saved.Context, saved.State).DungeonTitle == new LocationTitle(175), "restored dungeon retains stable HUD title");
             foreach (var file in hashes)

@@ -12,7 +12,7 @@ using Atria.Core.Resources.Sprites;
 using Atria.Core.Runtime.Timing;
 using Atria.Core.Game.State;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
+using Atria.Core.Runtime.Timing;
 using Atria.Platforms.Windows.Win32;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation;

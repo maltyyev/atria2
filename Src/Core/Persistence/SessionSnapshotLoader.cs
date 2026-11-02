@@ -17,6 +17,7 @@ using Atria.Core.Game.Script;
 using Atria.Core.Game;
 using Atria.Core.Game.Progression;
 using Atria.Core.Resources.Localization;
+using Atria.Core.Resources.Scripts;
 
 namespace Atria.Core.Persistence;
 
@@ -28,6 +29,7 @@ internal sealed class SessionSnapshotLoader(
     BitmapFont smallFont,
     IReadOnlyList<ReadOnlyMemory<byte>> messages,
     ItemCatalog items,
+    ScenarioProgramCatalog scenarioPrograms,
     Action<int> validateMusicTrack
 )
 {
@@ -321,13 +323,13 @@ internal sealed class SessionSnapshotLoader(
     {
         if (saved.Script is { } replay)
         {
-            byte[] source = GameResources.Read(root, "SCRIPT.000", Encoding.ASCII.GetBytes(replay.Member), replay.SourceHash);
-            if (Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(source)) != replay.SourceHash)
+            ScenarioSource source = scenarioPrograms.LoadSource(Encoding.ASCII.GetBytes(replay.Member), replay.SourceHash);
+            if (source.SourceHash != replay.SourceHash)
             {
                 throw new InvalidDataException("Saved scenario source changed.");
             }
 
-            var program = Atria.Core.Game.Script.ScriptProgram.Parse(replay.Member, source);
+            var program = scenarioPrograms.GetProgram(source);
             if (!program.Functions.ContainsKey(replay.Function))
             {
                 throw new InvalidDataException("Saved scenario function absent.");
@@ -340,7 +342,8 @@ internal sealed class SessionSnapshotLoader(
         ReadOnlySpan<byte> requiredScript = saved.SavedMode == GameMode.Town ? result.TownAssets!.Scene.ScriptReference.Span : saved.ScriptMember;
         if (!requiredScript.IsEmpty)
         {
-            var program = Atria.Core.Game.Script.ScriptProgram.Parse(Encoding.ASCII.GetString(requiredScript), Read("SCRIPT.000", requiredScript));
+            ScenarioSource source = scenarioPrograms.LoadSource(requiredScript);
+            var program = scenarioPrograms.GetProgram(source);
             if (saved.SavedMode == GameMode.Town && !program.Functions.ContainsKey("enter"))
             {
                 throw new InvalidDataException("Town load entry script lacks enter handler.");

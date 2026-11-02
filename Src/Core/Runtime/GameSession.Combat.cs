@@ -49,7 +49,7 @@ public sealed partial class GameSession
         {
             RunBattleTransition();
             StopAudio();
-            StopExclusiveScenarioSound();
+            exclusiveSound.Stop();
             state.Globals[61] = 0;
             host.FrameBuffer.Clear();
             host.Present();
@@ -62,7 +62,7 @@ public sealed partial class GameSession
                 () => encounterSeed,
                 entered,
                 audio.LoadEffect,
-                PlayBattleExclusiveBytes, state.HeroCatalog
+                bytes => exclusiveSound.PlayWave(bytes, CurrentEffectsVolume), state.HeroCatalog
             ) : new(
     root,
     new((FixedEncounterKind)state.BattleVariant, state.PendingBattle),
@@ -70,14 +70,14 @@ public sealed partial class GameSession
     () => encounterSeed,
     entered,
     audio.LoadEffect,
-    PlayBattleExclusiveBytes, state.HeroCatalog
+    bytes => exclusiveSound.PlayWave(bytes, CurrentEffectsVolume), state.HeroCatalog
 );
             awardMusicTrack = entry.MusicTrack;
             var backdrop = new CombatSelectionBackdrop(entry.Runtime, entry.Assets, retainedBattleVisualDetail);
             CombatSelectionAssets? selectionAssets = CombatSelectionAssets.Load(root);
             CombatSelectionRaster? selectionRaster = new(selectionAssets);
             gate.RebaseSchedule();
-            var selection = new CombatSelectionModal(state, host, selectionRaster, bindings, (_, target) => backdrop.Pixels.Span.CopyTo(target), () => music.Update(awardMusicTrack), name => PlayExclusiveScenarioSound(Encoding.ASCII.GetBytes(name)), StopExclusiveScenarioSound, chosen => entry.BindSelectedParty(chosen, region, gate.LastFrameMilliseconds), () =>
+            var selection = new CombatSelectionModal(state, host, selectionRaster, bindings, (_, target) => backdrop.Pixels.Span.CopyTo(target), () => music.Update(awardMusicTrack), name => exclusiveSound.PlayMember(Encoding.ASCII.GetBytes(name), CurrentEffectsVolume), exclusiveSound.Stop, chosen => entry.BindSelectedParty(chosen, region, gate.LastFrameMilliseconds), () =>
             {
                 if (controls.CombatInput.Press(0, GameAction.Pause) || controls.CombatInput.Press(1, GameAction.Pause))
                 {
@@ -166,7 +166,7 @@ public sealed partial class GameSession
                 }
             });
             //Retain the modern window/devices and immutable scene assets through the native owner change.
-            StopExclusiveScenarioSound();
+            exclusiveSound.Stop();
             StopAudio();
             music.Update(musicId);
             CompleteBattleReturn(result.ReturnCode);
@@ -178,7 +178,7 @@ public sealed partial class GameSession
             controls.Clear();
             combatControls = null;
             currentCombat = null;
-            StopExclusiveScenarioSound();
+            exclusiveSound.Stop();
             battleActive = false;
             gate.RebaseSchedule();
         }
@@ -270,32 +270,38 @@ public sealed partial class GameSession
     }
 
     private static uint ReadBattleSeed() => unchecked((uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-    private void PlayBattleExclusiveBytes(ReadOnlyMemory<byte> bytes)
-    {
-        var sound = audio.LoadEffect(bytes);
-        try
-        {
-            ReplaceExclusiveScenarioSound(sound, true, CurrentEffectsVolume);
-        }
-        catch
-        {
-            sound.Dispose();
-            throw;
-        }
-    }
-
     private void AwardBattleExperience(CombatExecutionRuntime execution, int signedAward)
     {
         using var assets = new ExperienceAssets(root, audio, ExperienceAssetContext.Battle);
-        var sound = new SessionExperienceNoticeSound(this, assets.LevelUp);
-        using var modal = new NativeExperienceModalEffects(state, host, new ExperienceAllocationRaster(assets.Etc, assets.Font, assets.Labels, X87Precision.Bits53), assets.Font, sound, bindings, host.IsHeld, DrawExperienceBackdrop, () => music.Update(awardMusicTrack), StopExclusiveScenarioSound, () => CurrentEffectsVolume, () => true, battleBackground: (_, target, nativeTime) =>
+        var sound = new SessionExperienceNoticeSound(exclusiveSound, assets.LevelUp);
+        using var modal = new NativeExperienceModalEffects(state, host, new ExperienceAllocationRaster(assets.Etc, assets.Font, assets.Labels, X87Precision.Bits53), assets.Font, sound, bindings, host.IsHeld, DrawExperienceBackdrop, () => music.Update(awardMusicTrack), exclusiveSound.Stop, () => CurrentEffectsVolume, () => true, battleBackground: (_, target, nativeTime) =>
         {
             execution.AdvanceLogicalVisual(nativeTime, false);
             execution.CopyCachedFrame(target);
         });
-        gate.RebaseSchedule();
-        new CombatExperienceAward(modal).Run(state, signedAward);
-        StopExclusiveScenarioSound();
-        gate.RebaseSchedule();
+        Exception? awardFailure = null;
+        try
+        {
+            gate.RebaseSchedule();
+            new CombatExperienceAward(modal).Run(state, signedAward);
+        }
+        catch (Exception exception)
+        {
+            awardFailure = exception;
+            throw;
+        }
+        finally
+        {
+            try
+            {
+                exclusiveSound.Stop();
+            }
+            catch when (awardFailure is not null)
+            {
+                // Preserve the modal failure while still detaching its borrowed sound.
+            }
+
+            gate.RebaseSchedule();
+        }
     }
 }

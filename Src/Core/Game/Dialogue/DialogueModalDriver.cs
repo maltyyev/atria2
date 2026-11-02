@@ -6,7 +6,7 @@ using Atria.Core.Presentation.Controls;
 using Atria.Core.Runtime.Input;
 using Atria.Core.Game.State;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
+using Atria.Core.Runtime.Timing;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation;
 using Atria.Core.Presentation.Sprites;
@@ -15,7 +15,6 @@ using Atria.Core.Resources;
 using Atria.Core.Game.Progression;
 using Atria.Core.Presentation.Dialogue;
 using Atria.Core.Resources.Sprites;
-using Atria.Core.Runtime.Timing;
 
 namespace Atria.Core.Game.Dialogue;
 

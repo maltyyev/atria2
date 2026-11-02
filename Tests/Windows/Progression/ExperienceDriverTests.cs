@@ -9,7 +9,7 @@ using Atria.Core.Game.Progression;
 using Atria.Core.Presentation.Progression;
 using Atria.Core.Game.State;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
+using Atria.Core.Runtime.Timing;
 using Atria.Platforms.Windows.Win32;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;

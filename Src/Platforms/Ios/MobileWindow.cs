@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using Atria.Core.Contracts.Window;
-using Atria.Core.Runtime.Clock;
+using Atria.Core.Runtime.Timing;
 using Atria.Core.Contracts.Input;
 using Atria.Core.Game.Combat;
 using Atria.Core.Game.Progression;
