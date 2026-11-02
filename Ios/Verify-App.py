@@ -42,7 +42,7 @@ for index in range(entries):
     if section and symbol_type & 0x0E == 0x0E:
         end = data.index(b'\0', strings + name_offset, strings + strings_size)
         defined.add(data[strings + name_offset:end].decode())
-for symbol in ('_atria_start', '_atria_frame', '_atria_pad', '_atria_surface', '_apple_text_create', '_apple_sound_create', '_apple_movie_start', '_RhInitialize', '_RhSetRuntimeInitializationCallback'):
+for symbol in ('_atria_start', '_atria_suspend', '_atria_resume', '_atria_stop', '_atria_wait_stopped', '_atria_frame', '_atria_pad', '_atria_touch_pad', '_atria_touch_activity', '_atria_surface', '_apple_text_create', '_apple_sound_create', '_apple_movie_start', '_RhInitialize', '_RhSetRuntimeInitializationCallback'):
     assert symbol in defined, f'Missing C#/NativeAOT symbol: {symbol}'
 
 import hashlib

@@ -2,8 +2,8 @@
 set -euo pipefail
 ios_root="$(cd -- "$(dirname -- "$0")" && pwd)"
 export PATH="/opt/atria-ios/swift/usr/bin:$PATH"
-export ATRIA_NATIVEAOT_ROOT="$ios_root/../.packages/microsoft.netcore.app.runtime.nativeaot.ios-arm64/10.0.13/runtimes/ios-arm64/native"
-stage=/opt/atria-ios/game-host
+export ATRIA_NATIVEAOT_ROOT="${ATRIA_NATIVEAOT_ROOT:-$ios_root/../.packages/microsoft.netcore.app.runtime.nativeaot.ios-arm64/10.0.13/runtimes/ios-arm64/native}"
+stage="${ATRIA_STAGE:-/opt/atria-ios/game-host}"
 mkdir -p "$stage/Host"
 # Foundation copies in small chunks; stage on Linux storage before xtool packages large assets.
 cp -a "$ios_root/Host/Sources" "$stage/Host/"
