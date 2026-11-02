@@ -625,6 +625,27 @@ public sealed class InputRouter : IDisposable
         return query ? Take(scan) : RawHeld(scan);
     }
 
+    internal bool QuerySceneScan(InputScene scene, byte scan) => SceneScan(scene, scan, true);
+    internal bool HeldSceneScan(InputScene scene, byte scan) => SceneScan(scene, scan, false);
+
+    private bool SceneScan(InputScene scene, byte scan, bool query)
+    {
+        if (scene == InputScene.World)
+        {
+            for (int player = 0; player < 2; player++)
+            {
+                for (int direction = 0; direction < 4; direction++)
+                {
+                    if (scan != legacy[player, direction]) continue;
+                    GameAction movement = (GameAction)direction;
+                    return query ? Press(player, movement, true) : Held(player, movement);
+                }
+            }
+        }
+
+        return LegacyMenu(scan, query);
+    }
+
     public void Clear()
     {
         contextVersions[0]++;

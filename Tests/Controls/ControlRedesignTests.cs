@@ -7,6 +7,7 @@ using Atria.Game.Dialogue;
 using Atria.Game.State;
 using Atria.Platform;
 using Atria.Platform.Windows.Win32;
+using Atria.Render;
 using Atria.Resources;
 using Atria.Tests.Combat;
 
@@ -60,6 +61,19 @@ public static class ControlRedesignTests
         public bool TryDequeueScanInput(out TimestampedScanInput input) { input = default; return false; }
         public string TakeTextInput() => "";
         public void RequestClose() => Closed = true;
+    }
+
+    private sealed class TestModalClock : IModalClock
+    {
+        public uint Milliseconds => 0;
+        public void Yield() { }
+    }
+
+    private sealed class TestPresenter : IFramePresenter
+    {
+        public void Resize(int width, int height) { }
+        public void SetFrameSize(int width, int height) { }
+        public void Present(ReadOnlySpan<uint> pixels) { }
     }
 
     private sealed class Effects : ICombatControlEffects
@@ -706,5 +720,48 @@ public static class ControlRedesignTests
         virtualOnly.Poll(keys, pressed, mouse, true, 8, default, new(true, 0, 0, 0, 0, 0, 0, 0));
         virtualOnly.Poll(keys, pressed, mouse, true, 9, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
         Check(virtualOnly.CombatInput.Press(0, GameAction.Attack), "released touch input rearms after player reset");
+
+        VerifyWorldLegacyQueries(legacy);
+    }
+
+    private static void VerifyWorldLegacyQueries(ControlBindings legacy)
+    {
+        var profile = ControlProfile.Defaults(legacy);
+        profile.Players[0].PadSlot = 0;
+        profile.Players[0].Set(GameAction.Left, InputBinding.Key(36), pad: InputBinding.Pad(16));
+        var pads = new Pads();
+        pads.Samples[0] = new(true, 0, 0, 0, 0, 0, 0, 0);
+        using var input = new InputRouter(profile, legacy, pads);
+        var window = new Window();
+        var host = CreateNativeHost(window, legacy, input);
+        window.ScanKeys[36] = true;
+        input.Poll(window);
+        Check(host.QueryWorldScan(legacy.Previous), "world legacy scan routes a remapped keyboard movement binding");
+        Check(!host.QueryScan(legacy.Previous), "the shared legacy menu query does not consume the world movement binding");
+
+        pads.Samples[0] = new(true, 0, 0, 0, -12000, 0, 0, 0);
+        input.Poll(window);
+        Check(host.IsWorldScanHeld(legacy.Previous), "world legacy held scan routes configured analog movement");
+        Check(!host.IsHeld(legacy.Previous), "the shared legacy menu held query does not expose world analog movement");
+    }
+
+    private static NativeDialogueFrameHost CreateNativeHost(Window window, ControlBindings legacy, InputRouter controls)
+    {
+        var host = new NativeDialogueFrameHost(
+            window,
+            new TestPresenter(),
+            legacy,
+            new ScanCodeEdges(),
+            new ModalFrameGate(new TestModalClock(), 0),
+            (_, _) => { },
+            _ => { },
+            _ => true,
+            Array.Empty<Atria.Audio.IBufferedSoundEffect>(),
+            () => 0
+        )
+        {
+            Controls = controls
+        };
+        return host;
     }
 }
