@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Atria.Platforms.Ios</AssemblyName>
+    <RootNamespace>Atria.Platforms.Ios</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Core/Atria.Core.csproj" />
+  </ItemGroup>
+</Project>

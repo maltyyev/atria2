@@ -1,0 +1,246 @@
+using System.Text;
+using System.Text.Json;
+using Atria.Core.Contracts.Audio;
+using Atria.Core.Resources.Audio;
+using Atria.Core.Runtime.Audio;
+using Atria.Core.Game.Combat;
+using Atria.Core.Presentation.Combat;
+using Atria.Core.Game.Dialogue;
+using Atria.Core.Presentation.Dialogue;
+using Atria.Core.Resources.Sprites;
+using Atria.Core.Runtime.Input;
+using Atria.Core.Runtime.Timing;
+using Atria.Core.Game.Exploration;
+using Atria.Core.Presentation.Exploration;
+using Atria.Core.Persistence;
+using Atria.Core.Presentation.Persistence;
+using Atria.Core.Game.Progression;
+using Atria.Core.Presentation.Progression;
+using Atria.Core.Game.State;
+using Atria.Core.Game.World;
+using Atria.Core.Resources.World;
+using Atria.Core.Resources.Localization;
+using Atria.Core.Resources;
+using Atria.Core.Game.Script;
+using Atria.Core.Persistence.Settings;
+using Tests.Core.Localization;
+
+namespace Tests.Core.Combat;
+
+public static class NecromancerTests
+{
+    private sealed class Voice : IBufferedSoundEffect
+    {
+        public void Play()
+        {
+        }
+        public void StopAll()
+        {
+        }
+        public void Dispose()
+        {
+        }
+        public void SetCurrentVolume(int value)
+        {
+        }
+    }
+    private sealed class StoryEffects : IScriptEffects
+    {
+        public int Battles
+        {
+            get; private set;
+        }
+        public void Execute(ScriptEffect effect, GameState state)
+        {
+            if (effect.Kind == ScriptEffectKind.ForcedBattleWithPostAction)
+            {
+                Battles++;
+                state.PendingBattle = state.EndingResetFlag = 0;
+            }
+            else if (effect.Call.Function == "dialogue_text")
+            {
+                Check(GameText.Get(Encoding.ASCII.GetString(effect.Call.Arguments[2].Bytes.Span)).Length > 0, "localized scene text");
+            }
+            else
+            {
+                throw new InvalidOperationException("Unexpected story effect.");
+            }
+        }
+    }
+
+    public static string Run(string root)
+    {
+        Console.WriteLine(NarrativeRevisionTests.Run(root));
+        Console.WriteLine(NarrativeReturnTests.Run(root));
+        var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
+        var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
+        var state = InitialGameState.Create(items, messages);
+        foreach (var hero in state.Heroes.Where(hero => hero.MemberStatus != 0))
+        {
+            hero.Level = 8;
+        }
+
+        state.Events[441] = 1;
+        var effects = new StoryEffects();
+        using var archive = BinderArchive.Open(Path.Combine(root, "SCRIPT.000"));
+        foreach (var scene in NarrativeScenes.All.Where(scene => scene.AfterMember != "WORLD"))
+        {
+            var source = GameResources.Read(root, "SCRIPT.000", Encoding.ASCII.GetBytes(scene.AfterMember));
+            var original = ScriptProgram.Parse(scene.AfterMember, source);
+            Check(original.Tokens.Any(token => token.Text == scene.AfterFunction), "hook exists in an original scenario: " + scene.AfterMember);
+        }
+        Console.WriteLine(EirenExpeditionTests.Run(root));
+        state = EirenExpeditionTests.CompleteChain(root, state, effects);
+        var optional = NarrativeScenes.All[8];
+        Check(NarrativeScenes.After(state, optional.AfterMember, optional.AfterFunction)?.Id == optional.Id, "optional recruited-party dialogue appears");
+        state.NarrativeHistory.Add(optional.Id);
+        state = NativeGameStateCodec.Decode(NativeGameStateCodec.Encode(state));
+        Check(NarrativeScenes.After(state, optional.AfterMember, optional.AfterFunction) is null, "optional dialogue history survives reload without repeated apology");
+        Check(effects.Battles == 9 && state.HasHero("eiren_wald"), "nine quest combats and recruitment");
+        Check(state.Journal.Progress(state, 1023).HasFlag(QuestMilestones.Completed), "quest chain completion persists");
+        Check(NewCharacterRuntime.ProcessPending(state, items, 0), "joining finalizes stats and equipment");
+        int eiren = state.HeroCatalog.Find("eiren_wald");
+        Check(state.Heroes[eiren].Level == 8 && state.Heroes[eiren].Health > 0, "recruit starts at current party median");
+        int owned = state.OwnedItems.Sum();
+        HeroRecruitment.Join(state, "eiren_wald");
+        Check(state.NewCharacterPending == 0 && state.OwnedItems.Sum() == owned, "idempotent recruitment");
+        using (var condition = JsonDocument.Parse("{\"all\":[\"roland\"],\"any\":[\"mist\",\"emerald\"],\"none\":[\"tiger\"]}"))
+        {
+            Check(NarrativeScenes.Matches(condition.RootElement, state), "generic all/any/none party predicate");
+            state.Heroes[1].MemberStatus = 0;
+            Check(!NarrativeScenes.Matches(condition.RootElement, state), "absent members do not speak");
+            state.Heroes[1].MemberStatus = 1;
+        }
+        using (var faces = new FaceSpriteSource(Path.Combine(root, "FACE.SPR")))
+        {
+            Check(faces.Load(157).Width > 0 && faces.Load(158).Height > 0, "both authored portraits decode");
+        }
+        foreach (string language in new[] { "ru-RU", "be-BY" })
+        {
+            var catalog = new LocalizationCatalog(Path.GetFullPath(Path.Combine(root, "..", "Localization")), language);
+            Check(catalog.Issues.Count == 0 && catalog.Get("ui.characters.eiren").Length > 0, "localized content validates: " + language);
+        }
+
+        CheckStorehouseEncounters();
+        for (int encounter = 900; encounter <= 918; encounter++)
+        {
+            foreach (var hero in state.Heroes.Where(hero => hero.MemberStatus != 0))
+            {
+                hero.Health = hero.MaximumHealth;
+                hero.Mana = hero.MaximumMana;
+                hero.SelectedForBattle = 1;
+            }
+            var random = new LegacyRandom(123);
+            using var entry = new CombatEntryPreparation(root, new(FixedEncounterKind.Forced, encounter), random, () => 123, 0, _ => new Voice(), _ => { });
+            var selection = new CombatPartySelection(state, 1);
+            selection.ApplyInput((_, key) => key == CombatSelectionInput.Finish, _ => { });
+            Check(selection.Completed, "selection confirms authored encounter");
+            selection.Commit(state);
+            entry.BindSelectedParty(selection, 6, 0);
+            var runtime = entry.Runtime;
+            if (encounter is 914 or 918)
+            {
+                var enemy = runtime.Actors.First(actor => actor.Binding?.Info.Type == 40);
+                var spellEffects = enemy.Binding!.Info.Attacks.SelectMany(attack => enemy.Binding.Assets.Animation.Sequences[attack.Animation].Frames)
+                    .Select(frame => (CombatSpellEffect)frame.Effect).ToHashSet();
+                Check(spellEffects.IsSupersetOf([CombatSpellEffect.WeakenDefense, CombatSpellEffect.PartyAttack, CombatSpellEffect.Slow]),
+                    "Eiren retains his real support/debuff spells behind the stronger guard");
+                Console.WriteLine("Final necromancer attacks: " + string.Join("; ", enemy.Binding!.Info.Attacks.Select((attack, index) =>
+                    $"{index}: {string.Join(',', enemy.Binding.Assets.Animation.Sequences[attack.Animation].Frames.Select(frame => frame.Effect).Distinct())}")));
+            }
+            var caster = runtime.Actors[runtime.Scene.PartyStartIndex + eiren];
+            var execution = new CombatExecutionRuntime(root, entry, state, random,
+                ControlBindings.Parse(File.ReadAllBytes(Path.Combine(root, "BATTLE.CFG"))), new CombatScanInput(_ => false), () => -10000, (_, _) => { }, (_, _) => { });
+            var info = caster.Binding!.Info;
+            foreach (var sequence in caster.Binding.Assets.Animation.Sequences)
+            {
+                foreach (var frame in sequence.Frames)
+                {
+                    Check(frame.SpriteFrameIndex < caster.Binding.Assets.Sprites.Frames.Length, "all authored frames own their sprite indexes");
+                }
+            }
+
+            for (int count = 1; count <= 3; count++)
+            {
+                uint now = (uint)(count * 40_000);
+                runtime.Summons.RemoveDead();
+                runtime.Summons.Cast(caster, CombatSummons.FirstEffect + count - 1, now);
+                var servants = runtime.Actors.Where(actor => actor.IsSummon && actor.State.Active != 0).ToArray();
+                Check(servants.Length == count && servants.All(actor => actor.State.MaximumHealth == 288 / count), "summon choice and 1.5x HP budget");
+                Check(!runtime.Summons.CanSummon(caster), "no accumulated groups");
+                int mana = caster.State.Mana;
+                caster.State.CommandCategory = 1;
+                caster.State.CommandSelection = count - 1;
+                caster.State.CommandScroll = 0;
+                CombatManualControl.ExecuteCommand(runtime, caster, state, now, false, _ => { }, _ => { }, _ => { });
+                Check(caster.State.Mana == mana, "occupied summon group does not consume mana");
+                servants[0].State.Health = 0;
+                runtime.Summons.RemoveDead();
+                Check(servants[0].State.Active == 0 && servants.Skip(1).All(actor => actor.State.Active != 0), "only killed servants disappear");
+                Check(runtime.Summons.CanSummon(caster) == (count == 1), "surviving servants still prevent another group");
+                foreach (var servant in servants)
+                {
+                    servant.State.Health = 0;
+                }
+                runtime.Summons.RemoveDead();
+                Check(runtime.Summons.CanSummon(caster), "all servants dead frees the group");
+                Check(CombatParticleMagic.Resurrect(runtime.Actors, caster, 0) == 0, "dead servants cannot be resurrected");
+            }
+            for (uint now = 200_000; now < 205_000; now += 10)
+            {
+                if (!execution.GlobalEffectBusy)
+                {
+                    execution.AdvanceActors(now, false);
+                    execution.AdvanceHits(now);
+                }
+                execution.AdvanceStatuses(now);
+                if (now % 40 == 0)
+                {
+                    execution.AdvanceLogicalVisual(now);
+                }
+            }
+            Check(execution.HasCachedFrame, "real actor, magic, hit and HUD pipeline renders");
+        }
+        NecromancerPresentationTests.Run(root, state);
+        NecromancerExecutionTests.Run(root);
+        return "Necromancer PASS: four staged quests/reload, generic membership, recruitment, RU/BE, portraits, current and archived encounters, three summon choices and death-only cleanup.";
+    }
+
+    private static void CheckStorehouseEncounters()
+    {
+        using var document = GameData.Open("AuthoredEncounters");
+        var first = document.RootElement.GetProperty("EBAT906").GetProperty("actors").EnumerateArray().ToArray();
+        var second = document.RootElement.GetProperty("EBAT907").GetProperty("actors").EnumerateArray().ToArray();
+        var openingWave = first.Where(actor => actor.GetProperty("wave").GetInt32() == 0).ToArray();
+        var eirenWave = first.Where(actor => actor.GetProperty("wave").GetInt32() == 1).ToArray();
+        const int necromancerSceneType = 42;
+        Check(first.Select(actor => actor.GetProperty("wave").GetInt32()).Distinct().Order().SequenceEqual([0, 1]), "first storehouse battle has exactly two waves");
+        Check(openingWave.All(actor => actor.GetProperty("type").GetInt32() != necromancerSceneType)
+            && eirenWave.Count(actor => actor.GetProperty("type").GetInt32() == necromancerSceneType) == 1,
+            "Eiren appears only in the second wave");
+        Check(second.All(actor => actor.GetProperty("wave").GetInt32() == 0)
+            && second.GroupBy(actor => actor.GetProperty("type").GetInt32()).All(group => group.Count() == 2)
+            && second.Count(actor => actor.GetProperty("type").GetInt32() == necromancerSceneType) == 2,
+            "copying battle has one wave with two necromancers and paired servants");
+        foreach (string statistic in new[] { "health", "attack", "defense" })
+        {
+            Check(openingWave.Sum(actor => actor.GetProperty(statistic).GetInt32()) < eirenWave.Sum(actor => actor.GetProperty(statistic).GetInt32())
+                && eirenWave.Sum(actor => actor.GetProperty(statistic).GetInt32()) < second.Sum(actor => actor.GetProperty(statistic).GetInt32()),
+                "successive storehouse waves increase total " + statistic);
+        }
+        foreach (var pair in second.GroupBy(actor => actor.GetProperty("type").GetInt32()))
+        {
+            foreach (string statistic in new[] { "health", "attack", "defense" })
+            {
+                Check(pair.Select(actor => actor.GetProperty(statistic).GetInt32()).Distinct().Count() == 1, "copies have the same combat statistics");
+            }
+        }
+    }
+    private static void Check(bool value, string message)
+    {
+        if (!value)
+        {
+            throw new InvalidOperationException("Necromancer: " + message);
+        }
+    }
+}

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Atria.Contracts.Tests</AssemblyName>
+    <RootNamespace>Tests.Contracts</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Src/Core/Atria.Core.csproj" />
+    <ProjectReference Include="../../Src/Platforms/Windows/Atria.Platforms.Windows.csproj" />
+    <ProjectReference Include="../../Src/Platforms/Ios/Atria.Platforms.Ios.csproj" />
+    <ProjectReference Include="../Core/Atria.Core.Tests.csproj" />
+  </ItemGroup>
+</Project>

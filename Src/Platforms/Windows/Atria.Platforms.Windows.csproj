@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Atria.Platforms.Windows</AssemblyName>
+    <RootNamespace>Atria.Platforms.Windows</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Core/Atria.Core.csproj" />
+  </ItemGroup>
+</Project>

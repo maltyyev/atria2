@@ -39,17 +39,21 @@ try {
         }
         'build' { & dotnet build Atria.slnx -c Release -m:1 -nr:false }
         'test' {
-            & dotnet run --project Core.Tests/Atria.Core.Tests.csproj -c Release
+            & dotnet run --project Tests/Core/Atria.Core.Tests.csproj -c Release
             if ($LASTEXITCODE -ne 0) { throw 'Core-only checks failed.' }
-            & dotnet run --project Tests/Atria.Tests.csproj -c Release -- "$projectRoot/Assets/Game" "$projectRoot/Assets/Music"
+            & dotnet run --project Tests/Contracts/Atria.Contracts.Tests.csproj -c Release -- "$projectRoot"
+            if ($LASTEXITCODE -ne 0) { throw 'Architecture and contract checks failed.' }
+            & dotnet run --project Tests/Windows/Atria.Tests.csproj -c Release -- "$projectRoot/Assets/Game" "$projectRoot/Assets/Music"
         }
         'test-aot' {
-            & dotnet run --project Core.Tests/Atria.Core.Tests.csproj -c Release
+            & dotnet run --project Tests/Core/Atria.Core.Tests.csproj -c Release
             if ($LASTEXITCODE -ne 0) { throw 'Core-only checks failed.' }
-            & dotnet publish Tests/Atria.Tests.csproj -c Release -r win-x64 -p:PublishAot=true -m:1 -nr:false -o artifacts/tests-aot
+            & dotnet run --project Tests/Contracts/Atria.Contracts.Tests.csproj -c Release -- "$projectRoot"
+            if ($LASTEXITCODE -ne 0) { throw 'Architecture and contract checks failed.' }
+            & dotnet publish Tests/Windows/Atria.Tests.csproj -c Release -r win-x64 -p:PublishAot=true -m:1 -nr:false -o artifacts/tests-aot
             if($LASTEXITCODE -eq 0) { & "$projectRoot/artifacts/tests-aot/Atria.Tests.exe" "$projectRoot/Assets/Game" "$projectRoot/Assets/Music" }
         }
-        'publish' { & dotnet publish Src/Platform/Windows/Atria.Windows.csproj -c Release -m:1 -nr:false -o artifacts/win-x64 }
+        'publish' { & dotnet publish Src/Hosts/Windows/Atria.Windows.csproj -c Release -m:1 -nr:false -o artifacts/win-x64 }
     }
     if ($LASTEXITCODE -ne 0) { throw "Action $Action failed with exit code $LASTEXITCODE" }
     if($Action -eq 'publish') {
