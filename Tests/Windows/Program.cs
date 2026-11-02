@@ -437,6 +437,7 @@ foreach (string line in Tests.Core.Script.ScriptTests.Run(args[0]))
     Console.WriteLine(line);
 }
 
+Console.WriteLine(Tests.Core.Script.ScenarioProgramCatalogTests.Run(args[0]));
 Console.WriteLine(Tests.Core.State.StateTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Menu.MainMenuTests.Run());
 Console.WriteLine(Tests.Windows.Menu.VerticalMenuTests.Run(args[0]));
@@ -452,6 +453,7 @@ Console.WriteLine(Tests.Core.Menu.MenuRasterTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Platform.ClockTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Audio.SoundEffectTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Audio.CombatSoundTests.Run(args[0]));
+Console.WriteLine(Tests.Core.Audio.SessionExclusiveSoundChannelTests.Run(args[0]));
 Console.WriteLine(Tests.Windows.Audio.CombatSoundProbeTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Settings.SettingsTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Credits.CreditsTests.Run(args[0]));

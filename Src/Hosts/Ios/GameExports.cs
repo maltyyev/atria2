@@ -38,6 +38,7 @@ public static unsafe class GameExports
         var previousOut = Console.Out;
         var previousError = Console.Error;
         StreamWriter? log = null;
+        AppleMovies? movies = null;
         try
         {
             Directory.CreateDirectory(output);
@@ -51,7 +52,7 @@ public static unsafe class GameExports
             GameText.Use(new LocalizationCatalog(Path.Combine(resources, "localization")));
             using var audio = new AppleAudio();
             using var music = new AppleMusic(Path.Combine(resources, "music"));
-            var movies = new AppleMovies(window, Path.Combine(resources, "movies"));
+            movies = new AppleMovies(window, Path.Combine(resources, "movies"));
             GameSession.RunHosted(Path.Combine(resources, "game"), output, window, presenter, audio, music,
                 new GameHostServices(resources, window, movies.Play, new AppleText()));
         }
@@ -63,7 +64,7 @@ public static unsafe class GameExports
         }
         finally
         {
-            try { AppleNative.MovieStop(); }
+            try { movies?.StopPlayback(); }
             catch (Exception ex) { Fail(ex); }
             Console.SetOut(previousOut);
             Console.SetError(previousError);

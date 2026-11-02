@@ -5,7 +5,7 @@ using Atria.Core.Resources;
 namespace Atria.Core;
 
 /// <summary>Build identity selected by the executable or native library host.</summary>
-internal static class BuildInfo
+public static class BuildInfo
 {
     private static string version = typeof(BuildInfo).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
 

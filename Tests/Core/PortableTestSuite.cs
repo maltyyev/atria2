@@ -14,6 +14,7 @@ internal static class PortableTestSuite
             Console.WriteLine(result);
         }
 
+        Console.WriteLine(Tests.Core.Script.ScenarioProgramCatalogTests.Run(resourceRoot));
         Console.WriteLine(Tests.Core.State.StateTests.Run(resourceRoot));
         Console.WriteLine(Tests.Core.Persistence.PersistenceTests.Run());
         Console.WriteLine(Tests.Core.Persistence.AutosaveTests.Run(resourceRoot));
@@ -21,6 +22,7 @@ internal static class PortableTestSuite
         Console.WriteLine(Tests.Core.Audio.MusicTests.Run());
         Console.WriteLine(Tests.Core.Audio.SoundEffectTests.Run(resourceRoot));
         Console.WriteLine(Tests.Core.Audio.CombatSoundTests.Run(resourceRoot));
+        Console.WriteLine(Tests.Core.Audio.SessionExclusiveSoundChannelTests.Run(resourceRoot));
         Console.WriteLine(Tests.Core.Audio.PcmChunkTests.Run());
         Console.WriteLine(Tests.Core.Platform.ClockTests.Run(resourceRoot));
         Console.WriteLine(Tests.Core.Settings.SettingsTests.Run(resourceRoot));

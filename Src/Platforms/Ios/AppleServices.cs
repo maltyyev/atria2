@@ -150,6 +150,9 @@ public sealed class AppleText : ITextRasterizer
 
 public sealed class AppleMovies(MobileWindow window, string directory)
 {
+    /// <summary>Stops any native movie playback owned by this platform service.</summary>
+    public void StopPlayback() => AppleNative.MovieStop();
+
     public MoviePlaybackResult Play(string path, Func<bool> skip, float volume, double maximumSeconds)
     {
         string converted = Path.Combine(directory, Path.GetFileNameWithoutExtension(path).ToLowerInvariant() + ".mp4");
@@ -169,7 +172,7 @@ public sealed class AppleMovies(MobileWindow window, string directory)
             }
             if (AppleNative.MovieStatus() < 0) throw new IOException("AVPlayer failed to play the cutscene.");
         }
-        finally { AppleNative.MovieStop(); }
+        finally { StopPlayback(); }
         return new(0, 0, 0, skipped, timedOut);
     }
 }
