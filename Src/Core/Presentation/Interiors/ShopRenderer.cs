@@ -1,0 +1,347 @@
+using System.Globalization;
+using System.Text;
+using Atria.Core.Contracts.Presentation;
+using Atria.Core.Game.Interiors;
+using Atria.Core.Game.State;
+using Atria.Core.Presentation.Sprites;
+using Atria.Core.Presentation.UI;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
+using Atria.Core.Resources.Localization;
+
+namespace Atria.Core.Presentation.Interiors;
+
+public enum ShopPrimitive
+{
+    Tint,
+    Panel,
+    ItemSprite,
+    EtcSprite,
+    Text
+}
+
+public enum ShopTextStyle
+{
+    Solid,
+    Normal,
+    Selected,
+    Title,
+    Quantity
+}
+
+public sealed record ShopDrawCommand(
+    ShopPrimitive Primitive,
+    int X,
+    int Y,
+    int A = 0,
+    int B = 0,
+    ushort Color = 0,
+    bool Small = false,
+    ShopTextStyle Style = ShopTextStyle.Solid,
+    ReadOnlyMemory<byte> Text = default,
+    SpriteBlend Blend = SpriteBlend.Copy,
+    bool Wrap = false
+);
+public readonly record struct ShopRenderFrame(int ArrowPhase, int TextPhase = 0);
+public sealed class ShopRenderClock
+{
+    private int counter, phase;
+    public ShopRenderFrame AdvanceLogicalFrame(bool hasRows)
+    {
+        var frame = new ShopRenderFrame(phase);
+        if (hasRows && ++counter > 3)
+        {
+            counter = 0;
+            phase = (phase + 1) & 3;
+        }
+
+        return frame;
+    }
+
+    public void Reset()
+    {
+        counter = phase = 0;
+    }
+}
+
+/// <summary>430780..4349b0 exact recovered shop composition; draw onto a freshly recomposed interior background.</summary>
+public sealed class ShopRenderer
+{
+    private readonly SpriteFile itemSprites, etc;
+    private readonly BitmapFont small, large;
+    private readonly ItemCatalog items;
+    private readonly ReadOnlyMemory<byte> itemExtra;
+    private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages;
+    private static ReadOnlySpan<ushort> QuantityPalette => [0xffff, 0xe7ff, 0xd7ff, 0xc7ff, 0xb7ff, 0xa7ff, 0x97ff, 0x97ff, 0x77ff, 0x67ff, 0x57ff, 0x47ff, 0x371c, 0x369a, 0x3618, 0x3596, 0x2514, 0x2492, 0x2410, 0x238e, 0x130c, 0x12cb, 0x128a, 0x1249, 0x0208, 0x01c7, 0x0186, 0x0145, 0x0104, 0x00c3, 0x0082, 0x0041];
+
+    public ShopRenderer(
+        SpriteFile itemSprites,
+        SpriteFile etc,
+        BitmapFont small,
+        BitmapFont large,
+        ItemCatalog items,
+        ReadOnlyMemory<byte> itemExtra,
+        IReadOnlyList<ReadOnlyMemory<byte>> messages
+    )
+    {
+        if (small.Width != 8 || small.Height != 16 || large.Width != 16 || large.Height != 24)
+        {
+            throw new ArgumentException("Shop requires both original ENG font sizes.");
+        }
+
+        if (messages.Count < 372)
+        {
+            throw new InvalidDataException("Shop TEXTmsg labels are absent.");
+        }
+
+        this.itemSprites = itemSprites;
+        this.etc = etc;
+        this.small = small;
+        this.large = large;
+        this.items = items;
+        this.itemExtra = itemExtra;
+        this.messages = messages;
+    }
+
+    public IReadOnlyList<ShopDrawCommand> BuildPlan(ShopSession session, GameState state, ShopRenderFrame frame)
+    {
+        if ((uint)frame.ArrowPhase > 3 || (uint)frame.TextPhase > 31)
+        {
+            throw new ArgumentOutOfRangeException(nameof(frame));
+        }
+
+        var ops = new List<ShopDrawCommand>();
+        void Text(ReadOnlyMemory<byte> value, int x, int y, bool smallFont, ShopTextStyle style = ShopTextStyle.Solid, ushort color = 0xffff, int w = 0, int h = 16, bool wrap = false) => ops.Add(new(ShopPrimitive.Text, x, y, w, h, Color: color, Small: smallFont, Style: style, Text: value, Wrap: wrap));
+        void Pair(ReadOnlyMemory<byte> value, int x, int y, bool sm, ShopTextStyle style, ushort color = 0xffff, int shadowX = 1, int shadowY = 1, int w = 0, int h = 16, bool wrap = false)
+        {
+            Text(value, x + shadowX, y + shadowY, sm, color: 0, w: w, h: h, wrap: wrap);
+            Text(value, x, y, sm, style, color, w, h, wrap);
+        }
+
+        void Tint(int x, int y, int w, int h, ushort color) => ops.Add(new(ShopPrimitive.Tint, x, y, w, h, color));
+        void Panel(int x, int y, int w, int h) => ops.Add(new(ShopPrimitive.Panel, x, y, w, h));
+        void Sprite(bool item, int index, int x, int y, SpriteBlend blend = SpriteBlend.Copy) => ops.Add(new(item ? ShopPrimitive.ItemSprite : ShopPrimitive.EtcSprite, x, y, index, Blend: blend));
+        //42f3b0/42f6a0 immutable base panels.
+        Tint(110, 46, 292, 36, 15);
+        Panel(96, 32, 8, 0);
+        Tint(110, 110, 292, 260, 0);
+        Panel(96, 96, 8, 7);
+        Tint(430, 110, 164, 292, 15);
+        Panel(416, 96, 4, 8);
+        Pair(Msg(365), 432, 370, true, ShopTextStyle.Solid, w: 104);
+        int[] categoryFrames = [21, 35, 58];
+        for (int c = 0; c < 3; c++)
+        {
+            Sprite(true, categoryFrames[c], 160 + c * 80, 48, SpriteBlend.HalfAll);
+        }
+
+        Sprite(true, categoryFrames[session.Category], 160 + session.Category * 80, 48);
+        if (session.Count < 1)
+        {
+            var empty = Msg(353);
+            Text(empty, 161, 229, false, color: 0);
+            Text(empty, 161, 227, false, color: 0);
+            Text(empty, 159, 229, false, color: 0);
+            Text(empty, 159, 227, false, color: 0);
+            Text(empty, 160, 228, false, ShopTextStyle.Title);
+            return ops.AsReadOnly();
+        }
+
+        foreach (var row in session.VisibleRows())
+        {
+            Sprite(true, row.SpriteFrame, row.X, row.Y);
+            Pair(GameText.ItemName(items, row.ItemId), 180, row.Y + 8, true, ShopTextStyle.Selected, w: 166, h: 32, wrap: true);
+            Pair(Number(row.Quantity), 356, row.Y + 5, false, ShopTextStyle.Selected);
+        }
+
+        int id = session.SelectedItemId;
+        if ((uint)id >= 88)
+        {
+            throw new InvalidDataException("Shop selected item exceeds original88-item UI tables.");
+        }
+
+        var item = items.GetItem(id);
+        int Int(int offset) => item.GetInteger((offset - 30) / 4);
+        if (session.Buying)
+        {
+            string description = string.Join(" ", Enumerable.Range(0, 3)
+                .Select(line => GameText.Decode(GameText.Legacy($"items.{id:D2}.extra.{line}", DatTables.GetItemExtraLine(itemExtra, id, line)).Span).Trim())
+                .Where(line => line.Length > 0));
+
+
+            int modifiers = Int(58);
+            if ((uint)modifiers > 3)
+            {
+                throw new InvalidDataException("Item modifier count exceeds original three slots.");
+            }
+
+            var details = new List<string>();
+            for (int i = 0; i < modifiers; i++)
+            {
+                int code = Int(62 + i * 4), value = Int(74 + i * 4);
+                if (code == 12)
+                {
+                    continue;
+                }
+
+                if ((uint)(45 + code) >= (uint)messages.Count)
+                {
+                    throw new InvalidDataException("Shop modifier label exceeds TEXTmsg.");
+                }
+
+                string amount = (value > 0 ? "+" : "") + value.ToString(CultureInfo.InvariantCulture);
+                details.Add(GameText.Decode(Msg(45 + code).Span).Trim() + " " + amount);
+            }
+
+            if (session.Category < 2 && Int(50) != 0)
+            {
+                details.Add(GameText.Decode(Msg(session.Category == 0 ? 366 : 370).Span).Trim() + " " + Int(50).ToString(CultureInfo.InvariantCulture));
+                details.Add(GameText.Decode(Msg(session.Category == 0 ? 367 : 371).Span).Trim() + " " + Int(54).ToString(CultureInfo.InvariantCulture)
+                    + (session.Category == 1 ? "%" : ""));
+            }
+
+            if (session.Category == 2)
+            {
+                int[] labels = id switch
+                {
+                    55 => [318, 319],
+                    56 => [320],
+                    57 => [321],
+                    >= 58 and <= 66 => [322 + (id - 58) * 2, 323 + (id - 58) * 2],
+                    >= 84 and <= 87 => [340 + (id - 84) * 2, 341 + (id - 84) * 2],
+                    _ => []
+                };
+                details.AddRange(labels.Select(label => GameText.Decode(Msg(label).Span).Trim()));
+            }
+
+            Pair(GameText.Encoding.GetBytes(description + "\n\n" + string.Join("\n", details)), 432, 116, true, ShopTextStyle.Normal, w: 160, h: 224, wrap: true);
+            Pair(Msg(368), 432, 350, true, ShopTextStyle.Solid, w: 40);
+            Pair(Join(Number(Int(46)), Msg(369)), 480, 350, true, ShopTextStyle.Selected, w: 112);
+        }
+        else
+        {
+            Pair(Join(Number(Int(46) / 2), Msg(369)), 432, 128, true, ShopTextStyle.Selected, shadowY: session.Category == 2 ? 1 : 2, w: 160, h: 32, wrap: true);
+            if (Int(46) == 0)
+            {
+                Pair(Msg(349), 432, 176, true, ShopTextStyle.Title, w: 160, h: 64, wrap: true);
+            }
+        }
+
+        if (session.Scroll > 0)
+        {
+            Sprite(false, 18, 152, 114);
+        }
+
+        if (session.Scroll + 5 < session.Count)
+        {
+            Sprite(false, 19, 152, 356);
+        }
+
+        Sprite(false, 22 + frame.ArrowPhase, 120, 133 + session.Row * 46);
+        Pair(
+            Join(Number(unchecked(state.OwnedItems[id] - state.AvailableItems[id])), " / "u8.ToArray(), Number(state.OwnedItems[id])),
+            432,
+            386,
+            true,
+            ShopTextStyle.Selected
+        );
+        if (session.QuantityActive)
+        {
+            int dy = session.Row * 46;
+            Tint(142, 130 + dy, 228, 36, 0);
+            Tint(142, 130 + dy, 228, 36, 0);
+            Panel(128, 116 + dy, 6, 0);
+            if (session.Buying && session.InsufficientFunds)
+            {
+                Pair(Msg(364), 164, 136 + dy, false, ShopTextStyle.Title);
+            }
+            else
+            {
+                Pair(Msg(session.Buying ? 348 : 350), 154, 140 + dy, false, ShopTextStyle.Solid);
+                Pair(Number(session.Quantity), 228, 138 + dy, false, ShopTextStyle.Quantity);
+                int total = unchecked((session.Buying ? Int(46) : Int(46) / 2) * session.Quantity);
+                Pair(Join(Number(total), Msg(369)), 264, 138 + dy, false, ShopTextStyle.Selected);
+            }
+        }
+
+        return ops.AsReadOnly();
+    }
+
+    public void Draw(ShopSession session, GameState state, ShopRenderFrame frame, Span<ushort> target)
+    {
+        if (target.Length != 640 * 480)
+        {
+            throw new ArgumentException("Shop target must be640x480.");
+        }
+
+        foreach (var op in BuildPlan(session, state, frame))
+        {
+            switch (op.Primitive)
+            {
+                case ShopPrimitive.Tint:
+                    UiRaster.TintHalf(target, 640, 480, 640, op.X, op.Y, op.A, op.B, op.Color);
+                    break;
+                case ShopPrimitive.Panel:
+                    UiRaster.DrawPanel(etc, op.X, op.Y, op.A, op.B, target);
+                    break;
+                case ShopPrimitive.ItemSprite:
+                case ShopPrimitive.EtcSprite:
+                    var sprites = op.Primitive == ShopPrimitive.ItemSprite ? itemSprites : etc;
+                    if ((uint)op.A >= (uint)sprites.Frames.Length)
+                    {
+                        throw new InvalidDataException("Shop sprite frame is absent.");
+                    }
+
+                    SpriteRaster.Draw565(sprites.Frames[op.A], target, 640, 480, 640, op.X, op.Y, op.Blend);
+                    break;
+                case ShopPrimitive.Text:
+                    var font = op.Small ? small : large;
+                    if (op.A > 0)
+                    {
+                        TextBoxRaster.Draw(font, GameText.Decode(op.Text.Span), target, 640, 480, 640, new(op.X, op.Y, op.X + op.A, op.Y + op.B), op.Color,
+                            op.Style == ShopTextStyle.Solid ? default : Palette(op.Style), frame.TextPhase, op.Wrap);
+                    }
+                    else if (op.Style == ShopTextStyle.Solid)
+                    {
+                        font.DrawText(op.Text.Span, target, 640, 480, 640, op.X, op.Y, op.Color);
+                    }
+                    else
+                    {
+                        UiRaster.DrawStyledText(font, op.Text.Span, Palette(op.Style), frame.TextPhase, target, 640, 480, 640, op.X, op.Y);
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    private ReadOnlyMemory<byte> Msg(int index) => messages[index];
+    private static byte[] Number(int value) => Encoding.ASCII.GetBytes(value.ToString(CultureInfo.InvariantCulture));
+    private static byte[] Join(params ReadOnlyMemory<byte>[] parts)
+    {
+        int size = 0;
+        foreach (var part in parts)
+        {
+            size = checked(size + part.Length);
+        }
+
+        var bytes = new byte[size];
+        int p = 0;
+        foreach (var part in parts)
+        {
+            part.Span.CopyTo(bytes.AsSpan(p));
+            p += part.Length;
+        }
+
+        return bytes;
+    }
+
+    private static ReadOnlySpan<ushort> Palette(ShopTextStyle style) => style switch
+    {
+        ShopTextStyle.Normal => NativeUiPalette.Normal,
+        ShopTextStyle.Selected => NativeUiPalette.Selected,
+        ShopTextStyle.Title => NativeUiPalette.Title,
+        ShopTextStyle.Quantity => QuantityPalette,
+        _ => throw new ArgumentOutOfRangeException(nameof(style))
+    };
+}

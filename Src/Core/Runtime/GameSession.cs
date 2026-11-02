@@ -1,0 +1,999 @@
+using System.Diagnostics;
+using System.Text;
+using Atria.Core.Contracts.Audio;
+using Atria.Core.Contracts.Host;
+using Atria.Core.Contracts.Presentation;
+using Atria.Core.Contracts.Window;
+using Atria.Core.Game;
+using Atria.Core.Game.ActionMenu;
+using Atria.Core.Game.Dialogue;
+using Atria.Core.Game.Exploration;
+using Atria.Core.Game.Menu;
+using Atria.Core.Game.Navigation;
+using Atria.Core.Game.Progression;
+using Atria.Core.Game.Script;
+using Atria.Core.Game.State;
+using Atria.Core.Game.Town;
+using Atria.Core.Game.World;
+using Atria.Core.Persistence;
+using Atria.Core.Persistence.Controls;
+using Atria.Core.Presentation;
+using Atria.Core.Presentation.ActionMenu;
+using Atria.Core.Presentation.Controls;
+using Atria.Core.Presentation.Dialogue;
+using Atria.Core.Presentation.Exploration;
+using Atria.Core.Presentation.Menu;
+using Atria.Core.Presentation.Persistence;
+using Atria.Core.Presentation.Progression;
+using Atria.Core.Presentation.Scenes;
+using Atria.Core.Presentation.Sprites;
+using Atria.Core.Presentation.Town;
+using Atria.Core.Presentation.UI;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Audio;
+using Atria.Core.Resources.Codecs;
+using Atria.Core.Resources.Localization;
+using Atria.Core.Resources.Scripts;
+using Atria.Core.Resources.Sprites;
+using Atria.Core.Resources.Video;
+using Atria.Core.Resources.World;
+using Atria.Core.Runtime.Audio;
+using Atria.Core.Runtime.Input;
+using Atria.Core.Runtime.Timing;
+
+namespace Atria.Core.Runtime;
+
+/// <summary>Shared native session. Unimplemented modes/effects fail explicitly at their actual boundary.</summary>
+public sealed partial class GameSession : IScriptEffects
+{
+    private readonly string root;
+    private readonly GameHostServices hostServices;
+    private readonly string sessionOutputDirectory;
+    private readonly IGameWindow window;
+    private readonly IFramePresenter presenter;
+    private readonly IGameAudio audio;
+    private readonly SessionExclusiveSoundChannel exclusiveSound;
+    private readonly IFileMusicTransport musicTransport;
+    private readonly MusicController music;
+    private readonly IBufferedSoundEffect[] effects;
+    private readonly ControlBindings bindings;
+    private readonly ModalFrameGate gate = new(new MonotonicModalClock(), 0);
+    private readonly NativeDialogueFrameHost host;
+    private MenuNavigation menuNavigation = null!;
+    private readonly DialogueRuntime dialogue;
+    private readonly ItemCatalog items;
+    private readonly IReadOnlyList<ReadOnlyMemory<byte>> messages;
+    private readonly IReadOnlyList<ReadOnlyMemory<byte>> displayMessages;
+    private readonly SpriteFile etc, effectSprites;
+    private readonly AnimationFile effectAnimation;
+    private readonly BitmapFont smallFont;
+    private readonly WorldHudRenderer hud;
+    private readonly ushort[] menuBackground;
+    private readonly MainMenuModalRenderer menuModal;
+    private readonly TownLeaveModalRenderer leaveModal;
+    private readonly ActionMenuRenderer actionRenderer;
+    private readonly MainMenuController menu = new();
+    private readonly TownController town = new();
+    private readonly ActionMenuController actions = new();
+    private readonly GameState state = new()
+    {
+        Mode = GameMode.MainMenu,
+        ModeStackDepth = 0
+    };
+
+    private readonly WorldAreaStore areas = new();
+    private readonly ScenarioProgramCatalog scenarioPrograms;
+    private readonly Stopwatch lifetime = Stopwatch.StartNew();
+    private readonly double maximumSeconds;
+    private readonly bool muted;
+    private TownSceneAssets? townAssets;
+    private WorldMapContext? map;
+    private WorldSceneReference? location;
+    private byte[] scriptMember = [], pendingHandler = [], townName = [], returnMap = [], townFile = [];
+    private int musicId = 1, labelDelay, objectActionField, entryTextMode;
+    private int selectedEquipmentActor = 0; //45ce68 BSS zero; status500 owns later selections.
+    private bool saveDisabled = true, dialogueActive, menuSpriteActive = true, moviePrepared, hasFrame;
+    private long logicalFrames, presents, dialoguesCompleted;
+    /// <summary>Creates a session from services selected by its platform host.</summary>
+    private GameSession(
+        string root,
+        IGameWindow window,
+        IFramePresenter presenter,
+        IGameAudio audio,
+        IFileMusicTransport musicTransport,
+        FaceSpriteSource faces,
+        double maximumSeconds,
+        bool muted,
+        string? controlsFile,
+        string outputDirectory,
+        GameHostServices services
+    )
+    {
+        this.root = root;
+        scenarioPrograms = new(root);
+        hostServices = services ?? throw new ArgumentNullException(nameof(services));
+        UnicodeText.UseRasterizer(services.TextRasterizer);
+        this.window = window;
+        this.presenter = presenter;
+        this.audio = audio;
+        exclusiveSound = new(root, audio);
+        sessionOutputDirectory = Path.GetFullPath(outputDirectory);
+        this.musicTransport = musicTransport;
+        this.maximumSeconds = maximumSeconds;
+        this.muted = muted;
+        music = new(musicTransport);
+        items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
+        byte[] text = File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat"));
+        messages = LegacyTextTables.ParseMessages(text);
+        displayMessages = GameText.Messages(messages);
+        var originalBindings = ControlBindings.Parse(File.ReadAllBytes(Path.Combine(root, "BATTLE.CFG")));
+        defaultBindings = originalBindings;
+        playerProfiles = new(sessionOutputDirectory, DefaultProfileName);
+        var configuredBindings = InitializeSettings(Path.Combine(ActiveProfileDirectory, "config"), originalBindings);
+        bindings = controlsFile is null ? configuredBindings.Clone() : ControlBindings.Parse(File.ReadAllBytes(controlsFile));
+        etc = SpriteFile.Decode(Read("AT2SPR.000", "ETC"u8));
+        effectSprites = SpriteFile.Decode(Read("AT2SPR.000", "CON_EFF"u8));
+        effectAnimation = AnimationFile.Decode(Read("ANI.000", "CON_EFF"u8));
+        smallFont = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng1.fnt")), true);
+        hud = WorldHudRenderer.Load(root, smallFont);
+        var largeFont = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng.fnt")), false);
+        menuModal = new(etc, largeFont, text);
+        leaveModal = new(etc, smallFont, text);
+        actionRenderer = new(etc, smallFont);
+        menuBackground = MainMenuArtwork.Load(hostServices.InterfaceRoot);
+        effects = SoundEffectRotation.UiMemberNames.Select(name => audio.LoadEffect(Read("AT2WAV.000", Encoding.ASCII.GetBytes(name)))).ToArray();
+        host = new(
+            window,
+            presenter,
+            bindings,
+            new ScanCodeEdges(),
+            gate,
+            ComposeScene,
+            UpdateMusic,
+            BeforeModalInput,
+            effects,
+            () => CurrentEffectsVolume,
+            PollSessionInput
+        );
+        dialogue = new(DialogueCatalog.Load(Path.Combine(root, "roland.idx"), Path.Combine(root, "ROLAND.DAT")), new DialogueModalDriver(host, etc, smallFont, faces, DrawModalHud));
+        host.PresentCustomFrame = PresentMainMenu;
+        try
+        {
+            InitializeModernControls(originalBindings);
+            host.Controls = controls;
+            menu.Enter();
+            gate.Resume();
+        }
+        catch
+        {
+            DisposeInputRouter();
+            throw;
+        }
+    }
+
+    /// <summary>Runs the shared session with explicit platform-owned services.</summary>
+    public static int RunHosted(string root, string outputDirectory, IGameWindow window, IFramePresenter presenter, IGameAudio audio,
+        IFileMusicTransport music, GameHostServices services, double maximumSeconds = double.PositiveInfinity, bool muted = false, string? controlsFile = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        UnicodeText.UseRasterizer(services.TextRasterizer);
+        try
+        {
+            using var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
+            var session = new GameSession(root, window, presenter, audio, music, faces, maximumSeconds, muted, controlsFile, outputDirectory, services);
+            return session.Execute();
+        }
+        finally
+        {
+            UnicodeText.ReleaseRasterizer(services.TextRasterizer);
+        }
+    }
+
+    /// <summary>Builds a shared session for a Windows integration probe while the probe owns its devices.</summary>
+    internal static GameSession CreateProbeSession(string root, IGameWindow window, IFramePresenter presenter, IGameAudio audio,
+        IFileMusicTransport music, FaceSpriteSource faces, double maximumSeconds, bool muted, string outputDirectory, GameHostServices services)
+        => new(root, window, presenter, audio, music, faces, maximumSeconds, muted, null, outputDirectory, services);
+
+    private int Execute()
+    {
+        try
+        {
+            Loop();
+        }
+        catch (OperationCanceledException) when (window.Closed || lifetime.Elapsed.TotalSeconds >= maximumSeconds)
+        {
+        }
+        finally
+        {
+            try
+            {
+                DisposeProgression();
+            }
+            finally
+            {
+                DisposeInputRouter();
+            }
+            Console.WriteLine($"Session: mode={state.Mode}, logicalFrames={logicalFrames}, presents={presents}, dialoguesCompleted={dialoguesCompleted}, introFlag={state.Globals[501]}, scriptActive={state.ScriptActive}, seconds={lifetime.Elapsed.TotalSeconds:F3}, dynamicCode={System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported}.");
+        }
+
+        return 0;
+    }
+
+    private void CheckLifetime()
+    {
+        if (window.Closed || lifetime.Elapsed.TotalSeconds >= maximumSeconds)
+        {
+            throw new OperationCanceledException("Session verification ended.");
+        }
+    }
+
+    private void Loop()
+    {
+        while (true)
+        {
+            if (resumeScript is not null)
+            {
+                ResumeSavedScenario();
+            }
+
+            host.Pump();
+            if (!host.Focused)
+            {
+                gate.Resume();
+                Thread.Sleep(10);
+                continue;
+            }
+
+            int batch = 0;
+            while (gate.IsDue && batch++ < 8)
+            {
+                host.Pump();
+                if (!host.Focused)
+                {
+                    break;
+                }
+
+                gate.CommitScheduled();
+                host.BeginLogicalFrame(gate.LastFrameMilliseconds);
+                UpdateMusic(state);
+                gate.AdjustSpeed(QueryLegacyMenuScan(0x4e), QueryLegacyMenuScan(0x4a));
+                if (BeforeModalInput(state))
+                {
+                    HandleModeInput();
+                }
+
+                if (navigation.ScreenDepth == 0 && resumeScript is not null)
+                {
+                    ResumeSavedScenario();
+                }
+
+                ComposeScene(state, host.FrameBuffer);
+                logicalFrames++;
+                hasFrame = true;
+                if (navigation.ScreenDepth == 0 && state.ScriptActive != 0)
+                {
+                    //404170 dispatches queued scenario after the scene has been presented.
+                    host.Present();
+                    presents++;
+                    RunScript(scriptMember, pendingHandler);
+                }
+
+                if (PendingWorldNarrative() is { } authored)
+                {
+                    RunScript(Encoding.ASCII.GetBytes(authored.Id), "run"u8);
+                }
+
+                FlushAutosave();
+            }
+
+            if (gate.IsDue)
+            {
+                continue; // Bound each batch, retain all remaining logical debt.
+            }
+
+            if (hasFrame && host.Focused)
+            {
+                host.Present();
+                presents++;
+            }
+            else
+            {
+                Thread.Sleep(1);
+            }
+        }
+    }
+
+    private bool QueryLegacyMenuScan(byte scan) => host.QueryScan(scan);
+    private bool QueryLegacyTownScan(byte scan) => controls.TownInput.QueryLegacyTownScan(scan);
+    private bool HeldLegacyTownScan(byte scan) => controls.TownInput.HeldLegacyTownScan(scan);
+    private bool QueryLegacyWorldScan(byte scan) => host.QueryWorldScan(scan);
+    private bool HeldLegacyWorldScan(byte scan) => host.IsWorldScanHeld(scan);
+
+    private NarrativeScenes.Scene? PendingWorldNarrative() =>
+        state.Mode == GameMode.World && exploration is { Moving: false } && state.ScriptActive == 0
+        && !battleActive && state.EndingResetFlag == 0 && actions.Depth < 0
+            ? NarrativeScenes.After(state, "WORLD", "arrival", map?.AreaIndex) : null;
+    private void UpdateMusic(GameState value)
+    {
+        if (value.Mode != 1)
+        {
+            music.Update(musicId);
+        }
+    }
+
+    private bool BeforeModalInput(GameState value)
+    {
+        UpdatePointerFocus();
+        if (controls.FocusPauseRequested)
+        {
+            ShowPause(false);
+            return false;
+        }
+
+        if (CanChangeProfile && controls.ProfileMenuPressed())
+        {
+            ShowPlayerProfiles();
+            return false;
+        }
+
+        bool statusPressed = false;
+        if (!battleActive && !dialogueActive)
+        {
+            statusPressed = value.Mode switch
+            {
+                GameMode.World or GameMode.WorldEntry or GameMode.Dungeon => controls.WorldInput.Press(0, WorldAction.Status),
+                GameMode.Town => controls.TownInput.Press(0, TownAction.Status),
+                _ => false
+            };
+        }
+        if (statusPressed)
+        {
+            OpenScreen(UiScreen.Status);
+            return false;
+        }
+
+        bool referencePressed = false;
+        if (!battleActive && !dialogueActive)
+        {
+            referencePressed = value.Mode switch
+            {
+                GameMode.World or GameMode.WorldEntry or GameMode.Dungeon => controls.WorldInput.Press(0, WorldAction.Reference),
+                GameMode.Town or GameMode.Interior or GameMode.Inn => controls.TownInput.Press(0, TownAction.Reference),
+                _ => controls.MenuInput.Press(0, MenuAction.Reference)
+            };
+        }
+        if (referencePressed)
+        {
+            ShowMoveReference(0);
+            return false;
+        }
+
+        if (navigation.ScreenDepth != 0)
+            return true;
+
+        if (NewCharacterRuntime.ProcessPending(value, items, selectedEquipmentActor))
+        {
+            return false;
+        }
+
+        if (ProcessPendingExperience(value))
+        {
+            return false;
+        }
+
+        if (value.EndingResetFlag != 0)
+        {
+            RunPendingBattle();
+            return false;
+        }
+
+        if (value.VisualMode == 2)
+        {
+            StopAudio();
+            PlayMovie("medal.jad");
+            value.VisualMode = 0;
+        }
+
+        if (actions.Depth >= 0 && actions.RenderEnabled)
+        {
+            bool previous = menuNavigation.Previous(), next = !previous && menuNavigation.Next();
+            bool cancel = !previous && !next && QueryLegacyMenuScan(bindings.Cancel);
+            bool accept = !previous && !next && !cancel && QueryLegacyMenuScan(bindings.Confirm);
+            actions.Input(new(previous, next, cancel, accept), HandleAction);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void HandleModeInput()
+    {
+        if (state.Mode == GameMode.MainMenu)
+        {
+            bool previous = false, next = false, accept = false, cancel = false;
+            if (menu.Confirmation)
+            {
+                previous = QueryLegacyMenuScan(bindings.Previous);
+                if (!previous)
+                {
+                    next = QueryLegacyMenuScan(bindings.Next);
+                }
+            }
+            else
+            {
+                next = menuNavigation.Next();
+                if (!next)
+                {
+                    previous = menuNavigation.Previous();
+                }
+            }
+
+            if (!next && !previous)
+            {
+                accept = QueryLegacyMenuScan(bindings.Confirm);
+                if (!accept)
+                {
+                    cancel = QueryLegacyMenuScan(bindings.Cancel);
+                }
+            }
+
+            menu.Input(new(next, previous, accept, cancel), saveDisabled, HandleMenu);
+            return;
+        }
+
+        if (state.Mode == GameMode.Town)
+        {
+            if (town.InputDeferred || (state.DungeonEntryPending != 0 && !town.LeaveConfirmation))
+            {
+                town.Input(default, state.DungeonEntryPending != 0, HandleTown);
+                return;
+            }
+
+            bool next = false, previous = false, yes = false, no = false, accept = false, cancel = false;
+            if (town.LeaveConfirmation)
+            {
+                yes = QueryLegacyTownScan(bindings.Previous);
+                if (!yes)
+                {
+                    no = QueryLegacyTownScan(bindings.Next);
+                }
+            }
+            else if (town.Scene.Count > 0)
+            {
+                next = QueryLegacyTownScan(bindings.Next);
+                previous = QueryLegacyTownScan(bindings.Previous);
+            }
+
+            if (!yes && !no)
+            {
+                accept = QueryLegacyTownScan(bindings.Confirm);
+                if (!accept)
+                {
+                    cancel = QueryLegacyTownScan(bindings.Cancel);
+                }
+            }
+
+            town.Input(new(next, previous, accept, cancel, yes, no), state.DungeonEntryPending != 0, HandleTown);
+            return;
+        }
+
+        if (state.Mode is GameMode.Interior or GameMode.Inn or GameMode.Shop)
+        {
+            HandleInteriorInput();
+            return;
+        }
+
+        if (state.Mode is GameMode.World or GameMode.WorldEntry)
+        {
+            HandleExplorationInput();
+            return;
+        }
+
+        if (state.Mode == GameMode.Status)
+        {
+            HandleStatusInput();
+            return;
+        }
+
+        if (state.Mode == GameMode.Dungeon)
+        {
+            HandleDungeonInput();
+            return;
+        }
+
+        if (state.Mode == GameMode.Settings)
+        {
+            HandleSettingsInput();
+            return;
+        }
+
+        if (state.Mode == GameMode.Credits)
+        {
+            HandleCreditsInput();
+            return;
+        }
+
+        if (state.Mode is GameMode.Save or GameMode.Load)
+        {
+            HandlePersistenceInput();
+            return;
+        }
+
+        if (state.Mode == GameMode.QuitConfirmation)
+        {
+            HandleQuitInput();
+            return;
+        }
+
+        if (state.Mode == GameMode.Defeat)
+        {
+            HandleDefeatInput();
+            return;
+        }
+
+        if (state.Mode == GameMode.Ending)
+        {
+            HandleEndingInput();
+            return;
+        }
+
+        throw new NotSupportedException($"Mode {state.Mode} input is not integrated yet.");
+    }
+
+    private void ComposeScene(GameState value, Span<ushort> target)
+    {
+        if (value.Mode == GameMode.MainMenu)
+        {
+            if (!menuSpriteActive)
+            {
+                throw new InvalidOperationException("Menu sprite was released before mode entry.");
+            }
+
+            MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, target, menuModal.Draw);
+        }
+        else if (value.Mode == GameMode.Town)
+        {
+            var frame = town.AdvanceLogicalFrame(new(actions.Depth, dialogueActive ? 1 : 0, labelDelay));
+            labelDelay = frame.LabelDelayAfterDraw;
+            TownComposer.Draw(
+                townAssets ?? throw new InvalidOperationException("Town not loaded."),
+                frame,
+                town.TownId,
+                etc,
+                smallFont,
+                effectAnimation,
+                effectSprites,
+                target,
+                leaveModal.Draw
+            );
+        }
+        else if (value.Mode is GameMode.Interior or GameMode.Inn or GameMode.Shop)
+        {
+            ComposeInterior(target);
+        }
+        else if (value.Mode is GameMode.World or GameMode.WorldEntry)
+        {
+            ComposeExploration(target);
+        }
+        else if (value.Mode == GameMode.Status)
+        {
+            ComposeStatus(target);
+        }
+        else if (value.Mode == GameMode.Dungeon)
+        {
+            ComposeDungeon(target);
+        }
+        else if (value.Mode == GameMode.Settings)
+        {
+            ComposeSettings(target);
+        }
+        else if (value.Mode == GameMode.Credits)
+        {
+            ComposeCredits(target);
+        }
+        else if (value.Mode is GameMode.Save or GameMode.Load)
+        {
+            ComposePersistence(target);
+        }
+        else if (value.Mode == GameMode.QuitConfirmation)
+        {
+            ComposeQuit(target);
+        }
+        else if (value.Mode == GameMode.Defeat)
+        {
+            ComposeDefeat(target);
+        }
+        else if (value.Mode == GameMode.Ending)
+        {
+            ComposeEnding(target);
+        }
+        else
+        {
+            throw new NotSupportedException($"Mode {value.Mode} rendering is not integrated yet.");
+        }
+
+        if (actions.AdvanceLogicalFrame() is { } actionFrame)
+        {
+            actionRenderer.Draw(actionFrame, target);
+        }
+
+        if (!dialogueActive)
+        {
+            DrawHud(value, target, false);
+        }
+
+        DrawAutosaveFailure(target);
+    }
+
+    private void DrawModalHud(GameState value, Span<ushort> target) => DrawHud(value, target, true);
+    private void DrawHud(GameState value, Span<ushort> target, bool modal)
+    {
+        int anchor = 400;
+        if (value.Mode == GameMode.Town && townAssets?.Objects is { } sprites && town.Scene.Count > 0)
+        {
+            anchor = SodScenePresentation.GetSelectionAnchor(town.Scene, sprites, town.Selection).Y;
+        }
+
+        string title = value.Mode switch
+        {
+            GameMode.World or GameMode.WorldEntry => LocationTitle.World(map!.AreaIndex).Text,
+            GameMode.Dungeon => dungeonTitle.Text,
+            GameMode.Town or GameMode.Interior or GameMode.Inn or GameMode.Shop => LocationTitle.Town(town.TownId).Text,
+            _ => ""
+        };
+        hud.Draw(value, title, target, modal, anchor, dungeonHudEnabled: DungeonHudVisible);
+        if (!modal && value.Mode == GameMode.World && questMarker is { } marker)
+        {
+            int? hudY = WorldHudRenderer.OriginY(value.WorldY, false);
+            var sprite = etc.Frames[marker.SpriteFrame];
+            if (hudY is { } y && marker.Y < y + 60 && marker.Y + sprite.Height > y)
+            {
+                SpriteRaster.Draw565(sprite, target, 640, 480, 640, marker.X, marker.Y);
+            }
+        }
+        RecordDungeonHudContext(value, modal, anchor);
+    }
+
+    private void Sound(int id)
+    {
+        if ((uint)id >= (uint)effects.Length)
+        {
+            throw new InvalidDataException("Unknown UI effect.");
+        }
+
+        effects[id].SetCurrentVolume(CurrentEffectsVolume);
+        effects[id].Play();
+    }
+
+    private void StopAudio()
+    {
+        musicTransport.Stop();
+        foreach (var effect in effects)
+        {
+            effect.StopAll();
+        }
+    }
+
+    private void PlayMovie(string name)
+    {
+        var result = hostServices.PlayMovie(Path.Combine(root, name), () =>
+        {
+            controls.Poll(window);
+            return controls.MenuInput.Menu(MenuAction.Confirm) || controls.MenuInput.Menu(MenuAction.Back);
+        }, muted ? 0 : 1, Math.Max(0, maximumSeconds - lifetime.Elapsed.TotalSeconds));
+        Console.WriteLine($"Session movie {name}: {result}.");
+        controls.Clear();
+        gate.Resume();
+        CheckLifetime();
+    }
+
+    private void HandleMenu(MenuCommand command)
+    {
+        if (command.Effect != MenuEffect.Sound)
+        {
+            Console.WriteLine($"Menu operation: {command.Effect}, value={command.Value}.");
+        }
+
+        switch (command.Effect)
+        {
+            case MenuEffect.Sound:
+                Sound(command.Value);
+                break;
+            case MenuEffect.InitializeQuitDialog:
+                InitializeQuitDialog();
+                break;
+            case MenuEffect.ReleaseMenuSprite:
+                menuSpriteActive = false;
+                break; // Bounded immutable cache remains reusable.
+            case MenuEffect.StopAudio:
+                StopAudio();
+                break;
+            case MenuEffect.PrepareMovieDisplay:
+                moviePrepared = true;
+                break;
+            case MenuEffect.PlayMovie:
+                if (!moviePrepared)
+                {
+                    throw new InvalidOperationException("Movie display was not prepared.");
+                }
+
+                PlayMovie(command.Resource ?? throw new InvalidDataException("Movie name missing."));
+                break;
+            case MenuEffect.RestoreMovieDisplay:
+                presenter.SetFrameSize(640, 480);
+                moviePrepared = false;
+                break;
+            case MenuEffect.ResetGame:
+                autosavePending = "";
+                autosaveFailure = "";
+                resumeScript = null;
+                nextBattleSeed = null;
+                admissionTarget = null;
+                questCompletionBeforeCall = state.Journal.CompletionRevision;
+                InitialGameState.ResetRecoveredCore(state, items, messages);
+                NewGameSceneReset.Apply(state, town, actions);
+                areas.ResetNames(messages);
+                ResetShopStocks();
+                ResetExplorationSession();
+                break;
+            case MenuEffect.SetNewGameGlobals:
+                hasStartedGame = true;
+                navigation.Reset();
+                state.ModeStackDepth = -1;
+                saveDisabled = false;
+                labelDelay = 0;
+                break;
+            case MenuEffect.LoadGroundMap:
+                map = WorldMapContext.Parse(Read("AT2AMF.000", Encoding.ASCII.GetBytes(command.Resource!)));
+                break;
+            case MenuEffect.InitializeGroundMap:
+                areas.Capture(command.Value, map ?? throw new InvalidOperationException("Map missing."));
+                break;
+            case MenuEffect.CopyInitialGroundLocation:
+                location = map!.SelectScene(state.WorldX, state.WorldY);
+                break;
+            case MenuEffect.ChangeMode:
+                if (command.Value == GameMode.Town)
+                    CommitLocation(LocationKind.Town);
+                else
+                    OpenScreen((UiScreen)command.Value);
+                break;
+            case MenuEffect.TryReturnToPreviousMode:
+                MainMenuController.CompleteReturnToPreviousMode(CloseScreen(), HandleMenu);
+                break;
+            default:
+                throw new NotSupportedException($"Main-menu operation {command.Effect} is not integrated yet.");
+        }
+    }
+
+    private void HandleTown(TownCommand command)
+    {
+        switch (command.Kind)
+        {
+            case TownEffectKind.Sound:
+                Sound(command.Value);
+                break;
+            case TownEffectKind.SetEntryGlobals:
+                entryTextMode = command.Value;
+                objectActionField = 0;
+                townFile = command.Bytes.ToArray();
+                break;
+            case TownEffectKind.SetScriptContext:
+                scriptMember = command.Bytes.ToArray();
+                state.ScriptActive = 0;
+                pendingHandler = [];
+                break;
+            case TownEffectKind.QueueEnterScript:
+                pendingHandler = command.Bytes.ToArray();
+                state.ScriptActive = 1;
+                break;
+            case TownEffectKind.SetTownNames:
+                townName = command.Bytes.ToArray();
+                break;
+            case TownEffectKind.SetMusic:
+                musicId = command.Value;
+                break;
+            case TownEffectKind.PlayMusic:
+                music.Update(command.Value);
+                break;
+            case TownEffectKind.LoadBackground:
+                if (townAssets is null || !townAssets.Scene.BackgroundReference.Span.SequenceEqual(command.Bytes.Span))
+                {
+                    throw new InvalidDataException("Loaded town background does not match the requested reference.");
+                }
+
+                break; // TownSceneAssets loaded and owns these exact pixels before committing entry.
+            case TownEffectKind.SetObjectActionField:
+                objectActionField = command.Value;
+                break;
+            case TownEffectKind.OpenActionMenu:
+                actions.Open(0, 0, 5, command.Value, command.Value2, displayMessages, state.Mode);
+                break;
+            case TownEffectKind.CloseActionMenus:
+                actions.CloseAll();
+                break;
+            case TownEffectKind.SetUiDirty:
+                actions.SetRenderEnabled(command.Value != 0);
+                break;
+            case TownEffectKind.RunPreEnter:
+                RunScript(command.Bytes.Span, "pre_enter"u8, ScenarioContinuation.EnterBuilding);
+                town.CompletePreEnter(state.EnterPermission != 0, state.Mode, HandleTown);
+                break;
+            case TownEffectKind.RunPreOut:
+                state.EnterPermission = 0;
+
+                RunScript(command.Bytes.Span, "pre_out"u8, ScenarioContinuation.LeaveTown);
+                town.CompletePreOut(state.EnterPermission != 0, HandleTown, state.Mode);
+                break;
+            case TownEffectKind.ReleaseTownSprite:
+                town.ReleaseObjectSprites();
+                if (townAssets is not null)
+                {
+                    townAssets = townAssets with
+                    {
+                        Objects = null
+                    };
+                }
+
+                break;
+            case TownEffectKind.EnableSave:
+                saveDisabled = false;
+                break;
+            case TownEffectKind.CopyReturnMapReferences:
+                returnMap = command.Bytes.ToArray();
+                break;
+            case TownEffectKind.LoadReturnMap:
+                LoadExplorationReturnMap(command.Bytes);
+                break;
+            case TownEffectKind.CopyTownToBattleReturn:
+                townFile = command.Bytes.ToArray();
+                break;
+            case TownEffectKind.InitializeEncounter:
+                StartDungeonFromTown();
+                break;
+            case TownEffectKind.ChangeMode:
+                if (GameMode.CanSnapshot(command.Value))
+                    CommitLocation((LocationKind)command.Value);
+                else
+                    OpenScreen((UiScreen)command.Value);
+                break;
+            default:
+                throw new NotSupportedException($"Town operation {command.Kind} is not integrated yet.");
+        }
+    }
+
+    private void HandleAction(ActionMenuCommand command)
+    {
+        if (TryHandleDungeonAction(command))
+        {
+            return;
+        }
+
+        if (TryHandleExplorationAction(command))
+        {
+            return;
+        }
+
+        if (command.Kind == ActionMenuEffect.Sound)
+        {
+            Sound(command.Value);
+        }
+        else if (command.Kind == ActionMenuEffect.InvokeTownChoice)
+        {
+            town.ChooseAction(command.Value, HandleTown);
+        }
+        else if (state.Mode is GameMode.Interior or GameMode.Inn or GameMode.Shop)
+        {
+            InteriorActions.HandleCommand(command);
+        }
+        else
+        {
+            throw new NotSupportedException($"Action-menu operation {command.Kind} is not integrated in mode {state.Mode}.");
+        }
+    }
+
+    private void RunScript(ReadOnlySpan<byte> member, ReadOnlySpan<byte> handler, ScenarioContinuation continuation = ScenarioContinuation.None, int continuationMode = 0, ScriptCheckpoint? replay = null)
+    {
+        if (replay is null && NarrativeScenes.Replacement(state,
+            Path.GetFileNameWithoutExtension(Encoding.ASCII.GetString(member)).ToUpperInvariant(), Encoding.ASCII.GetString(handler)) is { } replacement)
+        {
+            member = Encoding.ASCII.GetBytes(replacement.Id);
+            handler = "run"u8;
+        }
+        ScenarioSource source = scenarioPrograms.LoadSource(member, replay?.SourceHash);
+        string name = source.Member;
+        string hash = source.SourceHash;
+        ScriptProgram program = scenarioPrograms.GetProgram(source);
+
+        string function = Encoding.ASCII.GetString(handler);
+        Console.WriteLine($"Scenario started: {name}/{function}.");
+        if (replay is not null && replay.SourceHash != hash)
+        {
+            throw new InvalidDataException("Scenario source differs from the saved continuation.");
+        }
+
+        if (activeScriptHost is not null)
+        {
+            throw new InvalidOperationException("External scenario reentry cannot overwrite a continuation.");
+        }
+
+        activeScriptIdentity = new(name, function, hash, continuation, continuationMode, []);
+        var recording = new CheckpointScriptHost(new ScriptStateHost(state, this), replay?.Calls)
+        {
+            BeforeCall = BeforeScenarioCall,
+            AfterCall = AfterScenarioCall
+        };
+        activeScriptHost = recording;
+        try
+        {
+            new ScriptMachine(program, recording).Invoke(function);
+            recording.VerifyReplayComplete();
+        }
+        finally
+        {
+            activeScriptHost = null;
+            activeScriptIdentity = null;
+        }
+
+        if (state.Mode is not (GameMode.Defeat or GameMode.Ending) && NarrativeScenes.All.Any(scene => scene.Id == name))
+        {
+            state.NarrativeHistory.Add(name);
+            RefreshAuthoredDungeon();
+        }
+
+        Console.WriteLine($"Scenario returned: {name}/{function}; active={state.ScriptActive}, introFlag={state.Globals[501]}.");
+        if (state.Mode is not (GameMode.Defeat or GameMode.Ending) && NarrativeScenes.After(state, name, function) is { } scene)
+        {
+            RunScript(Encoding.ASCII.GetBytes(scene.Id), "run"u8, continuation, continuationMode);
+        }
+    }
+
+    public void Execute(ScriptEffect effect, GameState value)
+    {
+        if (effect.Kind is ScriptEffectKind.Battle or ScriptEffectKind.BattleWithPostAction or ScriptEffectKind.ForcedBattleWithPostAction)
+        {
+            if (!ReferenceEquals(value, state))
+            {
+                throw new InvalidOperationException("Battle belongs to the owning session state.");
+            }
+            //battle_start queues only; the other two callbacks wait for the real battle and caller restoration.
+            if (effect.Kind != ScriptEffectKind.Battle)
+            {
+                RunPendingBattle();
+            }
+
+            return;
+        }
+
+        if (effect.Kind == ScriptEffectKind.ModeChange)
+        {
+            if (!ReferenceEquals(value, state) || value.Mode is not (GameMode.Ending or GameMode.Defeat))
+            {
+                throw new InvalidOperationException("Scenario termination requires the owning session state.");
+            }
+            //42ddf0 resets depth and calls429260; keep the actual stack in sync with its packed fields.
+            ShowTermination(value.Mode);
+            return;
+        }
+
+        if (effect.Kind is not (ScriptEffectKind.DialogueText or ScriptEffectKind.DialogueKey or ScriptEffectKind.QuestionText or ScriptEffectKind.QuestionKey))
+        {
+            throw new NotSupportedException($"Scenario effect {effect.Kind} is not integrated yet.");
+        }
+
+        bool previous = dialogueActive;
+        dialogueActive = true;
+        try
+        {
+            dialogue.Execute(effect, value);
+            dialoguesCompleted++;
+            Console.WriteLine($"Dialogue completed: count={dialoguesCompleted}.");
+        }
+        finally
+        {
+            dialogueActive = previous;
+        }
+    }
+
+    private byte[] Read(string archiveName, ReadOnlySpan<byte> member) => GameResources.Read(root, archiveName, member);
+}

@@ -7,17 +7,20 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:NUGET_PACKAGES = $packages
 Push-Location $PSScriptRoot
 try {
-    & dotnet build (Join-Path $PSScriptRoot 'Managed\Atria.Ios.csproj') -c Release -p:PublishAot=false -p:NuGetAudit=false -nr:false -v:minimal
+    $hostDirectory = Join-Path $projectRoot 'Src\Hosts\Ios'
+    $platformAssembly = Join-Path $projectRoot 'Src\Platforms\Ios\bin\Release\net10.0\Atria.Platforms.Ios.dll'
+    & dotnet build (Join-Path $hostDirectory 'Atria.Ios.csproj') -c Release -p:PublishAot=false -p:NuGetAudit=false -nr:false -v:minimal
     if ($LASTEXITCODE -ne 0) { throw 'Managed compilation failed.' }
     $compiler = Join-Path $packages "runtime.win-x64.microsoft.dotnet.ilcompiler\$version\tools\ilc.exe"
     $references = Join-Path $packages "microsoft.netcore.app.runtime.nativeaot.ios-arm64\$version\runtimes\ios-arm64\lib\net10.0"
-    $assembly = Join-Path $PSScriptRoot 'Managed\bin\Release\net10.0\Atria.Ios.dll'
-    $coreAssembly = Join-Path $projectRoot 'Core\bin\Release\net10.0\Atria.Core.dll'
+    $assembly = Join-Path $hostDirectory 'bin\Release\net10.0\Atria.Ios.dll'
+    $coreAssembly = Join-Path $projectRoot 'Src\Core\bin\Release\net10.0\Atria.Core.dll'
     $objectPath = Join-Path $PSScriptRoot 'Game.ios-arm64.o'
     $responsePath = Join-Path $PSScriptRoot 'ilc-ios.rsp'
     $arguments = @(
         $assembly
         ('-r:' + $coreAssembly)
+        ('-r:' + $platformAssembly)
         "-o:$objectPath"
         '--targetos:ios'
         '--targetarch:arm64'

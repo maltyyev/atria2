@@ -1,6 +1,8 @@
 <Solution>
-  <Project Path="Core/Atria.Core.csproj" />
-  <Project Path="Core.Tests/Atria.Core.Tests.csproj" />
-  <Project Path="Src/Platform/Windows/Atria.Windows.csproj" />
-  <Project Path="Tests/Atria.Tests.csproj" />
+  <Project Path="Src/Core/Atria.Core.csproj" />
+  <Project Path="Src/Platforms/Windows/Atria.Platforms.Windows.csproj" />
+  <Project Path="Src/Hosts/Windows/Atria.Windows.csproj" />
+  <Project Path="Tests/Core/Atria.Core.Tests.csproj" />
+  <Project Path="Tests/Contracts/Atria.Contracts.Tests.csproj" />
+  <Project Path="Tests/Windows/Atria.Tests.csproj" />
 </Solution>

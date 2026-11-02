@@ -1,0 +1,232 @@
+using Atria.Core.Contracts.Presentation;
+using Atria.Core.Game.Progression;
+using Atria.Core.Game.State;
+using Atria.Core.Persistence.Settings;
+using Atria.Core.Presentation.Controls;
+using Atria.Core.Presentation.Status;
+using Atria.Core.Presentation.UI;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Localization;
+
+namespace Atria.Core.Game.Status;
+
+/// <summary>414f50/415430/416a20 integration with real catalog descriptions and equipment effects.</summary>
+public sealed class StatusMenuRuntime
+{
+    public StatusMenuController Menu { get; } = new();
+    public StatusEquipmentController Equipment { get; } = new();
+    public StatusTextList? TextList
+    {
+        get; private set;
+    }
+    public string[] Description { get; private set; } = [];
+
+    public int DescriptionOffset { get; private set; }
+    private LocalizationCatalog language = GameText.Current;
+
+    public void RefreshLanguage(GameState state)
+    {
+        if (ReferenceEquals(language, GameText.Current))
+            return;
+
+        language = GameText.Current;
+        if (!Menu.DetailActive)
+            return;
+
+        if (Menu.Page == 2)
+            LoadDescription(GameText.Get(state.HeroCatalog[Menu.SelectedActor].IntroductionKey), StatusMenuLayout.BiographyWidth);
+        else if (TextList?.DescriptionOpen == true)
+        {
+            int id = TextList.SelectedId;
+            LoadDescription(Menu.Page == 4 ? QuestJournalText.Description(state, id)
+                : GameText.Get($"{(Menu.Page == 1 ? "items" : "questItems")}.{id:D2}.description"));
+        }
+    }
+
+    private void LoadDescription(string text, int width = 464)
+    {
+        Description = TextFlow.Wrap(text, width);
+        DescriptionOffset = 0;
+    }
+
+    public void Enter(Action<StatusMenuCommand> emit)
+    {
+        TextList = null;
+        Description = [];
+        DescriptionOffset = 0;
+        Equipment.Enter();
+        Menu.Enter(emit);
+    }
+
+    public void Input(
+        StatusMenuInput input,
+        GameState state,
+        ItemCatalog items,
+        ReadOnlyMemory<byte> eventItemText,
+        QuestJournalCatalog journal,
+        Action<StatusMenuCommand> emit
+    )
+    {
+        void Command(StatusMenuCommand command)
+        {
+            if (command.Kind == StatusMenuEffect.BeginPage)
+            {
+                Menu.SetDetailActive(true);
+                Description = [];
+                DescriptionOffset = 0;
+                if (Menu.Page == 2)
+                {
+                    LoadDescription(GameText.Get(state.HeroCatalog[Menu.SelectedActor].IntroductionKey), StatusMenuLayout.BiographyWidth);
+                }
+                if (Menu.Page == 0)
+                {
+                    Equipment.Enter();
+                }
+                else if (Menu.Page is 1 or 3 or 4)
+                {
+                    TextList = new(state, Menu.Page);
+                }
+                else
+                {
+                    TextList = null;
+                }
+
+                emit(new(StatusMenuEffect.Recompose));
+            }
+
+            emit(command);
+        }
+
+        void Sound(int id) => emit(new(StatusMenuEffect.Sound, id));
+        void Recompose() => emit(new(StatusMenuEffect.Recompose));
+        void Detail(StatusMenuInput value)
+        {
+            int action = value.Cancel ? 5 : value.Accept ? 4 : value.PreviousPage ? 1 : value.NextPage ? 0 : value.PreviousActor ? 3 : value.NextActor ? 2 : -1;
+            bool closed = false;
+            if (action == 4 && Menu.Page == 4 && TextList?.DescriptionOpen == true)
+            {
+                state.Journal.ToggleTracking(state, TextList.SelectedId);
+                Sound(3);
+                return;
+            }
+            if (action is 0 or 1 && (TextList?.DescriptionOpen == true || Menu.Page == 2))
+            {
+                int visible = Menu.Page == 2 ? StatusMenuLayout.BiographyLines : 5;
+                int nextOffset = Math.Clamp(DescriptionOffset + (action == 0 ? 1 : -1), 0, Math.Max(0, Description.Length - visible));
+                if (nextOffset != DescriptionOffset)
+                {
+                    DescriptionOffset = nextOffset;
+                    Sound(1);
+                }
+                return;
+            }
+            if (action is 0 or 1 or 4 or 5)
+            {
+                if (Menu.Page == 0)
+                {
+                    closed = Equipment.Input(action, state, items, Menu.SelectedActor, Sound, Recompose);
+                }
+                else if (Menu.Page is 1 or 3 or 4)
+                {
+                    closed = TextList!.Input(action, Sound, id => LoadDescription(Menu.Page == 4
+                        ? QuestJournalText.Description(state, id)
+                        : StatusTextList.LoadDescription(Menu.Page, id, items, eventItemText, journal)));
+                }
+                else if (action == 5)
+                {
+                    Sound(4);
+                    Recompose();
+                    closed = true;
+                }
+
+                if (closed)
+                {
+                    Menu.SetDetailActive(false);
+                }
+
+                if (closed && Menu.Page is 1 or 3 or 4)
+                {
+                    Recompose();
+                }
+
+                return;
+            }
+
+            //416a20 keeps horizontal selection in the equipment confirmation modal.
+            if (Menu.Page == 0 && !Equipment.CanChangeActor)
+            {
+                if (Equipment.Dialog == 1 && action is 2 or 3)
+                {
+                    Equipment.Input(action, state, items, Menu.SelectedActor, Sound, Recompose);
+                }
+
+                return;
+            }
+
+            if (action < 0 && !value.CycleActor)
+            {
+                return;
+            }
+
+            int current = Menu.SelectedActor, next = current;
+            if (action == 3)
+            {
+                for (int i = current - 1; i >= 0; i--)
+                {
+                    if (state.Heroes[i].MemberStatus != 0)
+                    {
+                        next = i;
+                        break;
+                    }
+                }
+            }
+            else if (action == 2)
+            {
+                for (int i = current + 1; i < state.Heroes.Length; i++)
+                {
+                    if (state.Heroes[i].MemberStatus != 0)
+                    {
+                        next = i;
+                        break;
+                    }
+                }
+            }
+            else if (value.CycleActor)
+            {
+                bool found = false;
+                for (int step = 1; step <= state.Heroes.Length; step++)
+                {
+                    int i = (current + step) % state.Heroes.Length;
+                    if (state.Heroes[i].MemberStatus != 0)
+                    {
+                        next = i;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    throw new InvalidDataException("Status cycle requires an active playable actor.");
+                }
+            }
+
+            if (next != current)
+            {
+                Menu.SetSelectedActor(next);
+                emit(new(StatusMenuEffect.SelectActor, next));
+                Sound(1);
+                if (Menu.Page == 2)
+                {
+                    LoadDescription(GameText.Get(state.HeroCatalog[next].IntroductionKey), StatusMenuLayout.BiographyWidth);
+                }
+                if (Menu.Page == 0)
+                {
+                    Equipment.ActorChanged(state, next);
+                }
+            }
+        }
+
+        Menu.Input(input, state, Command, Detail);
+    }
+}

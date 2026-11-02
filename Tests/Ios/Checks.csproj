@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../Src/Hosts/Ios/Atria.Ios.csproj" AdditionalProperties="PublishAot=false" /></ItemGroup>
+</Project>

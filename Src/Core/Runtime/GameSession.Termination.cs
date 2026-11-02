@@ -1,0 +1,141 @@
+using System.Runtime.InteropServices;
+using Atria.Core.Game.Menu;
+using Atria.Core.Game.Navigation;
+using Atria.Core.Game.State;
+using Atria.Core.Game.Termination;
+using Atria.Core.Presentation.Menu;
+using Atria.Core.Presentation.Sprites;
+using Atria.Core.Presentation.Termination;
+using Atria.Core.Resources;
+using Atria.Core.Resources.Codecs;
+
+namespace Atria.Core.Runtime;
+
+public sealed partial class GameSession
+{
+    private readonly QuitController quit = new();
+    private readonly DefeatController defeat = new();
+    private readonly EndingController ending = new();
+    private BitmapFont? terminationLargeFont;
+    private ushort[]? defeatBackground, endingBackground;
+    private EndingText? endingText;
+    private void InitializeQuitDialog() => quit.Initialize();
+    private void EnterQuitConfirmation()
+    { /*42a850 already ran before429260; no extra native entry state.*/
+    }
+
+    private void HandleQuitInput() => quit.Input(key => QueryLegacyMenuScan(key switch
+    {
+        QuitKey.Right => bindings.Next,
+        QuitKey.Left => bindings.Previous,
+        QuitKey.Cancel => bindings.Cancel,
+        QuitKey.Confirm => bindings.Confirm,
+        _ => throw new ArgumentOutOfRangeException(nameof(key))
+    }), effect =>
+    {
+        switch (effect.Kind)
+        {
+            case QuitEffectKind.Sound:
+                Sound(effect.Value);
+                break;
+            case QuitEffectKind.ReturnMenuRetained:
+                CloseScreen();
+                break; //No stack pop/entry reset in42aaa0.
+            case QuitEffectKind.RequestWindowClose:
+                musicTransport.Stop(); //435760/435740 stop and close native CD stream before WM_CLOSE.
+                window.RequestClose();
+
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(effect));
+        }
+    });
+    private void ComposeQuit(Span<ushort> target)
+    {
+        MainMenuComposer.Draw(menu.AdvanceLogicalFrame(), menuBackground, target, menuModal.Draw);
+        terminationLargeFont ??= BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(root, "eng.fnt")), false);
+        TerminationRenderer.DrawQuit(quit, etc, terminationLargeFont, displayMessages, target);
+    }
+
+    private ushort[] LoadTerminationBackground(ReadOnlySpan<byte> name)
+    {
+        var bitmap = BmpImage.Decode(Read("AT2BMP.000", name));
+        if (bitmap.Width != 640 || bitmap.Height != 480)
+        {
+            throw new InvalidDataException("Invalid termination background.");
+        }
+
+        ushort[] pixels = bitmap.ToRgb565();
+        return pixels;
+    }
+
+    private void EnterDefeat()
+    {
+        musicId = 27;
+        defeatBackground ??= LoadTerminationBackground("GAMEOVER"u8);
+        music.Update(musicId);
+    }
+
+    private void HandleDefeatInput() => defeat.Input(() => QueryLegacyMenuScan(bindings.Confirm), () =>
+    {
+        //421910->403630. Native core subset retains uninitialized/opaque bytes by design.
+        InitialGameState.ResetRecoveredCore(state, items, messages);
+        areas.ResetNames(messages);
+        ResetShopStocks();
+        ResetExplorationSession();
+        actions.CloseAll();
+        saveDisabled = true;
+        ReturnTerminationMenu();
+    });
+    private void ComposeDefeat(Span<ushort> target)
+    {
+        (defeatBackground ?? throw new InvalidOperationException("Game-over background missing.")).CopyTo(target);
+        defeat.AdvanceFrame();
+    }
+
+    private void EnterEnding()
+    {
+        endingText = EndingText.Parse(File.ReadAllBytes(Path.Combine(root, "END.DAT")), state.EndingSelection);
+        musicId = 27;
+        ending.Enter(state.EndingSelection, HandleEndingEffect, endingText.Flow);
+        //4211d0 writes all16000 raw bytes at464020; darkness indices118..120 alias its first three DWORDs.
+        endingText[0][..12].CopyTo(dungeonEndingTextPrefix);
+        gate.SetThresholdMilliseconds(25);
+        music.Update(musicId);
+    }
+
+    private void HandleEndingInput() => ending.Input(HandleEndingEffect);
+    private void HandleEndingEffect(EndingEffect effect)
+    {
+        switch (effect.Kind)
+        {
+            case EndingEffectKind.LoadBackground:
+                endingBackground = LoadTerminationBackground(System.Text.Encoding.ASCII.GetBytes($"END{effect.Value:00}"));
+                break;
+            case EndingEffectKind.ReturnMainMenu:
+                gate.SetThresholdMilliseconds(20);
+                saveDisabled = true;
+                ReturnTerminationMenu();
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(effect));
+        }
+    }
+
+    private void ComposeEnding(Span<ushort> target)
+    {
+        (endingBackground ?? throw new InvalidOperationException("Ending background missing.")).CopyTo(target);
+        TerminationRenderer.DrawEnding(endingText ?? throw new InvalidOperationException("Ending text missing."), ending.AdvanceFrame(), smallFont, target);
+    }
+
+    private void ReturnTerminationMenu()
+    {
+        menuSpriteActive = true;
+        menu.ReturnFromTermination();
+        navigation.Reset();
+        SetVisibleMode(navigation.Mode);
+        //Native200 entry preserves musicId27; no invented restart of title track1.
+        music.Update(musicId);
+    }
+
+}

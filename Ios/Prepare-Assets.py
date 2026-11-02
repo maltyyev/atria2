@@ -9,7 +9,7 @@ from asset_manifest import listed_files, verify_exact_inventory
 
 repo = Path(__file__).resolve().parents[1]
 assets = repo / 'Assets'
-destination = repo / 'Ios/Host/Sources/AtriaProbe/Resources/assets'
+destination = repo / 'Src/Hosts/Ios/Swift/Sources/AtriaProbe/Resources/assets'
 destination.mkdir(parents=True, exist_ok=True)
 props = ET.parse(assets / 'PackageResources.props').getroot()
 manifest = {}

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Atria.Core.Tests</AssemblyName>
+    <RootNamespace>Tests.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Src/Core/Atria.Core.csproj" />
+    <EmbeddedResource Include="../../Src/Core/Resources/Content/Atria2/OriginalNames.json" LogicalName="Atria.Tests.OriginalNames.json" />
+  </ItemGroup>
+</Project>

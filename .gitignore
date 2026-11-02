@@ -37,11 +37,11 @@ Thumbs.db
 .DS_Store
 
 # Reproducible iOS staging, compiler output and xtool signing products.
-/Ios/Host/.build/
-/Ios/Host/.bsp/
-/Ios/Host/.swiftpm/
-/Ios/Host/xtool/
-/Ios/Host/Sources/AtriaProbe/Resources/
+/Src/Hosts/Ios/Swift/.build/
+/Src/Hosts/Ios/Swift/.bsp/
+/Src/Hosts/Ios/Swift/.swiftpm/
+/Src/Hosts/Ios/Swift/xtool/
+/Src/Hosts/Ios/Swift/Sources/AtriaProbe/Resources/
 /Ios/*.o
 /Ios/*.rsp
 /Ios/**/__pycache__/

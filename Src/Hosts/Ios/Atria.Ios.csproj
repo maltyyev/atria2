@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Atria.Ios</AssemblyName>
+    <Version>0.17.7-ios.3</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <RootNamespace>Atria.Hosts.Ios</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <NativeLib>Static</NativeLib>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Core/Atria.Core.csproj" />
+    <ProjectReference Include="../../Platforms/Ios/Atria.Platforms.Ios.csproj" />
+  </ItemGroup>
+</Project>

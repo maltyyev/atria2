@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Atria.Core</AssemblyName>
+    <Version>0.17.7</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <RootNamespace>Atria.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../Assets/Localization/ru-RU/*.json" LogicalName="Atria.Localization.Defaults.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Resources/Content/Atria2/*.json" Exclude="Resources/Content/Atria2/OriginalNames.json" LogicalName="Atria.Content.Atria2.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

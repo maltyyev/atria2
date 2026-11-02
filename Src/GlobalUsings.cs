@@ -1,1 +1,0 @@
-global using Atria.Localization;
