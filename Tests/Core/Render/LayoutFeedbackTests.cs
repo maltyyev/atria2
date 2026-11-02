@@ -55,7 +55,7 @@ public static class LayoutFeedbackTests
         var etc = Sprite("etc.spr"u8);
         var itemSprites = Sprite("item.spr"u8);
         ushort[] pixels = new ushort[640 * 480];
-        void Capture(string name) => UnicodeTextTests.SaveBitmap(Path.Combine(output, name + ".bmp"), pixels);
+        void Capture(string name) => BitmapTestWriter.Save(Path.Combine(output, name + ".bmp"), pixels);
         var overflow = new HashSet<string>();
         void Fits(string text, BitmapFont font, int w, int h, bool wrap)
         {

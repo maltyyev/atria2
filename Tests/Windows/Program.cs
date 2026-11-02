@@ -1,7 +1,6 @@
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation;
 using Atria.Platforms.Windows.Win32;
-using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation.UI;
 
 UnicodeText.UseRasterizer(new DirectWriteRasterizer());
@@ -16,7 +15,7 @@ if (args.Length == 4 && args[3] == "--expedition-session")
 if (args.Length == 2 && args[1] == "--eiren-expedition")
 {
     Console.WriteLine(Tests.Core.Combat.EirenExpeditionTests.Run(args[0]));
-    Console.WriteLine(Tests.Core.Combat.NecromancerTests.Run(args[0]));
+    Console.WriteLine(Tests.Windows.Combat.NecromancerIntegrationTests.Run(args[0]));
     return;
 }
 
@@ -113,7 +112,7 @@ if (args.Length is 2 or 3 && args[1] == "--selection-assets")
 
 if (args.Length == 2 && args[1] == "--necromancer")
 {
-    Console.WriteLine(Tests.Core.Combat.NecromancerTests.Run(args[0]));
+    Console.WriteLine(Tests.Windows.Combat.NecromancerIntegrationTests.Run(args[0]));
     return;
 }
 
@@ -174,6 +173,7 @@ if (args.Length == 2 && args[1] == "--travel-cost")
 if (args.Length == 2 && args[1] == "--experience-layout")
 {
     Console.WriteLine(Tests.Core.Progression.ProgressionTests.Run(args[0]));
+    Tests.Windows.Progression.ExperienceDriverTests.Run(args[0]);
     Console.WriteLine(Tests.Windows.Progression.ExperienceLayoutTests.Run(args[0]));
     return;
 }
@@ -272,6 +272,7 @@ if (args.Length == 2 && args[1] == "--slow-duration")
 {
     Console.WriteLine(Tests.Core.Combat.CombatSlowDurationTests.Run(args[0]));
     Console.WriteLine(Tests.Core.Combat.CombatTests.Run(args[0]));
+    Tests.Windows.Combat.CombatSelectionModalTests.Run();
     Console.WriteLine(Tests.Core.Combat.CombatParticleTests.Run(args[0]));
     Console.WriteLine(Tests.Core.Combat.CombatSchedulingTests.Run());
     return;
@@ -348,6 +349,7 @@ if (args.Length == 2 && args[1] == "--combat-audio")
 {
     Console.WriteLine(Tests.Core.Combat.CombatEntryTests.Run(args[0]));
     Console.WriteLine(Tests.Core.Audio.CombatSoundTests.Run(args[0]));
+    Console.WriteLine(Tests.Windows.Audio.CombatSoundProbeTests.Run(args[0]));
     return;
 }
 
@@ -369,6 +371,7 @@ if (args.Length == 2 && args[1] == "--reward-policy")
     Console.WriteLine(Tests.Core.Combat.CombatOutcomeTests.Run(args[0]));
     Console.WriteLine(Tests.Core.Combat.CombatSessionBridgeTests.Run(args[0]));
     Console.WriteLine(Tests.Core.Progression.ProgressionTests.Run(args[0]));
+    Tests.Windows.Progression.ExperienceDriverTests.Run(args[0]);
     return;
 }
 
@@ -449,6 +452,7 @@ Console.WriteLine(Tests.Core.Menu.MenuRasterTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Platform.ClockTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Audio.SoundEffectTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Audio.CombatSoundTests.Run(args[0]));
+Console.WriteLine(Tests.Windows.Audio.CombatSoundProbeTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Settings.SettingsTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Credits.CreditsTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Termination.TerminationTests.Run(args[0]));
@@ -461,6 +465,7 @@ Console.WriteLine(Tests.Core.ActionMenu.ActionMenuTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Exploration.ExplorationTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Exploration.RuinsAccessTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Progression.ProgressionTests.Run(args[0]));
+Tests.Windows.Progression.ExperienceDriverTests.Run(args[0]);
 Console.WriteLine(Tests.Windows.Progression.ExperienceLayoutTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Interiors.InteriorTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Interiors.GeographerTests.Run(args[0]));
@@ -472,6 +477,7 @@ Tests.Core.Status.StatusRendererTests.Run(args[0]);
 Console.WriteLine(Tests.Core.Combat.PartyAirCombatTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Combat.PartySpellTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Combat.CombatTests.Run(args[0]));
+Tests.Windows.Combat.CombatSelectionModalTests.Run();
 Console.WriteLine(Tests.Core.Combat.CombatFrameSoundTests.Run(args[0]));
 Console.WriteLine(Tests.Windows.Combat.CombatSelectionAssetsTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Combat.CombatBalanceTests.Run(args[0]));
@@ -495,4 +501,4 @@ Console.WriteLine(Tests.Core.Combat.ProjectileReactionTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Combat.CombatParticleTests.Run(args[0]));
 Console.WriteLine(Tests.Core.Dungeon.DungeonTests.Run(args[0]));
 
-Console.WriteLine(Tests.Core.Combat.NecromancerTests.Run(args[0]));
+Console.WriteLine(Tests.Windows.Combat.NecromancerIntegrationTests.Run(args[0]));

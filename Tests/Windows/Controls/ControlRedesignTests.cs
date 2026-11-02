@@ -17,6 +17,7 @@ using Atria.Platforms.Windows.Win32;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Presentation;
 using Atria.Core.Resources;
+using Tests.Core;
 using Tests.Core.Combat;
 using Tests.Windows.Combat;
 using Atria.Core.Game.Menu;

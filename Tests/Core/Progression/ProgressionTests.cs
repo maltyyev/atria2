@@ -56,7 +56,6 @@ public static class ProgressionTests
         CheckInvalid(items);
         CheckNotice();
         CheckAllocationRaster();
-        ExperienceDriverTests.Run(items);
         CheckNewCharacter();
         return "progression: threshold1..13, allocation modes/manual/stable ties, signedXP, stat/rank gains, strict notice and invalid-state atomicity passed";
     }

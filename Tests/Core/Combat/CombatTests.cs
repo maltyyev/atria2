@@ -118,7 +118,6 @@ public static class CombatTests
 
         Check(award == 100 && shared.AttackDelay == 0, "Shared INF delay is reduced per actor, not copied per enemy.");
         CheckSelection();
-        CombatSelectionModalTests.Run();
         CheckHits();
         CheckDamageApplication();
         CheckMaintenance();

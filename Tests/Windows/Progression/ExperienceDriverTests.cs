@@ -14,6 +14,7 @@ using Atria.Platforms.Windows.Win32;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Tests.Core;
 using Tests.Windows.Combat;
 using Tests.Windows.Controls;
 
@@ -21,6 +22,8 @@ namespace Tests.Windows.Progression;
 
 internal static class ExperienceDriverTests
 {
+    internal static void Run(string root) => Run(ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT"))));
+
     internal static void Run(ItemCatalog items)
     {
         byte[] cfg = new byte[64];

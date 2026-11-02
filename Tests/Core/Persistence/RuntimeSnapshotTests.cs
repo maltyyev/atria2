@@ -117,11 +117,11 @@ internal static class RuntimeSnapshotTests
         byte[] endingSource = File.ReadAllBytes(Path.Combine(root, "END.DAT"));
         var ending = Atria.Core.Game.Termination.EndingText.Parse(endingSource, 2);
         Check(ending[0][..12].SequenceEqual(endingSource.AsSpan(16100, 12)), "ending464020 alias preserves first12 raw bytes at native section2 offset16100");
-        var retainedMenu = new Atria.Game.Menu.MainMenuController();
+        var retainedMenu = new Atria.Core.Presentation.Menu.MainMenuController();
         retainedMenu.RestoreRetained(new(1, 3, 2));
         retainedMenu.Enter();
         Check(retainedMenu.CaptureRetained() == new Atria.Core.Presentation.Menu.MainMenuRetainedSnapshot(1, 3, 2), "main200 entry retains native reveal cursor/counter/confirmation flash");
-        var retainedCredits = new Atria.Game.Credits.CreditsController();
+        var retainedCredits = new Atria.Core.Presentation.Credits.CreditsController();
         retainedCredits.RestoreRetained(new(9));
         retainedCredits.Enter();
         Check(retainedCredits.SpeedCounter == 9, "credits entry retains native speed counter");

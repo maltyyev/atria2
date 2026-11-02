@@ -64,6 +64,7 @@ public static class ContractChecks
         "Src/Core/GlobalUsings.cs",
         "Src/Platforms/Windows/AssemblyInfo.cs",
         "Src/Platforms/Windows/GlobalUsings.cs",
+        "Tests/Core/AssemblyInfo.cs",
         "Tests/Windows/GlobalUsings.cs",
         "Tests/Windows/Program.cs",
         "Tests/Contracts/Program.cs",

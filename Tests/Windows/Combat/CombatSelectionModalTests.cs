@@ -14,6 +14,7 @@ using Atria.Platforms.Windows.Win32;
 using Atria.Core.Presentation.Sprites;
 using Atria.Core.Resources.Codecs;
 using Atria.Core.Resources;
+using Tests.Core;
 using Tests.Core.Combat;
 using Tests.Core.Persistence;
 using Tests.Windows.Controls;

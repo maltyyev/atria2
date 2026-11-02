@@ -68,9 +68,8 @@ public static class NecromancerTests
         }
     }
 
-    public static string Run(string root)
+    public static string Run(string root, Action<GameState>? windowsIntegration = null)
     {
-        Console.WriteLine(NarrativeRevisionTests.Run(root));
         Console.WriteLine(NarrativeReturnTests.Run(root));
         var items = ItemCatalog.Parse(File.ReadAllBytes(Path.Combine(root, "ATITEM.DAT")));
         var messages = LegacyTextTables.ParseMessages(File.ReadAllBytes(Path.Combine(root, "TEXTmsg.dat")));
@@ -201,8 +200,7 @@ public static class NecromancerTests
             }
             Check(execution.HasCachedFrame, "real actor, magic, hit and HUD pipeline renders");
         }
-        NecromancerPresentationTests.Run(root, state);
-        NecromancerExecutionTests.Run(root);
+        windowsIntegration?.Invoke(state);
         return "Necromancer PASS: four staged quests/reload, generic membership, recruitment, RU/BE, portraits, current and archived encounters, three summon choices and death-only cleanup.";
     }
 

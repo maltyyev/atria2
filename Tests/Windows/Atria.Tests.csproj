@@ -12,7 +12,6 @@
     <ProjectReference Include="../../Src/Platforms/Windows/Atria.Platforms.Windows.csproj" />
     <ProjectReference Include="../../Src/Hosts/Windows/Atria.Windows.csproj" />
     <ProjectReference Include="../Core/Atria.Core.Tests.csproj" />
-    <ProjectReference Include="../Contracts/Atria.Contracts.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Video/Fixtures/*.framemd5" Link="VideoFixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

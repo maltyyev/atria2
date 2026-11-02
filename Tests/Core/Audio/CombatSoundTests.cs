@@ -132,30 +132,7 @@ public static class CombatSoundTests
         }
 
         Check(partial.Count == 3 && partial.All(s => s.Stopped == 1 && s.Disposed == 1), "Partial entry initialization releases already-created banks.");
-        int exclusiveCount = 0;
-        using (var device = new AudioDevice())
-        using (var native = new CombatSoundBank(root, wave => device.LoadEffect(wave), wave =>
-        {
-            using var effect = device.LoadEffect(wave);
-            effect.SetCurrentVolume(-10000);
-            effect.Play();
-            effect.StopAll();
-            exclusiveCount++;
-        }))
-        {
-            Check(native.LoadedCount == expected, "Actual XAudio2 numeric bank initialization.");
-            native.Play(playable, -10000);
-            foreach (var entry in archive.Entries)
-            {
-                if (int.TryParse(entry.Name, NumberStyles.None, CultureInfo.InvariantCulture, out int id) && id >= CombatSoundBank.Capacity)
-                {
-                    native.Play(id, -10000);
-                }
-            }
-        }
-
-        Check(exclusiveCount > 0, "Actual high-ID WAV coverage");
-        return $"Combat audio: {expected} entry WAV banks and {exclusiveCount} exclusive WAV resources; optional slots, INF additions, exact payload dispatch, safe partial cleanup and native muted lifetime passed.";
+        return $"Combat audio: {expected} entry WAV banks; optional slots, INF additions, exact payload dispatch and safe partial cleanup passed.";
     }
 
     private static void Check(bool condition, string message)
