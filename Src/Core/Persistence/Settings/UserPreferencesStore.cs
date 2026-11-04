@@ -38,7 +38,7 @@ internal sealed class UserPreferencesStore(string directory, string originalRoot
                 string? language = root.TryGetProperty("language", out var selectedLanguage) && selectedLanguage.ValueKind == JsonValueKind.String
                     ? selectedLanguage.GetString() : null;
                 return new(controls, settings.Settings, settings.Bindings,
-                    LocalizationCatalog.IsSupportedLanguage(language) ? language! : LocalizationCatalog.BaseLanguage);
+                    GameText.Current.SupportsLanguage(language) ? language! : LocalizationCatalog.BaseLanguage);
             }
             catch (Exception error) when (IsReadError(error))
             {
@@ -72,7 +72,7 @@ internal sealed class UserPreferencesStore(string directory, string originalRoot
 
     public void Write(UserPreferences preferences)
     {
-        if (!LocalizationCatalog.IsSupportedLanguage(preferences.Language))
+        if (!GameText.Current.SupportsLanguage(preferences.Language))
             throw new InvalidDataException("Unsupported interface language.");
         // Preserve the original-resource and redirected-directory protections used by legacy settings.
         new LocalSettingsStore(directory, originalRoot).CheckDirectory();

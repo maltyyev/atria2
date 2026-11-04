@@ -1,4 +1,5 @@
 using Atria.Core.Contracts.Presentation;
+using Atria.Core.Contracts.Host;
 using Atria.Core.Game;
 using Atria.Core.Game.Progression;
 using Atria.Core.Presentation;
@@ -26,8 +27,10 @@ public sealed partial class GameSession
             mainMenuView.InvalidateProfileHint();
         }
         bool quitting = state.Mode == GameMode.QuitConfirmation;
-        string profile = GameText.Format(CanChangeProfile ? "ui.profiles.menuHintDynamic" : "ui.profiles.menuCurrent",
-            ("name", playerProfiles.Active.Name), ("button", controls.ProfileMenuHint));
+        string profile = window is IMobileUiChannel
+            ? ""
+            : GameText.Format(CanChangeProfile ? "ui.profiles.menuHintDynamic" : "ui.profiles.menuCurrent",
+                ("name", playerProfiles.Active.Name), ("button", controls.ProfileMenuHint));
         var frame = mainMenuView.Render(menu.Selection, saveDisabled, menu.Confirmation, quitting ? quit.Selection == 1 : menu.YesSelected, quitting, profile);
         inputHintsDirty = false;
         presenter.Resize(size.Width, size.Height);

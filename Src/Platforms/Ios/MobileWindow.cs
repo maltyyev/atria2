@@ -1,5 +1,8 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Atria.Core.Contracts.Input;
+using Atria.Core.Contracts.Host;
 using Atria.Core.Contracts.Window;
 using Atria.Core.Game.Combat;
 using Atria.Core.Game.Progression;
@@ -10,7 +13,7 @@ using Atria.Core.Runtime.Timing;
 namespace Atria.Platforms.Ios;
 
 /// <summary>Transports host input to the game thread without sharing physical and touch slots.</summary>
-public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadSource, IInputActivitySource
+public sealed class MobileWindow : IGameWindow, IGamepadDevice, IInputActivitySource, IMobileUiChannel
 {
     /// <summary>Number of independent physical controller slots.</summary>
     public const int PadCount = 4;
@@ -20,11 +23,14 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
     private readonly ConcurrentQueue<(int X, int Y, bool Down)> pointer = new();
     private readonly object sync = new();
     private readonly List<PadSample>[] padChanges = Enumerable.Range(0, PadCount).Select(_ => new List<PadSample>()).ToArray();
-    private readonly List<PadSample> virtualPadChanges = new();
+    private readonly List<MobileTouchState> touchChanges = new();
+    private readonly Queue<MobileUiCommand> uiCommands = new();
     private readonly PadSample[] pads = new PadSample[PadCount];
     private readonly PadSample[] lastSubmitted = new PadSample[PadCount];
     private readonly bool[] resyncPad = new bool[PadCount];
-    private PadSample virtualPad, lastVirtualPad;
+    private MobileTouchState touchState, lastTouchState;
+    private MobileUiSnapshot? uiSnapshot;
+    private byte[] uiSnapshotJson = [];
     private InputActivity lastInputActivity;
     private long inputSequence;
     private volatile bool focused = true;
@@ -49,6 +55,75 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
     public uint InputClockMilliseconds => unchecked((uint)Environment.TickCount64);
     /// <summary>Gets the latest sequenced direct touch interaction reported by the host.</summary>
     public InputActivity LastInputActivity { get { lock (sync) return lastInputActivity; } }
+    public ulong UiRevision { get { lock (sync) return uiSnapshot?.Revision ?? 0; } }
+    public ulong UiContextId { get { lock (sync) return uiSnapshot?.ContextId ?? 0; } }
+
+    /// <summary>Copies the last Core-owned UTF-8 snapshot; returns its required byte count.</summary>
+    public int CopyUiSnapshot(Span<byte> destination)
+    {
+        lock (sync)
+        {
+            if (destination.Length < uiSnapshotJson.Length) return uiSnapshotJson.Length;
+            uiSnapshotJson.CopyTo(destination);
+            return uiSnapshotJson.Length;
+        }
+    }
+
+    public void PublishUiSnapshot(MobileUiSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        lock (sync)
+        {
+            if (uiSnapshot is { } current && snapshot.ContextId == current.ContextId && snapshot.Revision == current.Revision) return;
+            if (uiSnapshot is { } previous && snapshot.ContextId != previous.ContextId)
+            {
+                touchChanges.Clear();
+                touchState = lastTouchState = new(snapshot.ContextId, 0, 0, MobileTouchButtons.None);
+                uiCommands.Clear();
+            }
+
+            uiSnapshot = snapshot;
+            uiSnapshotJson = JsonSerializer.SerializeToUtf8Bytes(snapshot, MobileUiJsonContext.Default.MobileUiSnapshot);
+        }
+    }
+
+    public void SubmitUiCommand(MobileUiCommand command)
+    {
+        lock (sync)
+        {
+            if (!focused || uiSnapshot is null || command.ContextId != uiSnapshot.ContextId) return;
+            if (uiCommands.Count == 128) uiCommands.Dequeue();
+            uiCommands.Enqueue(command);
+            RecordActivity(InputSourceKind.Touch, 0);
+        }
+    }
+
+    public bool TryDequeueUiCommand(out MobileUiCommand command)
+    {
+        lock (sync) return uiCommands.TryDequeue(out command);
+    }
+
+    public void SubmitTouchState(MobileTouchState state)
+    {
+        lock (sync)
+        {
+            if (!focused || uiSnapshot is null || state.ContextId != uiSnapshot.ContextId || state == lastTouchState) return;
+            QueueTouchSample(touchChanges, touchState, state);
+            lastTouchState = state;
+        }
+    }
+
+    public bool TryDequeueTouchState(out MobileTouchState state)
+    {
+        lock (sync)
+        {
+            if (touchChanges.Count == 0) { state = touchState; return false; }
+            touchState = touchChanges[0];
+            touchChanges.RemoveAt(0);
+            state = touchState;
+            return true;
+        }
+    }
 
     /// <summary>Updates drawable size and flushes input when the surface loses focus.</summary>
     public void SetSurface(int width, int height, bool active)
@@ -62,10 +137,12 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
                 focused = false;
                 Interlocked.Exchange(ref focusReset, 1);
                 foreach (var changes in padChanges) changes.Clear();
-                virtualPadChanges.Clear();
+                touchChanges.Clear();
+                uiCommands.Clear();
                 Array.Clear(pads);
                 Array.Fill(resyncPad, true);
-                virtualPad = lastVirtualPad = default;
+                touchState = lastTouchState = new(uiSnapshot?.ContextId ?? 0, 0, 0, MobileTouchButtons.None);
+                if (uiSnapshot is { } current) touchChanges.Add(new(current.ContextId, 0, 0, MobileTouchButtons.None));
                 keys.Clear();
                 pointer.Clear();
             }
@@ -100,33 +177,7 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
         }
     }
 
-    /// <summary>Queues touch controls without marking a physical controller connected.</summary>
-    public void SubmitVirtualPad(PadSample sample)
-    {
-        sample = sample with { Connected = !Neutral(sample) };
-        lock (sync)
-        {
-            if (!focused || sample == lastVirtualPad) return;
-            QueueSample(virtualPadChanges, virtualPad, sample);
-            lastVirtualPad = sample;
-        }
-    }
-
-    /// <summary>Returns one pending touch sample while retaining its current state.</summary>
-    public PadSample ReadVirtualGamepad()
-    {
-        lock (sync)
-        {
-            if (virtualPadChanges.Count != 0)
-            {
-                virtualPad = virtualPadChanges[0];
-                virtualPadChanges.RemoveAt(0);
-            }
-            return virtualPad;
-        }
-    }
-
-    /// <summary>Records a touch contact even when it does not change any virtual control.</summary>
+    /// <summary>Records a touch contact even when no touch-control state changes.</summary>
     public void SubmitTouchActivity(int identity)
     {
         lock (sync)
@@ -207,12 +258,35 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IVirtualGamepadS
         changes.Add(sample);
     }
 
+    private static void QueueTouchSample(List<MobileTouchState> changes, MobileTouchState consumed, MobileTouchState sample)
+    {
+        if (changes.Count != 0)
+        {
+            var last = changes[^1];
+            var before = changes.Count > 1 ? changes[^2] : consumed;
+            bool modifier = (sample.Buttons & MobileTouchButtons.B) != 0;
+            if (!modifier && before.Buttons == last.Buttons && last.Buttons == sample.Buttons &&
+                Monotonic(before.LeftX, last.LeftX, sample.LeftX) && Monotonic(before.LeftY, last.LeftY, sample.LeftY))
+            {
+                changes[^1] = sample;
+                return;
+            }
+        }
+        // shortcut: keep at most 128 touch transitions, raise this if the game thread can stall during active input.
+        if (changes.Count == 128) changes.RemoveAt(0);
+        changes.Add(sample);
+    }
+
     private static bool Monotonic(byte before, byte last, byte next)
         => before <= last && last <= next || before >= last && last >= next;
 
-    // Touch controls are digital full-scale values; physical deadzones remain in InputRouter.
-    private static bool Neutral(PadSample sample)
-        => sample.Buttons == 0 && sample.LeftTrigger <= 32 && sample.RightTrigger <= 32 &&
-            Math.Abs((int)sample.LX) <= 1800 && Math.Abs((int)sample.LY) <= 1800 &&
-            Math.Abs((int)sample.RX) <= 1800 && Math.Abs((int)sample.RY) <= 1800;
+    private static bool Monotonic(short before, short last, short next)
+        => before <= last && last <= next || before >= last && last >= next;
+
 }
+
+[JsonSourceGenerationOptions(
+    GenerationMode = JsonSourceGenerationMode.Metadata,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(MobileUiSnapshot))]
+internal partial class MobileUiJsonContext : JsonSerializerContext;

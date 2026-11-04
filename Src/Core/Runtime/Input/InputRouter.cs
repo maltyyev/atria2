@@ -1,4 +1,5 @@
 using Atria.Core.Contracts.Input;
+using Atria.Core.Contracts.Host;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Contracts.Window;
 using Atria.Core.Game.Menu;
@@ -23,9 +24,7 @@ public sealed class InputRouter : IDisposable
     private const int PadTokenStride = 32;
     private const int DpadDirectionCount = 4;
     private const int QuickChordTokenStart = PadTokenStart + PadCount * PadTokenStride;
-    private const int VirtualPadTokenStart = 448;
-    private const int VirtualQuickChordTokenStart = VirtualPadTokenStart + PadControlCount;
-    private const int InputTokenCapacity = VirtualQuickChordTokenStart + DpadDirectionCount;
+    private const int InputTokenCapacity = QuickChordTokenStart + PadCount * DpadDirectionCount;
     private const int DpadUp = 10;
     private const int DpadLeft = 13;
     private const int LeftTrigger = 14;
@@ -42,6 +41,7 @@ public sealed class InputRouter : IDisposable
     private const int InitialRepeatMilliseconds = 350;
     private const int RepeatIntervalMilliseconds = 90;
     private const int AxisHysteresis = 1800;
+    private const int TouchRunThreshold = 24576;
     private const ushort RumbleLowFrequencyStrength = 10000;
     private const ushort RumbleHighFrequencyStrength = 6000;
     private const int RumbleMilliseconds = 80;
@@ -64,8 +64,15 @@ public sealed class InputRouter : IDisposable
     private (int Width, int Height) lastWindowSize;
     private bool hasActivityCandidate;
     private bool hasAuthoritativeActivity;
-    private PadSample previousVirtualPad;
-    private PadSample virtualAxisActivityBaseline;
+    private MobileTouchState mobileTouch;
+    private MobileOverlayKind mobileOverlay;
+    private ulong mobileContextId;
+    private bool mobileDirectionsAreMenu;
+    private MobileTouchButtons mobileBlockedButtons;
+    private bool mobileAxisBlocked;
+    private readonly int[] mobilePendingActions = new int[(int)GameAction.Count];
+    private readonly int[] mobilePendingQuick = new int[4];
+    private int mobileQuickSector = -1;
     private InputActivity activityCandidate;
     private readonly int[] contextVersions = new int[2];
     public int ContextVersion(int player) => contextVersions[player];
@@ -100,11 +107,19 @@ public sealed class InputRouter : IDisposable
     /// <summary>Compatibility view for older callers that only distinguish gamepads.</summary>
     public bool LastWasPad => CurrentInputSource.Kind == InputSourceKind.Gamepad;
     /// <summary>Gets the profile-menu binding appropriate to the latest active source.</summary>
-    public string ProfileMenuHint => CurrentInputSource.Kind is InputSourceKind.Gamepad or InputSourceKind.Touch
-        ? ControlNames.Binding(InputBinding.Pad(3)) : ControlNames.Binding(InputBinding.Key(0x3c));
+    public string ProfileMenuHint => CurrentInputSource.Kind switch
+    {
+        InputSourceKind.Gamepad => ControlNames.Binding(InputBinding.Pad(3)),
+        InputSourceKind.Touch => GameText.Get("ui.controls.touch"),
+        _ => ControlNames.Binding(InputBinding.Key(0x3c))
+    };
     /// <summary>Gets the profile rename binding appropriate to the latest active source.</summary>
-    public string ProfileRenameHint => CurrentInputSource.Kind is InputSourceKind.Gamepad or InputSourceKind.Touch
-        ? ControlNames.Binding(InputBinding.Pad(2)) : ControlNames.Binding(InputBinding.Key(0x3d));
+    public string ProfileRenameHint => CurrentInputSource.Kind switch
+    {
+        InputSourceKind.Gamepad => ControlNames.Binding(InputBinding.Pad(2)),
+        InputSourceKind.Touch => GameText.Get("ui.controls.touch"),
+        _ => ControlNames.Binding(InputBinding.Key(0x3d))
+    };
     public bool InBattle
     {
         get; set;
@@ -124,15 +139,169 @@ public sealed class InputRouter : IDisposable
         this.pads = pads;
     }
 
+    /// <summary>Sets the Core-selected mobile scene context and its semantic touch layout.</summary>
+    public void SetMobileContext(ulong contextId, MobileOverlayKind overlay, bool directionsAreMenu = false)
+    {
+        if (mobileContextId == contextId && mobileOverlay == overlay && mobileDirectionsAreMenu == directionsAreMenu) return;
+        mobileContextId = contextId;
+        mobileOverlay = overlay;
+        mobileDirectionsAreMenu = directionsAreMenu;
+        ResetMobileTouch(blockHeld: false);
+    }
+
+    private void ResetMobileTouch(bool blockHeld)
+    {
+        if (blockHeld)
+        {
+            mobileBlockedButtons |= mobileTouch.Buttons;
+            mobileAxisBlocked |= mobileTouch.LeftX != 0 || mobileTouch.LeftY != 0;
+        }
+        else
+        {
+            mobileTouch = new(mobileContextId, 0, 0, MobileTouchButtons.None);
+            mobileBlockedButtons = MobileTouchButtons.None;
+            mobileAxisBlocked = false;
+        }
+        mobileQuickSector = -1;
+        Array.Clear(mobilePendingActions);
+        Array.Clear(mobilePendingQuick);
+    }
+
+    private void ApplyMobileTouchState(MobileTouchState state)
+    {
+        if (state.ContextId != mobileContextId) return;
+        mobileBlockedButtons &= state.Buttons;
+        if (state.LeftX == 0 && state.LeftY == 0) mobileAxisBlocked = false;
+
+        MobileTouchButtons pressed = state.Buttons & ~mobileTouch.Buttons;
+        if (mobileOverlay == MobileOverlayKind.Navigation)
+        {
+            QueueNavigationDirections(pressed, mobileDirectionsAreMenu);
+            if ((pressed & MobileTouchButtons.A) != 0) QueueMobileAction(GameAction.Confirm);
+            if ((pressed & MobileTouchButtons.B) != 0) QueueMobileAction(GameAction.Back);
+        }
+        else if (mobileOverlay == MobileOverlayKind.Combat)
+        {
+            if ((pressed & MobileTouchButtons.X) != 0) QueueMobileAction(GameAction.Attack);
+            if ((pressed & MobileTouchButtons.A) != 0) QueueMobileAction(GameAction.Jump);
+            int sector = (state.Buttons & MobileTouchButtons.B) != 0 && (mobileBlockedButtons & MobileTouchButtons.B) == 0
+                ? TouchSector(state.LeftX, state.LeftY) : -1;
+            if (sector >= 0 && sector != mobileQuickSector) mobilePendingQuick[sector] = Math.Min(255, mobilePendingQuick[sector] + 1);
+            mobileQuickSector = sector;
+        }
+
+        bool axisMoved = Math.Abs((int)state.LeftX - mobileTouch.LeftX) >= AxisHysteresis && Math.Abs((int)state.LeftX) >= Profile.DeadZone
+            || Math.Abs((int)state.LeftY - mobileTouch.LeftY) >= AxisHysteresis && Math.Abs((int)state.LeftY) >= Profile.DeadZone;
+        if (pressed != MobileTouchButtons.None || axisMoved)
+            RecordInputActivity(InputSourceKind.Touch, 0);
+        mobileTouch = state;
+    }
+
+    private void QueueNavigationDirections(MobileTouchButtons pressed, bool menu)
+    {
+        QueueDirection(pressed, MobileTouchButtons.Left, menu ? GameAction.MenuLeft : GameAction.Left);
+        QueueDirection(pressed, MobileTouchButtons.Right, menu ? GameAction.MenuRight : GameAction.Right);
+        QueueDirection(pressed, MobileTouchButtons.Up, menu ? GameAction.MenuUp : GameAction.Up);
+        QueueDirection(pressed, MobileTouchButtons.Down, menu ? GameAction.MenuDown : GameAction.Down);
+    }
+
+    private static bool IsNavigationAction(GameAction action) => action is
+        GameAction.MenuLeft or GameAction.MenuRight or GameAction.MenuUp or GameAction.MenuDown or GameAction.Confirm or GameAction.Back;
+
+    private void QueueDirection(MobileTouchButtons pressed, MobileTouchButtons button, GameAction action)
+    {
+        if ((pressed & button) == 0) return;
+        QueueMobileAction(action);
+    }
+
+    private void QueueMobileAction(GameAction action)
+    {
+        ref int count = ref mobilePendingActions[(int)action];
+        if (count < 255) count++;
+    }
+
+    private bool TakeMobileAction(GameAction action)
+    {
+        ref int count = ref mobilePendingActions[(int)action];
+        if (count == 0) return false;
+        count--;
+        return true;
+    }
+
+    internal bool TakeMobileTownPrevious() => mobileOverlay == MobileOverlayKind.Navigation && mobileDirectionsAreMenu
+        && (TakeMobileAction(GameAction.MenuLeft) || TakeMobileAction(GameAction.MenuUp));
+
+    internal bool TakeMobileTownNext() => mobileOverlay == MobileOverlayKind.Navigation && mobileDirectionsAreMenu
+        && (TakeMobileAction(GameAction.MenuRight) || TakeMobileAction(GameAction.MenuDown));
+
+    private int TouchSector(short x, short y)
+    {
+        long lx = x, ly = y, deadZone = Profile.DeadZone;
+        if (lx * lx + ly * ly < deadZone * deadZone) return -1;
+        double degrees = Math.Atan2(x, y) * 180 / Math.PI;
+        if (degrees < 0) degrees += 360;
+        return degrees < 45 || degrees >= 315 ? 0 : degrees < 135 ? 1 : degrees < 225 ? 2 : 3;
+    }
+
+    private bool TouchMovement(GameAction action)
+    {
+        if (mobileAxisBlocked || mobileOverlay != MobileOverlayKind.Combat || (mobileTouch.Buttons & MobileTouchButtons.B) != 0) return false;
+        return action switch
+        {
+            GameAction.Left => mobileTouch.LeftX < -Profile.DeadZone,
+            GameAction.Right => mobileTouch.LeftX > Profile.DeadZone,
+            GameAction.Up => mobileTouch.LeftY > Profile.DeadZone,
+            GameAction.Down => mobileTouch.LeftY < -Profile.DeadZone,
+            _ => false
+        };
+    }
+
+    private bool TouchHeld(int player, GameAction action)
+    {
+        if (player != 0 || mobileOverlay != MobileOverlayKind.Combat) return false;
+        MobileTouchButtons button = action switch
+        {
+            GameAction.Attack => MobileTouchButtons.X,
+            GameAction.Jump => MobileTouchButtons.A,
+            _ => MobileTouchButtons.None
+        };
+        return button != MobileTouchButtons.None && (mobileTouch.Buttons & button) != 0 && (mobileBlockedButtons & button) == 0;
+    }
+
+    private bool? TouchRun(int player)
+    {
+        if (player != 0 || mobileAxisBlocked || mobileOverlay != MobileOverlayKind.Combat ||
+            (mobileTouch.Buttons & MobileTouchButtons.B) != 0 ||
+            Math.Abs((int)mobileTouch.LeftX) < Profile.DeadZone && Math.Abs((int)mobileTouch.LeftY) < Profile.DeadZone)
+            return null;
+        long x = mobileTouch.LeftX, y = mobileTouch.LeftY;
+        return x * x + y * y >= (long)TouchRunThreshold * TouchRunThreshold;
+    }
+
+    internal bool? Run(int player)
+    {
+        bool? physicalRun = Profile.Players[player].Classic ? null : Held(player, GameAction.Run);
+        bool? touchRun = TouchRun(player);
+        if (!touchRun.HasValue) return physicalRun;
+        return touchRun.Value || physicalRun == true;
+    }
+
+    private bool TakeTouchQuick(int player, int slot)
+    {
+        if (player != 0 || mobileOverlay != MobileOverlayKind.Combat || mobilePendingQuick[slot] == 0) return false;
+        mobilePendingQuick[slot]--;
+        return true;
+    }
+
     public bool Connected(int slot) => slot >= 0 && samples[slot].Connected;
     internal bool ProfileMenuPressed() => Take(0x3c) || PadButtonPressed(3); // F2 / physical Y
     internal bool PadButtonPressed(int button, bool repeat = false)
     {
         for (int slot = 0; slot < PadCount; slot++)
             if (Take(PadTokenStart + slot * PadTokenStride + button, repeat)) return true;
-        return Take(VirtualPadTokenStart + button, repeat);
+        return false;
     }
-    /// <summary>Samples the shared window, physical devices, optional virtual pad, and activity source.</summary>
+    /// <summary>Samples the shared window, physical devices, and activity source.</summary>
     public void Poll(IGameWindow window)
     {
         bool mouseMoved = false;
@@ -170,9 +339,9 @@ public sealed class InputRouter : IDisposable
             window.Focused,
             Environment.TickCount64,
             window.MousePressed,
-            window is IVirtualGamepadSource virtualPad ? virtualPad.ReadVirtualGamepad() : default,
             mouseMoved,
-            externalActivity
+            externalActivity,
+            window as IMobileUiChannel
         );
         if (window.Focused)
         {
@@ -181,16 +350,15 @@ public sealed class InputRouter : IDisposable
 
     }
 
-    /// <summary>Samples keyboard, mouse, physical pads, and an optional virtual touch pad at one timestamp.</summary>
+    /// <summary>Samples keyboard, mouse, and physical pads at one timestamp.</summary>
     public void Poll(
         ReadOnlySpan<bool> keys,
         ReadOnlySpan<bool> pressed,
         ReadOnlySpan<bool> mouse,
         bool focused,
         long now,
-        ReadOnlySpan<bool> mousePressed = default,
-        PadSample virtualPad = default
-    ) => Poll(keys, pressed, mouse, focused, now, mousePressed, virtualPad, false, default);
+        ReadOnlySpan<bool> mousePressed = default
+    ) => Poll(keys, pressed, mouse, focused, now, mousePressed, false, default, null);
 
     private void Poll(
         ReadOnlySpan<bool> keys,
@@ -199,9 +367,9 @@ public sealed class InputRouter : IDisposable
         bool focused,
         long now,
         ReadOnlySpan<bool> mousePressed,
-        PadSample virtualPad,
         bool mouseMoved,
-        InputActivity externalActivity)
+        InputActivity externalActivity,
+        IMobileUiChannel? mobileChannel)
     {
         hasActivityCandidate = false;
         hasAuthoritativeActivity = false;
@@ -280,15 +448,8 @@ public sealed class InputRouter : IDisposable
             PollPadSample(PadTokenStart + slot * PadTokenStride, QuickChordTokenStart + slot * DpadDirectionCount, s);
         }
 
-        if (focused && virtualPad.Connected)
-        {
-            if (!previousVirtualPad.Connected || resumed) virtualAxisActivityBaseline = virtualPad;
-            if (previousVirtualPad.Connected && !resumed && HasIntentionalAxisMovement(ref virtualAxisActivityBaseline, virtualPad))
-                RecordInputActivity(InputSourceKind.Touch, hasActivityCandidate && activityCandidate.Kind == InputSourceKind.Touch ? activityCandidate.Identity : 0);
-            PollPadSample(VirtualPadTokenStart, VirtualQuickChordTokenStart, virtualPad);
-        }
-        else virtualAxisActivityBaseline = virtualPad;
-        previousVirtualPad = virtualPad;
+        if (focused && !resumed && mobileChannel is not null)
+            while (mobileChannel.TryDequeueTouchState(out var touch)) ApplyMobileTouchState(touch);
 
         for (int i = 0; i < held.Length; i++)
         {
@@ -332,8 +493,6 @@ public sealed class InputRouter : IDisposable
             RecordInputActivity(InputSourceKind.Keyboard, 0);
         else if (token < KeyboardMouseTokenEnd)
             RecordInputActivity(InputSourceKind.Mouse, 0);
-        else if (token >= VirtualPadTokenStart && token < InputTokenCapacity)
-            RecordInputActivity(InputSourceKind.Touch, hasActivityCandidate && activityCandidate.Kind == InputSourceKind.Touch ? activityCandidate.Identity : 0);
     }
 
     private void RecordInputActivity(InputSourceKind kind, int identity)
@@ -417,14 +576,14 @@ public sealed class InputRouter : IDisposable
         };
     }
 
-    internal bool Held(int player, GameAction action) => Held(player, Profile.Players[player].Bindings[(int)action]);
+    internal bool Held(int player, GameAction action)
+        => Held(player, Profile.Players[player].Bindings[(int)action]) || player == 0 && (TouchMovement(action) || TouchHeld(player, action));
     internal bool Held(int player, InputBinding[] row)
     {
         foreach (var b in row)
         {
             int t = Token(player, b);
-            if (t >= 0 && held[t] && !blocked[t]
-                || player == 0 && b.Kind == InputKind.Pad && held[VirtualPadTokenStart + b.Code] && !blocked[VirtualPadTokenStart + b.Code])
+            if (t >= 0 && held[t] && !blocked[t])
             {
                 return true;
             }
@@ -445,15 +604,18 @@ public sealed class InputRouter : IDisposable
         }
     }
 
-    internal bool Press(int player, GameAction action, bool allowRepeat = false) => Press(player, Profile.Players[player].Bindings[(int)action], allowRepeat);
+    internal bool Press(int player, GameAction action, bool allowRepeat = false)
+        => Press(player, Profile.Players[player].Bindings[(int)action], allowRepeat) ||
+           player == 0 && TakeMobileAction(action);
     internal bool PressQuick(int player, int slot, bool assigning = false)
     {
+        if (!assigning && TakeTouchQuick(player, slot)) return true;
         foreach (var b in Profile.Players[player].Bindings[(int)GameAction.Quick1 + slot])
         {
             int token = Token(player, b);
             if (b.Kind != InputKind.Pad || b.Code is < DpadUp or > DpadLeft)
             {
-                if (Take(token) || player == 0 && b.Kind == InputKind.Pad && Take(VirtualPadTokenStart + b.Code))
+                if (Take(token))
                 {
                     return true;
                 }
@@ -468,14 +630,10 @@ public sealed class InputRouter : IDisposable
 
             int chord = QuickChordTokenStart + Profile.Players[player].PadSlot * DpadDirectionCount + b.Code - DpadUp;
             int rt = PadTokenStart + Profile.Players[player].PadSlot * PadTokenStride + RightTrigger;
-            int virtualDirection = b.Code - DpadUp;
-            int virtualChord = VirtualQuickChordTokenStart + virtualDirection;
-            int virtualTrigger = VirtualPadTokenStart + RightTrigger;
             if (assigning)
             {
                 if (token >= 0) Take(chord);
-                if (player == 0) Take(virtualChord);
-                if (Take(token) || player == 0 && Take(VirtualPadTokenStart + b.Code))
+                if (Take(token))
                 {
                     return true;
                 }
@@ -493,13 +651,6 @@ public sealed class InputRouter : IDisposable
                 }
             }
 
-            if (player == 0)
-            {
-                Take(VirtualPadTokenStart + b.Code);
-                if (!Take(virtualChord)) continue;
-                Take(virtualTrigger);
-                return true;
-            }
         }
 
         return false;
@@ -511,8 +662,7 @@ public sealed class InputRouter : IDisposable
         foreach (var b in row)
         {
             int t = Token(player, b);
-            if (Take(t, allowRepeat)
-                || player == 0 && b.Kind == InputKind.Pad && Take(VirtualPadTokenStart + b.Code, allowRepeat))
+            if (Take(t, allowRepeat))
             {
                 return true;
             }
@@ -560,8 +710,7 @@ public sealed class InputRouter : IDisposable
             _ => -1
         };
         int slot = Profile.Players[player].PadSlot;
-        return stick >= 0 && (slot >= 0 && Take(PadTokenStart + slot * PadTokenStride + stick, repeat)
-            || player == 0 && Take(VirtualPadTokenStart + stick, repeat));
+        return stick >= 0 && slot >= 0 && Take(PadTokenStart + slot * PadTokenStride + stick, repeat);
     }
 
     internal bool Menu(GameAction action, bool repeat = false)
@@ -608,7 +757,6 @@ public sealed class InputRouter : IDisposable
                 }
             }
 
-            if (Take(VirtualPadTokenStart + stick, repeat)) return true;
         }
 
         return false;
@@ -641,6 +789,8 @@ public sealed class InputRouter : IDisposable
                         return ControlProfile.IsMenu(action) ? Menu(action, a < 4) : Press(p, action);
                     }
 
+                    if (p == 0 && mobileOverlay == MobileOverlayKind.Navigation && IsNavigationAction(action))
+                        return TakeMobileAction(action);
                     return Held(p, action);
                 }
             }
@@ -666,7 +816,9 @@ public sealed class InputRouter : IDisposable
                     2 => GameAction.Up,
                     _ => GameAction.Down
                 };
-                return query ? Press(player, movement, true) : Held(player, movement);
+                if (query) return Press(player, movement, true);
+                if (player == 0 && mobileOverlay == MobileOverlayKind.Navigation && TakeMobileAction(movement)) return true;
+                return Held(player, movement);
             }
         }
 
@@ -683,6 +835,7 @@ public sealed class InputRouter : IDisposable
         {
             blocked[i] = held[i];
         }
+        ResetMobileTouch(blockHeld: true);
     }
 
     public void ClearPlayer(int player)
@@ -724,11 +877,7 @@ public sealed class InputRouter : IDisposable
 
         if (player == 0)
         {
-            for (int i = VirtualPadTokenStart; i < InputTokenCapacity; i++)
-            {
-                pending[i] = false;
-                blocked[i] = held[i];
-            }
+            ResetMobileTouch(blockHeld: true);
         }
     }
 
@@ -753,27 +902,17 @@ public sealed class InputRouter : IDisposable
             }
         }
 
-        if (kind == InputKind.Pad && player == 0)
-        {
-            for (int i = VirtualPadTokenStart; i < VirtualPadTokenStart + PadControlCount; i++)
-            {
-                if (Take(i))
-                {
-                    return new(InputKind.Pad, i - VirtualPadTokenStart);
-                }
-            }
-        }
-
         return default;
     }
 
     internal string Hint(int player, GameAction a)
     {
+        if (CurrentInputSource.Kind == InputSourceKind.Touch) return TouchHint(a);
         var row = Profile.Players[player].Bindings[(int)a];
         InputKind preferred = CurrentInputSource.Kind switch
         {
             InputSourceKind.Mouse => InputKind.Mouse,
-            InputSourceKind.Gamepad or InputSourceKind.Touch => InputKind.Pad,
+            InputSourceKind.Gamepad => InputKind.Pad,
             _ => InputKind.Key
         };
         var binding = row.FirstOrDefault(b => b.Kind == preferred);
@@ -785,12 +924,31 @@ public sealed class InputRouter : IDisposable
     /// <summary>Gets the button used to assign a quick slot, without its execution chord.</summary>
     internal string QuickAssignHint(int player, int slot)
     {
+        if (CurrentInputSource.Kind == InputSourceKind.Touch) return TouchHint((GameAction)((int)GameAction.Quick1 + slot));
         var row = Profile.Players[player].Bindings[(int)GameAction.Quick1 + slot];
-        InputKind preferred = CurrentInputSource.Kind is InputSourceKind.Gamepad or InputSourceKind.Touch ? InputKind.Pad : InputKind.Key;
+        InputKind preferred = CurrentInputSource.Kind == InputSourceKind.Gamepad ? InputKind.Pad : InputKind.Key;
         var binding = row.FirstOrDefault(b => b.Kind == preferred);
         if (binding.Kind == InputKind.None) binding = row.FirstOrDefault(b => b.Kind is InputKind.Key or InputKind.Pad or InputKind.Mouse);
         return binding.ToString();
     }
+
+    private static string TouchHint(GameAction action) => action switch
+    {
+        GameAction.Left or GameAction.MenuLeft => "←",
+        GameAction.Right or GameAction.MenuRight => "→",
+        GameAction.Up or GameAction.MenuUp => "↑",
+        GameAction.Down or GameAction.MenuDown => "↓",
+        GameAction.Confirm or GameAction.Jump => "A",
+        GameAction.Back => "B",
+        GameAction.Attack => "X",
+        GameAction.Quick1 => "B+↑",
+        GameAction.Quick2 => "B+→",
+        GameAction.Quick3 => "B+↓",
+        GameAction.Quick4 => "B+←",
+        GameAction.Run => GameText.Get("ui.controls.movementStick"),
+        GameAction.Branch => "B",
+        _ => GameText.Get("ui.controls.touch")
+    };
 
     public void Rumble(int player)
     {

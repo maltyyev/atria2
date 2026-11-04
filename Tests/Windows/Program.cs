@@ -137,6 +137,18 @@ if (args.Length == 4 && args[3] == "--profile-session")
     return;
 }
 
+if (args.Length == 4 && args[3] == "--mobile-menu-session")
+{
+    Console.WriteLine(Atria.Core.Runtime.GameSession.VerifyMobileMenuIntegration(args[0], args[1], args[2], Tests.Windows.WindowsSessionProbeHost.CreateMobile));
+    return;
+}
+
+if (args.Length == 4 && args[3] == "--mobile-world-session")
+{
+    Console.WriteLine(Atria.Core.Runtime.GameSession.VerifyMobileWorldInputIntegration(args[0], args[1], Tests.Windows.WindowsSessionProbeHost.CreateMobile));
+    return;
+}
+
 if (args.Length == 2 && args[1] == "--profiles")
 {
     Console.WriteLine(Tests.Windows.Profiles.PlayerProfileTests.Run(args[0]));

@@ -38,6 +38,7 @@ public sealed class ActionMenuController
         get; private set;
     }
     public int Selection => stack.Count == 0 ? throw new InvalidOperationException("Action menu is closed.") : stack[^1].Selection;
+    public int ContextType => stack.Count == 0 ? -1 : stack[^1].Type;
 
     public void SetRenderEnabled(bool value) => RenderEnabled = value;
     public void PointerSelect(int x, int y)

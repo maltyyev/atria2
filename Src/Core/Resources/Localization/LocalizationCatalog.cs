@@ -11,9 +11,9 @@ public sealed class LocalizationCatalog
 {
     public const string BaseLanguage = "ru-RU";
     public const string BelarusianLanguage = "be-BY";
-    public static bool IsSupportedLanguage(string? language) => language is BaseLanguage or BelarusianLanguage;
     public string? Root { get; }
     public string Language { get; }
+    public IReadOnlyList<string> AvailableLanguages { get; }
     private const int MaximumInterfaceTextCharacters = 1024;
     private const int MaximumLegacyRowTextBytes = 79;
     private const int MaximumParagraphCharacters = 16_384;
@@ -27,6 +27,7 @@ public sealed class LocalizationCatalog
     {
         Root = root;
         Language = language;
+        AvailableLanguages = DiscoverLanguages(root);
         foreach (var file in defaults.Value.Values)
         {
             foreach (var entry in file)
@@ -40,7 +41,7 @@ public sealed class LocalizationCatalog
             ReadLanguage(root, BaseLanguage);
             if (language != BaseLanguage)
             {
-                if (language != Path.GetFileName(language) || language is "." or ".." || language.Contains('/') || language.Contains('\\'))
+                if (!IsSafeLanguageId(language))
                 {
                     throw new ArgumentException("Language must be a directory name.", nameof(language));
                 }
@@ -63,6 +64,92 @@ public sealed class LocalizationCatalog
 
     public string Get(string key) => texts.TryGetValue(key, out var value) ? value : throw new KeyNotFoundException($"Unknown localization key: {key}");
     public bool TryGet(string key, out string text) => texts.TryGetValue(key, out text!);
+    public bool SupportsLanguage(string? language) => language is not null && AvailableLanguages.Contains(language, StringComparer.Ordinal);
+
+    /// <summary>Returns the next installed locale in stable order, wrapping from the final locale.</summary>
+    public string NextLanguage()
+    {
+        for (int i = 0; i < AvailableLanguages.Count; i++)
+        {
+            if (AvailableLanguages[i] == Language)
+            {
+                return AvailableLanguages[(i + 1) % AvailableLanguages.Count];
+            }
+        }
+
+        return AvailableLanguages[0];
+    }
+
+    /// <summary>Checks that a locale identifier is a safe, single directory name.</summary>
+    public static bool IsSafeLanguageId(string? language)
+    {
+        if (string.IsNullOrEmpty(language) || language.Length > 63) return false;
+        foreach (char c in language)
+            if (!(c is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '-' or '_')) return false;
+        return IsAsciiLetterOrDigit(language[0]) && IsAsciiLetterOrDigit(language[^1]);
+    }
+
+    private static IReadOnlyList<string> DiscoverLanguages(string? root)
+    {
+        if (root is null)
+        {
+            return Array.AsReadOnly([BaseLanguage]);
+        }
+
+        try
+        {
+            return ScanLanguages(Path.GetFullPath(root));
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return Array.AsReadOnly([BaseLanguage]);
+        }
+    }
+
+    private static IReadOnlyList<string> ScanLanguages(string root)
+    {
+        var extras = new SortedSet<string>(StringComparer.Ordinal);
+        try
+        {
+            foreach (string path in Directory.EnumerateDirectories(root))
+            {
+                string? id = Path.GetFileName(path);
+                if (!IsSafeLanguageId(id) || id == BaseLanguage)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+                    {
+                        continue;
+                    }
+
+                    string uiFile = Path.Combine(path, "ui.json");
+                    if (File.Exists(uiFile) && (File.GetAttributes(uiFile) & FileAttributes.ReparsePoint) == 0)
+                    {
+                        extras.Add(id);
+                    }
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+        }
+
+        string[] languages = new string[extras.Count + 1];
+        languages[0] = BaseLanguage;
+        extras.CopyTo(languages, 1);
+        return Array.AsReadOnly(languages);
+    }
+
+    private static bool IsAsciiLetterOrDigit(char value) =>
+        value is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9';
+
     public ReadOnlyMemory<byte> Legacy(string key, ReadOnlyMemory<byte> original)
     {
         if (!legacyOverrides.TryGetValue(key, out var bytes)
@@ -87,9 +174,7 @@ public sealed class LocalizationCatalog
     public static IReadOnlyList<LocalizationIssue> Validate(string root)
     {
         var issues = new List<LocalizationIssue>();
-        var languages = Directory.Exists(root) ? Directory.GetDirectories(root).Select(Path.GetFileName).OfType<string>().ToHashSet(StringComparer.Ordinal) : [];
-        languages.Add(BaseLanguage);
-        foreach (string language in languages.Order(StringComparer.Ordinal))
+        foreach (string language in DiscoverLanguages(root))
         {
             issues.AddRange(new LocalizationCatalog(root, language).Issues.Where(i => language == BaseLanguage || !i.File.StartsWith(BaseLanguage + "/", StringComparison.Ordinal)));
         }

@@ -197,7 +197,6 @@ public sealed partial class GameSession
             throw new InvalidOperationException("Profile session: keyboard and mouse should share the configured fallback hint.");
 
         window.LastInputActivity = new(1, InputSourceKind.Touch, 7);
-        window.VirtualPad = new(true, 0, 0, 0, 0, 0, 0, 0);
         router.Poll(window);
         if (router.CurrentInputSource is not { Kind: InputSourceKind.Touch, Identity: 7 })
             throw new InvalidOperationException("Profile session: touch metadata did not select its source once.");
@@ -206,8 +205,8 @@ public sealed partial class GameSession
         PresentAndVerify("touch hint");
         var touchPixels = view.Render(session.menu.Selection, session.saveDisabled, session.menu.Confirmation,
             session.menu.YesSelected, false, CurrentProfileHint(session)).ToArray();
-        if (!touchPixels.AsSpan().SequenceEqual(padPixels))
-            throw new InvalidOperationException("Profile session: touch and gamepad should share the configured pad hint.");
+        if (touchPixels.AsSpan().SequenceEqual(padPixels))
+            throw new InvalidOperationException("Profile session: touch and gamepad hints should identify their own controls.");
 
         router.Poll(window);
         if (session.inputHintsDirty)
@@ -231,7 +230,6 @@ public sealed partial class GameSession
         replacementWindow.ScanKeys[session.bindings.Down] = false;
         router.Poll(replacementWindow);
         replacementWindow.LastInputActivity = new(1, InputSourceKind.Touch, 7);
-        replacementWindow.VirtualPad = new(true, 0, 0, 0, 0, 0, 0, 0);
         router.Poll(replacementWindow);
         if (!session.inputHintsDirty)
             throw new InvalidOperationException("Profile session: replacement router did not subscribe to source changes.");
@@ -258,8 +256,8 @@ public sealed partial class GameSession
         public void Vibrate(int slot, ushort left, ushort right) { }
     }
 
-    /// <summary>Provides controllable keyboard, pointer, touch, and virtual-pad state for the profile probe.</summary>
-    private sealed class HintProbeWindow : IGameWindow, IInputActivitySource, IVirtualGamepadSource
+    /// <summary>Provides controllable keyboard, pointer, and touch-source metadata for the profile probe.</summary>
+    private sealed class HintProbeWindow : IGameWindow, IInputActivitySource
     {
         public bool Closed { get; set; }
         public bool Focused { get; set; } = true;
@@ -275,8 +273,6 @@ public sealed partial class GameSession
         public int MouseWheelDelta { get; set; }
         public uint InputClockMilliseconds => 0;
         public InputActivity LastInputActivity { get; set; }
-        public PadSample VirtualPad { get; set; }
-        public PadSample ReadVirtualGamepad() => VirtualPad;
         public void Pump() { }
         public bool TryDequeueScanInput(out TimestampedScanInput input) { input = default; return false; }
         public string TakeTextInput() => "";

@@ -11,6 +11,8 @@ namespace Atria.Hosts.Ios;
 
 public static unsafe class GameExports
 {
+    private const int MobileTargetIdMaximumUtf8Bytes = 512;
+    private const int MobileTextMaximumUtf8Bytes = 4096;
     private static readonly MobileSession session = new();
     private static string apiError = "";
 
@@ -105,19 +107,62 @@ public static unsafe class GameExports
         catch (Exception ex) { Fail(ex); }
     }
 
-    /// <summary>Publishes touch controls independently of physical gamepad slots.</summary>
-    [UnmanagedCallersOnly(EntryPoint = "atria_touch_pad")]
-    public static void TouchPad(ushort buttons, byte leftTrigger, byte rightTrigger, short x, short y)
-    {
-        try { session.SubmitVirtualPad(new PadSample(false, buttons, leftTrigger, rightTrigger, x, y, 0, 0)); }
-        catch (Exception ex) { Fail(ex); }
-    }
-
-    /// <summary>Reports a direct touch action even when no virtual control changed.</summary>
+    /// <summary>Reports a direct touch action even when no touch-control state changed.</summary>
     [UnmanagedCallersOnly(EntryPoint = "atria_touch_activity")]
     public static void TouchActivity(int identity)
     {
         try { session.SubmitTouchActivity(identity); }
+        catch (Exception ex) { Fail(ex); }
+    }
+
+    /// <summary>Gets the revision of the cached Core-owned mobile UI snapshot.</summary>
+    [UnmanagedCallersOnly(EntryPoint = "atria_mobile_ui_revision")]
+    public static ulong MobileUiRevision()
+    {
+        try { return session.UiRevision; }
+        catch (Exception ex) { Fail(ex); return 0; }
+    }
+
+    /// <summary>Copies cached UTF-8 UI JSON into caller-owned memory; returns required length.</summary>
+    [UnmanagedCallersOnly(EntryPoint = "atria_mobile_ui_copy")]
+    public static int MobileUiCopy(byte* output, int capacity)
+    {
+        try
+        {
+            if (capacity < 0 || output == null && capacity != 0) return -1;
+            return output == null ? session.CopyUiSnapshot(Span<byte>.Empty)
+                : session.CopyUiSnapshot(new Span<byte>(output, capacity));
+        }
+        catch (Exception ex) { Fail(ex); return -1; }
+    }
+
+    /// <summary>Queues one context-guarded semantic action from the native mobile menu.</summary>
+    [UnmanagedCallersOnly(EntryPoint = "atria_mobile_ui_command")]
+    public static void MobileUiCommand(ulong contextId, int action, byte* targetId, int value, byte* text)
+    {
+        try
+        {
+            var kind = (MobileUiAction)action;
+            if (!Enum.IsDefined(kind)) return;
+            if (!TryReadUtf8(targetId, MobileTargetIdMaximumUtf8Bytes, out string? target)) return;
+            bool validText = TryReadUtf8(text, MobileTextMaximumUtf8Bytes, out string? submittedText);
+            bool invalidText = !validText;
+            session.SubmitUiCommand(new(contextId, kind, target, value, submittedText, invalidText));
+        }
+        catch (Exception ex) { Fail(ex); }
+    }
+
+    /// <summary>Queues raw scene-aware touch controls without translating them to Xbox buttons.</summary>
+    [UnmanagedCallersOnly(EntryPoint = "atria_mobile_touch_sample")]
+    public static void MobileTouchSample(ulong contextId, short leftX, short leftY, ushort buttons)
+    {
+        try
+        {
+            const ushort knownButtons = (ushort)(MobileTouchButtons.Up | MobileTouchButtons.Down | MobileTouchButtons.Left |
+                MobileTouchButtons.Right | MobileTouchButtons.A | MobileTouchButtons.B | MobileTouchButtons.X);
+            if ((buttons & ~knownButtons) != 0) return;
+            session.SubmitTouchState(new(contextId, leftX, leftY, (MobileTouchButtons)buttons));
+        }
         catch (Exception ex) { Fail(ex); }
     }
 
@@ -194,4 +239,20 @@ public static unsafe class GameExports
     }
 
     private static void Fail(Exception exception) => Volatile.Write(ref apiError, exception.ToString());
+
+    private static bool TryReadUtf8(byte* value, int maximumBytes, out string? decoded)
+    {
+        decoded = null;
+        if (value == null) return true;
+        int length = 0;
+        while (length < maximumBytes && value[length] != 0) length++;
+        if (length == maximumBytes) return false;
+        try
+        {
+            decoded = new UTF8Encoding(false, true).GetString(new ReadOnlySpan<byte>(value, length));
+            return true;
+        }
+        catch (DecoderFallbackException) { return false; }
+    }
+
 }

@@ -40,6 +40,10 @@ public sealed partial class GameSession
         controls.Profile = saved.Controls;
         controls.Clear();
         GameText.Use(catalog);
+        if (mobileCreatedProfileAwaitingSwitch?.Id == profile.Id)
+        {
+            mobileCreatedProfileAwaitingSwitch = null;
+        }
         settings.Set(saved.Audio.Music, saved.Audio.Effects, saved.Audio.ThirdOption);
         ApplySettingsAudio();
         modernSettings = null;
@@ -55,6 +59,12 @@ public sealed partial class GameSession
     private void ShowPlayerProfiles()
     {
         if (!CanChangeProfile) return;
+        if (window is Atria.Core.Contracts.Host.IMobileUiChannel)
+        {
+            OpenMobileProfiles();
+            return;
+        }
+
         blockingControls = true;
         controls.Clear();
         var panel = new ControlPanel(etc, smallFont);

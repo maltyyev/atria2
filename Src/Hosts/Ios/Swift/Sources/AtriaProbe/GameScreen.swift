@@ -24,17 +24,37 @@ struct GameScreen: UIViewControllerRepresentable {
 }
 
 /// Coordinates UIKit lifecycle, touch controls and the shared game session.
-@MainActor final class GameController: UIViewController {
+@MainActor final class GameController: UIViewController, UIGestureRecognizerDelegate {
     private var renderer: MetalFrameRenderer!
     private let controllerInput = ControllerInput()
     private let session = GameHostSession.shared
     private let sessionOwner = UUID()
     private var startTask: Task<Void, Never>?
-    private var virtualButtons: UInt16 = 0
-    private var leftTrigger: UInt8 = 0
-    private var rightTrigger: UInt8 = 0
-    private var buttons: [String: HoldButton] = [:]
-    private let dpad = DirectionPad()
+    private var touchButtons: MobileTouchButtons = []
+    private var touchLeftX: Int16 = 0
+    private var touchLeftY: Int16 = 0
+    private var touchContextId: UInt64 = 0
+    private var snapshotRevision: UInt64 = 0
+    private var snapshotReadErrorShown = false
+    private var mobileSnapshot: MobileUiSnapshot?
+    private var resettingTouchControls = false
+    private var touchOverlayLayout: TouchOverlayLayout?
+    private let dpad = NativeTouchDirectionPad(labels: .init(up: "", left: "", down: "", right: ""))
+    private let stick = NativeTouchStick(accessibilityLabel: "")
+    private let confirmButton = NativeTouchButton(title: "A", accessibilityLabel: "", holds: true, compact: true)
+    private let backButton = NativeTouchButton(title: "B", accessibilityLabel: "", holds: true, compact: true)
+    private let attackButton = NativeTouchButton(title: "X", accessibilityLabel: "", holds: true, compact: true)
+    private let jumpButton = NativeTouchButton(title: "A", accessibilityLabel: "", holds: true, compact: true)
+    private let modifierButton = NativeTouchButton(title: "B", accessibilityLabel: "", holds: true, compact: true)
+    private let languageButton = NativeTouchButton(title: "", accessibilityLabel: "", compact: true)
+    private let profilesButton = NativeTouchButton(title: "", accessibilityLabel: "")
+    private let navigationButtons = UIView()
+    private let combatButtons = UIView()
+    private let noticeView = UIView()
+    private let noticeLabel = UILabel()
+    private var noticeTopConstraint: NSLayoutConstraint?
+    private var nativeMenuHost: UIHostingController<NativeMenuPanel>?
+    private var nativeMenuVisible = false
     private let movieView = UIView()
     private let errorLabel = UILabel()
     private var observers: [NSObjectProtocol] = []
@@ -76,7 +96,14 @@ struct GameScreen: UIViewControllerRepresentable {
         renderer = try MetalFrameRenderer(frame: view.bounds)
         renderer.onFirstFrame = { AppLog.write("First C# frame: \($0)x\($1).") }
         renderer.onError = { [weak self] in self?.showError($0) }
-        renderer.onFrame = { [weak self] in self?.sendInput() }
+        renderer.onContentViewportChanged = { [weak self] _ in
+            self?.layoutTouchControls()
+            self?.layoutProfilesButton()
+        }
+        renderer.onFrame = { [weak self] in
+            self?.refreshMobileUI()
+            self?.sendInput()
+        }
         view.addSubview(renderer.view)
         renderer.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapGame(_:))))
         movieView.backgroundColor = .clear
@@ -86,38 +113,82 @@ struct GameScreen: UIViewControllerRepresentable {
     }
 
     private func setupControls() {
-        dpad.changed = { [weak self] bits in
+        navigationButtons.addSubview(confirmButton)
+        navigationButtons.addSubview(backButton)
+        combatButtons.addSubview(attackButton)
+        combatButtons.addSubview(jumpButton)
+        combatButtons.addSubview(modifierButton)
+
+        dpad.onDirectionChanged = { [weak self] direction, down in
             guard let self else { return }
-            self.virtualButtons = (self.virtualButtons & ~UInt16(15)) | bits
-            self.sendInput()
-        }
-        dpad.touched = { atria_touch_activity(0) }
-        view.addSubview(dpad)
-        let definitions: [(String, UInt16)] = [("A", PadButton.a), ("B", PadButton.b), ("X", PadButton.x), ("Y", PadButton.y),
-            ("LB", PadButton.leftShoulder), ("RB", PadButton.rightShoulder),
-            ("☰", PadButton.menu), ("▣", PadButton.options), ("LT", 0), ("RT", 0)]
-        for (title, bit) in definitions {
-            let button = HoldButton(title: title)
-            button.changed = { [weak self] down in
-                guard let self else { return }
-                if down { atria_touch_activity(0) }
-                if title == "LT" { self.leftTrigger = down ? 255 : 0 }
-                else if title == "RT" { self.rightTrigger = down ? 255 : 0 }
-                else if down { self.virtualButtons |= bit }
-                else { self.virtualButtons &= ~bit }
-                self.sendInput()
+            let bit: MobileTouchButtons = switch direction {
+            case .up: .up
+            case .left: .left
+            case .down: .down
+            case .right: .right
             }
-            buttons[title] = button
-            view.addSubview(button)
+            self.setTouchButton(bit, down: down)
         }
-        let keyboard = HoldButton(title: "⌨")
-        keyboard.changed = { [weak self] down in
-            guard down, let self else { return }
-            atria_touch_activity(0)
-            self.showKeyboard()
+        confirmButton.onHoldChanged = { [weak self] in self?.setTouchButton(.a, down: $0) }
+        backButton.onHoldChanged = { [weak self] in self?.setTouchButton(.b, down: $0) }
+        attackButton.onHoldChanged = { [weak self] in self?.setTouchButton(.x, down: $0) }
+        jumpButton.onHoldChanged = { [weak self] in self?.setTouchButton(.a, down: $0) }
+        modifierButton.onHoldChanged = { [weak self] in self?.setTouchButton(.b, down: $0) }
+        stick.onChange = { [weak self] x, y in self?.setTouchAxes(x, y) }
+        let touchActivity = { atria_touch_activity(0) }
+        dpad.onTouchBegan = touchActivity
+        stick.onTouchBegan = touchActivity
+        for button in [confirmButton, backButton, attackButton, jumpButton, modifierButton, languageButton, profilesButton] {
+            button.onTouchBegan = touchActivity
         }
-        buttons["⌨"] = keyboard
-        view.addSubview(keyboard)
+        languageButton.onTap = { [weak self] in
+            guard let snapshot = self?.mobileSnapshot else { return }
+            self?.sendMobileCommand(contextId: snapshot.contextId, action: .cycleLanguage)
+        }
+        profilesButton.onTap = { [weak self] in
+            guard let snapshot = self?.mobileSnapshot else { return }
+            self?.sendMobileCommand(contextId: snapshot.contextId, action: .openProfiles)
+        }
+
+        view.addSubview(dpad)
+        view.addSubview(stick)
+        view.addSubview(navigationButtons)
+        view.addSubview(combatButtons)
+        view.addSubview(languageButton)
+        view.addSubview(profilesButton)
+
+        for control in [dpad, stick, navigationButtons, combatButtons, languageButton] {
+            control.isHidden = true
+        }
+        profilesButton.isHidden = true
+        noticeView.backgroundColor = UIColor(red: 0.10, green: 0.09, blue: 0.08, alpha: 1)
+        noticeView.layer.borderColor = UIColor(red: 0.59, green: 0.42, blue: 0.25, alpha: 1).cgColor
+        noticeView.layer.borderWidth = 2
+        noticeView.layer.cornerRadius = 12
+        noticeView.layer.masksToBounds = true
+        noticeView.isHidden = true
+        noticeView.translatesAutoresizingMaskIntoConstraints = false
+        noticeLabel.font = .preferredFont(forTextStyle: .body)
+        noticeLabel.adjustsFontForContentSizeCategory = true
+        noticeLabel.textColor = UIColor(red: 1, green: 0.95, blue: 0.86, alpha: 1)
+        noticeLabel.numberOfLines = 0
+        noticeLabel.textAlignment = .center
+        noticeLabel.isAccessibilityElement = true
+        noticeLabel.accessibilityTraits = .staticText
+        noticeLabel.translatesAutoresizingMaskIntoConstraints = false
+        noticeView.addSubview(noticeLabel)
+        view.addSubview(noticeView)
+        let noticeTop = noticeView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12)
+        noticeTopConstraint = noticeTop
+        NSLayoutConstraint.activate([
+            noticeTop,
+            noticeView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            noticeView.widthAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.widthAnchor, constant: -32),
+            noticeLabel.leadingAnchor.constraint(equalTo: noticeView.leadingAnchor, constant: 14),
+            noticeLabel.trailingAnchor.constraint(equalTo: noticeView.trailingAnchor, constant: -14),
+            noticeLabel.topAnchor.constraint(equalTo: noticeView.topAnchor, constant: 10),
+            noticeLabel.bottomAnchor.constraint(equalTo: noticeView.bottomAnchor, constant: -10)
+        ])
         errorLabel.isHidden = true
         view.addSubview(errorLabel)
     }
@@ -125,45 +196,262 @@ struct GameScreen: UIViewControllerRepresentable {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         renderer?.view.frame = view.bounds
+        renderer?.updateContentViewport()
         movieView.frame = view.bounds
         AppleMovies.layer?.frame = movieView.bounds
         let area = view.safeAreaLayoutGuide.layoutFrame
-        let diameter: CGFloat = min(44, area.height / 7)
-        let gap: CGFloat = 5
-        let left = area.minX + 8
-        let right = area.maxX - 8
-        let centerY = area.maxY - diameter * 1.8
-        dpad.frame = CGRect(x: left, y: centerY - diameter * 1.5, width: diameter * 3, height: diameter * 3)
-        let centers: [String: CGPoint] = [
-            "A": CGPoint(x:right-diameter*1.5,y:centerY+diameter), "Y": CGPoint(x:right-diameter*1.5,y:centerY-diameter),
-            "X": CGPoint(x:right-diameter*2.5,y:centerY), "B": CGPoint(x:right-diameter*0.5,y:centerY),
-            "LT": CGPoint(x:left+diameter*0.5,y:area.minY+diameter*0.6),
-            "LB": CGPoint(x:left+diameter*1.6+gap,y:area.minY+diameter*0.6),
-            "RT": CGPoint(x:right-diameter*0.5,y:area.minY+diameter*0.6),
-            "RB": CGPoint(x:right-diameter*1.6-gap,y:area.minY+diameter*0.6),
-            "☰": CGPoint(x:area.midX+diameter*0.7,y:area.minY+diameter*0.6),
-            "▣": CGPoint(x:area.midX-diameter*0.7,y:area.minY+diameter*0.6),
-            "⌨": CGPoint(x:area.midX,y:area.maxY-diameter*0.5)
-        ]
-        for (name, point) in centers {
-            buttons[name]?.frame = CGRect(x:point.x-diameter/2,y:point.y-diameter/2,width:diameter,height:diameter)
-        }
         errorLabel.frame = area.insetBy(dx: 20, dy: 30)
+        layoutTouchControls()
+        layoutProfilesButton()
         updateFocus()
     }
 
     private func sendInput() {
         guard active && !interrupted else { return }
-        // Touch controls travel separately; they never occupy or mask a physical controller slot.
-        let x: Int16 = rightTrigger == 0 ? (virtualButtons & PadButton.left != 0 ? -32767 : virtualButtons & PadButton.right != 0 ? 32767 : 0) : 0
-        let y: Int16 = rightTrigger == 0 ? (virtualButtons & PadButton.up != 0 ? 32767 : virtualButtons & PadButton.down != 0 ? -32767 : 0) : 0
-        atria_touch_pad(virtualButtons, leftTrigger, rightTrigger, x, y)
         for slot in 0..<4 {
             let pad = controllerInput.sample(slot)
             atria_pad(pad.slot, pad.connected, pad.buttons, pad.leftTrigger, pad.rightTrigger,
                 pad.lx, pad.ly, pad.rx, pad.ry)
         }
         if errorLabel.isHidden { showCoreError() }
+    }
+
+    private func refreshMobileUI() {
+        let revision = atria_mobile_ui_revision()
+        guard revision != snapshotRevision, let next = readMobileSnapshot() else { return }
+        let contextChanged = mobileSnapshot?.contextId != next.contextId
+        let touchLayoutChanged = mobileSnapshot?.overlayKind != next.overlayKind
+        snapshotRevision = next.revision
+        touchContextId = next.contextId
+        mobileSnapshot = next
+        if contextChanged || touchLayoutChanged { resetTouchControls(publishNeutral: true) }
+        dpad.updateAccessibilityLabels(.init(up: next.labels.up, left: next.labels.left,
+            down: next.labels.down, right: next.labels.right))
+        stick.updateAccessibilityLabel(next.labels.movement)
+        confirmButton.updateAccessibilityLabel(next.labels.confirm)
+        backButton.updateAccessibilityLabel(next.labels.back)
+        attackButton.updateAccessibilityLabel(next.labels.attack)
+        jumpButton.updateAccessibilityLabel(next.labels.jump)
+        modifierButton.updateAccessibilityLabel(next.labels.modifier)
+        languageButton.updateTitle(next.labels.language, accessibilityLabel: next.labels.language)
+        profilesButton.updateTitle(next.labels.profiles, accessibilityLabel: next.labels.profiles)
+        profilesButton.isHidden = !next.showProfilesButton
+        noticeTopConstraint?.constant = next.showLanguageButton ? 72 : 12
+        if next.menu == nil, next.textRequest == nil, let notice = next.notice, !notice.isEmpty {
+            noticeLabel.text = notice
+            noticeLabel.accessibilityLabel = notice
+            noticeView.isHidden = false
+        } else {
+            noticeView.isHidden = true
+        }
+        layoutTouchControls()
+        layoutProfilesButton()
+        updateNativeMenu(next)
+    }
+
+    private func readMobileSnapshot() -> MobileUiSnapshot? {
+        var capacity = atria_mobile_ui_copy(nil, 0)
+        guard capacity > 0 else {
+            reportSnapshotReadError("Invalid snapshot size: \(capacity).")
+            return nil
+        }
+        for _ in 0..<3 {
+            var bytes = [UInt8](repeating: 0, count: Int(capacity))
+            let copied = bytes.withUnsafeMutableBufferPointer { buffer in
+                atria_mobile_ui_copy(buffer.baseAddress, Int32(buffer.count))
+            }
+            if copied > capacity {
+                capacity = copied
+                continue
+            }
+            guard copied >= 0, copied <= capacity else {
+                reportSnapshotReadError("Snapshot copy returned \(copied) bytes for capacity \(capacity).")
+                return nil
+            }
+            do {
+                let snapshot = try JSONDecoder().decode(MobileUiSnapshot.self, from: Data(bytes.prefix(Int(copied))))
+                snapshotReadErrorShown = false
+                return snapshot
+            }
+            catch {
+                reportSnapshotReadError("Mobile UI snapshot decode failed: \(error).")
+                return nil
+            }
+        }
+        reportSnapshotReadError("Mobile UI snapshot changed size repeatedly while copying.")
+        return nil
+    }
+
+    private func reportSnapshotReadError(_ detail: String) {
+        guard !snapshotReadErrorShown else { return }
+        snapshotReadErrorShown = true
+        AppLog.write(detail)
+        showError("The mobile interface could not be loaded. Close and reopen the game.")
+    }
+
+    private func updateNativeMenu(_ snapshot: MobileUiSnapshot) {
+        guard snapshot.menu != nil || snapshot.textRequest != nil else {
+            if nativeMenuVisible {
+                view.endEditing(true)
+                nativeMenuHost?.rootView = NativeMenuPanel(snapshot: snapshot) { [weak self] contextId, action, targetId, value, text in
+                    self?.sendMobileCommand(contextId: contextId, action: action, targetId: targetId, value: value, text: text)
+                }
+                nativeMenuHost?.view.isHidden = true
+                nativeMenuVisible = false
+            }
+            return
+        }
+        let panel = NativeMenuPanel(snapshot: snapshot) { [weak self] contextId, action, targetId, value, text in
+            self?.sendMobileCommand(contextId: contextId, action: action, targetId: targetId, value: value, text: text)
+        }
+        if let nativeMenuHost {
+            nativeMenuHost.rootView = panel
+            nativeMenuHost.view.isHidden = false
+        } else {
+            let host = UIHostingController(rootView: panel)
+            host.view.backgroundColor = .clear
+            host.view.isOpaque = true
+            addChild(host)
+            view.addSubview(host.view)
+            host.view.translatesAutoresizingMaskIntoConstraints = false
+            let touchRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(panelTouch(_:)))
+            touchRecognizer.minimumPressDuration = 0
+            touchRecognizer.cancelsTouchesInView = false
+            touchRecognizer.delaysTouchesBegan = false
+            touchRecognizer.delaysTouchesEnded = false
+            touchRecognizer.delegate = self
+            host.view.addGestureRecognizer(touchRecognizer)
+            NSLayoutConstraint.activate([
+                host.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                host.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                host.view.topAnchor.constraint(equalTo: view.topAnchor),
+                host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+            host.didMove(toParent: self)
+            nativeMenuHost = host
+        }
+        nativeMenuVisible = true
+        if !errorLabel.isHidden { view.bringSubviewToFront(errorLabel) }
+    }
+
+    private func layoutProfilesButton() {
+        guard let metal = renderer?.view, renderer.contentViewport.width > 0 else { return }
+        let content = view.convert(renderer.contentViewport, from: metal)
+        let center = CGPoint(x: content.midX, y: content.minY + content.height * (1320.0 / 1440.0))
+        let safe = view.safeAreaLayoutGuide.layoutFrame.insetBy(dx: 8, dy: 8)
+        let availableWidth = max(1, min(safe.width, content.width * 0.72))
+        let size = profilesButton.intrinsicContentSize
+        let width = min(availableWidth, max(min(180, availableWidth), size.width))
+        let height = min(max(1, safe.height), profilesButton.fittingHeight(forWidth: width))
+        let x = min(max(center.x - width / 2, safe.minX), safe.maxX - width)
+        let y = min(max(center.y - height / 2, safe.minY), safe.maxY - height)
+        profilesButton.frame = CGRect(x: x, y: y, width: width, height: height)
+    }
+
+    /// Places controls in black side gutters; lower groups retain the bottom safe-area inset.
+    private func layoutTouchControls() {
+        guard let renderer else { return }
+        let viewport = view.convert(renderer.contentViewport, from: renderer.view)
+        let safe = view.safeAreaLayoutGuide.layoutFrame
+        let rightGutter = TouchControlGeometry.rightGutter(viewport: viewport, safeArea: safe)
+        let languageMaxWidth = max(0, rightGutter.width - TouchControlMetrics.gutterMargin * 2)
+        let languageWidth = min(languageMaxWidth, max(TouchControlMetrics.buttonSide,
+            languageButton.intrinsicContentSize.width))
+        let languageHeight = languageButton.fittingHeight(forWidth: languageWidth)
+        let overlayMode: TouchOverlayMode = switch mobileSnapshot?.overlayKind ?? .none {
+        case .none: .none
+        case .navigation: .navigation
+        case .combat: .combat
+        }
+        let next = TouchControlGeometry.overlayLayout(viewport: viewport, screenBounds: view.bounds, safeArea: safe,
+            overlayKind: overlayMode,
+            showLanguageButton: mobileSnapshot?.showLanguageButton == true,
+            languageSize: CGSize(width: languageWidth, height: languageHeight))
+        if touchOverlayLayout != next {
+            resetTouchControls(publishNeutral: true)
+            touchOverlayLayout = next
+            AppLog.write("Touch layout viewport=\(viewport), safe=\(safe), dpad=\(String(describing: next.directionPad)), stick=\(String(describing: next.stick)), actions=\(String(describing: next.navigationButtons ?? next.combatButtons)).")
+        }
+        dpad.frame = next.directionPad ?? .zero
+        navigationButtons.frame = next.navigationButtons ?? .zero
+        stick.frame = next.stick ?? .zero
+        combatButtons.frame = next.combatButtons ?? .zero
+        languageButton.frame = next.languageButton ?? .zero
+        let faceFrames = TouchControlGeometry.faceButtonFrames(in: CGRect(origin: .zero,
+            size: TouchControlGeometry.directionPadSize))
+        confirmButton.frame = faceFrames.jump
+        backButton.frame = faceFrames.modifier
+        attackButton.frame = faceFrames.attack
+        jumpButton.frame = faceFrames.jump
+        modifierButton.frame = faceFrames.modifier
+        dpad.isHidden = next.directionPad == nil
+        navigationButtons.isHidden = next.navigationButtons == nil
+        stick.isHidden = next.stick == nil
+        combatButtons.isHidden = next.combatButtons == nil
+        languageButton.isHidden = next.languageButton == nil
+    }
+
+    private func sendMobileCommand(contextId: UInt64, action: MobileUiAction, targetId: String? = nil,
+                                   value: Int32 = 0, text: String? = nil) {
+        guard active && !interrupted else { return }
+        withUTF8CString(targetId) { target in
+            withUTF8CString(text) { message in
+                atria_mobile_ui_command(contextId, action.rawValue, target, value, message)
+            }
+        }
+    }
+
+    private func withUTF8CString<T>(_ value: String?, _ body: (UnsafePointer<UInt8>?) -> T) -> T {
+        guard let value else { return body(nil) }
+        var bytes = Array(value.utf8)
+        bytes.append(0)
+        return bytes.withUnsafeBufferPointer { body($0.baseAddress) }
+    }
+
+    private func setTouchButton(_ bit: MobileTouchButtons, down: Bool) {
+        guard !resettingTouchControls else { return }
+        if down { touchButtons.insert(bit) }
+        else { touchButtons.remove(bit) }
+        sendTouchSample()
+    }
+
+    private func setTouchAxes(_ x: Int16, _ y: Int16) {
+        guard !resettingTouchControls else { return }
+        touchLeftX = x
+        touchLeftY = y
+        sendTouchSample()
+    }
+
+    private func sendTouchSample(force: Bool = false) {
+        guard mobileSnapshot != nil, force || active && !interrupted else { return }
+        atria_mobile_touch_sample(touchContextId, touchLeftX, touchLeftY, touchButtons.rawValue)
+    }
+
+    private func resetTouchControls(publishNeutral: Bool) {
+        resettingTouchControls = true
+        touchButtons = []
+        touchLeftX = 0
+        touchLeftY = 0
+        dpad.reset()
+        stick.reset()
+        confirmButton.reset()
+        backButton.reset()
+        attackButton.reset()
+        jumpButton.reset()
+        modifierButton.reset()
+        languageButton.reset()
+        profilesButton.reset()
+        resettingTouchControls = false
+        if publishNeutral { sendTouchSample(force: true) }
+    }
+
+    @objc private func panelTouch(_ gesture: UILongPressGestureRecognizer) {
+        if gesture.state == .began, active && !interrupted { atria_touch_activity(0) }
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        true
     }
 
     private func showCoreError(fallback: String? = nil) {
@@ -203,31 +491,17 @@ struct GameScreen: UIViewControllerRepresentable {
 
     private func updateFocus() {
         let focused = active && !interrupted
-        if !focused {
-            virtualButtons = 0
-            leftTrigger = 0
-            rightTrigger = 0
-            dpad.reset()
-            for button in buttons.values { button.reset() }
-            atria_touch_pad(0, 0, 0, 0, 0)
-        }
+        if !focused { resetTouchControls(publishNeutral: true) }
         let size = renderer?.view.drawableSize ?? CGSize(width: 1280, height: 720)
         atria_surface(Int32(max(1, size.width)), Int32(max(1, size.height)), focused ? 1 : 0)
-        if focused { session.resume(owner: sessionOwner) }
+        if focused {
+            session.resume(owner: sessionOwner)
+            sendTouchSample()
+        }
         else { session.suspend(owner: sessionOwner) }
         renderer?.view.isPaused = !focused
         AppleAudio.setActive(focused)
         AppleMovies.focus(focused)
-    }
-
-    private func showKeyboard() {
-        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .alert)
-        alert.addTextField { $0.autocorrectionType = .no; $0.placeholder = "Имя / Імя" }
-        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-            (alert.textFields?.first?.text ?? "").withCString { atria_text($0) }
-        })
-        alert.addAction(UIAlertAction(title: "×", style: .cancel))
-        present(alert, animated: true)
     }
 
     @objc private func tapGame(_ gesture: UITapGestureRecognizer) {
@@ -244,7 +518,11 @@ struct GameScreen: UIViewControllerRepresentable {
     private func showError(_ text: String) {
         AppLog.write("ERROR: \(text)")
         errorLabel.textColor = .white
-        errorLabel.backgroundColor = UIColor.black.withAlphaComponent(0.9)
+        errorLabel.backgroundColor = UIColor(red: 0.10, green: 0.09, blue: 0.08, alpha: 1)
+        errorLabel.layer.cornerRadius = 12
+        errorLabel.layer.borderWidth = 2
+        errorLabel.layer.borderColor = UIColor(red: 0.59, green: 0.42, blue: 0.25, alpha: 1).cgColor
+        errorLabel.clipsToBounds = true
         errorLabel.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
         errorLabel.numberOfLines = 0
         errorLabel.text = text
@@ -254,6 +532,7 @@ struct GameScreen: UIViewControllerRepresentable {
 
     /// Releases this view's lease and asynchronously stops the final active host.
     func stopSession() {
+        resetTouchControls(publishNeutral: true)
         active = false
         startTask?.cancel()
         startTask = nil
@@ -266,67 +545,4 @@ struct GameScreen: UIViewControllerRepresentable {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
-}
-
-final class HoldButton: UIControl {
-    var changed: ((Bool)->Void)?
-    private let title = UILabel()
-    init(title text:String) {
-        super.init(frame:.zero)
-        backgroundColor = UIColor(white:0.12,alpha:0.65)
-        layer.borderWidth = 1
-        layer.borderColor = UIColor(white:0.8,alpha:0.7).cgColor
-        title.text = text
-        title.textColor = .white
-        title.textAlignment = .center
-        title.font = .systemFont(ofSize:16,weight:.semibold)
-        title.isUserInteractionEnabled = false
-        addSubview(title)
-        accessibilityLabel = text
-        accessibilityTraits = .button
-    }
-    required init?(coder:NSCoder) { fatalError("init(coder:) is not supported") }
-    override func layoutSubviews() { super.layoutSubviews(); title.frame = bounds; layer.cornerRadius = bounds.width/2 }
-    override func beginTracking(_ touch:UITouch,with event:UIEvent?) -> Bool { alpha = 0.5; changed?(true); return true }
-    override func endTracking(_ touch:UITouch?,with event:UIEvent?) { reset() }
-    override func cancelTracking(with event:UIEvent?) { reset() }
-    func reset() { alpha = 1; changed?(false) }
-}
-
-final class DirectionPad: UIView {
-    var changed: ((UInt16)->Void)?
-    var touched: (() -> Void)?
-    private let label = UILabel()
-    private var lastBits: UInt16 = 0
-    override init(frame:CGRect) {
-        super.init(frame:frame)
-        backgroundColor = UIColor(white:0.12,alpha:0.6)
-        label.text = "      ↑\n←      →\n      ↓"
-        label.numberOfLines = 3
-        label.textAlignment = .center
-        label.textColor = .white
-        label.font = .systemFont(ofSize:25,weight:.semibold)
-        addSubview(label)
-        accessibilityLabel = "D-pad"
-    }
-    required init?(coder:NSCoder) { fatalError("init(coder:) is not supported") }
-    override func layoutSubviews() { super.layoutSubviews(); layer.cornerRadius = bounds.width/2; label.frame = bounds }
-    private func update(_ touches:Set<UITouch>) {
-        guard let point = touches.first?.location(in:self) else { return }
-        let dx = point.x-bounds.midX, dy = point.y-bounds.midY
-        let deadZone = bounds.width*0.12
-        var bits: UInt16 = 0
-        if dx < -deadZone { bits |= PadButton.left }
-        if dx > deadZone { bits |= PadButton.right }
-        if dy < -deadZone { bits |= PadButton.up }
-        if dy > deadZone { bits |= PadButton.down }
-        if bits != lastBits && bits != 0 { touched?() }
-        lastBits = bits
-        changed?(bits)
-    }
-    override func touchesBegan(_ touches:Set<UITouch>,with event:UIEvent?) { touched?(); update(touches) }
-    override func touchesMoved(_ touches:Set<UITouch>,with event:UIEvent?) { update(touches) }
-    override func touchesEnded(_ touches:Set<UITouch>,with event:UIEvent?) { reset() }
-    override func touchesCancelled(_ touches:Set<UITouch>,with event:UIEvent?) { reset() }
-    func reset() { lastBits = 0; changed?(0) }
 }

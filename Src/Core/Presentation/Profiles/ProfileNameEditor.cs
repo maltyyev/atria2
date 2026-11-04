@@ -49,6 +49,15 @@ internal sealed class ProfileNameEditor
         }
     }
 
+    internal void ReplaceText(string value)
+    {
+        Text = value ?? throw new ArgumentNullException(nameof(value));
+        Closed = false;
+        Result = null;
+        replaceOnType = false;
+        Error = "";
+    }
+
     internal void Erase()
     {
         if (replaceOnType) Text = "";
@@ -60,6 +69,13 @@ internal sealed class ProfileNameEditor
     {
         try { Result = PlayerProfileStore.ValidateName(Text); Closed = true; }
         catch (ArgumentException) { Error = GameText.Get("ui.profiles.invalidName"); }
+    }
+
+    internal void Reject(string error)
+    {
+        Closed = false;
+        Result = null;
+        Error = error;
     }
 
     public void Update(InputRouter input, string typed)

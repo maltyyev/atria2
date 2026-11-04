@@ -1,4 +1,5 @@
 using Atria.Core.Game.Progression;
+using Atria.Core.Contracts.Input;
 using Atria.Core.Game.Settings;
 using Atria.Core.Persistence.Settings;
 using Atria.Core.Presentation.Settings;
@@ -10,6 +11,20 @@ using Atria.Core.Runtime.Input;
 
 namespace Atria.Core.Presentation.Controls;
 
+public sealed record ControlSettingsMenuRow(string Id, string Label, string Value, bool CanActivate, bool CanAdjust);
+
+public sealed record ControlSettingsMenuView(
+    string Scene,
+    string Title,
+    IReadOnlyList<ControlSettingsMenuRow> Rows,
+    int Selection,
+    int Scroll,
+    string Notice,
+    bool Capturing,
+    string? CaptureRowId,
+    bool Closed
+);
+
 public sealed class ControlSettingsMenu
 {
     private readonly InputRouter input;
@@ -19,6 +34,7 @@ public sealed class ControlSettingsMenu
     private readonly Action<ControlProfile, NativeSettingsState> apply;
     private readonly Action<string>? changeLanguage;
     private readonly List<ControlRow> rows = [];
+    private ControlSettingsMenuView? cachedView;
     private enum Page
     {
         Root, Player, Bindings, Moves
@@ -28,6 +44,8 @@ public sealed class ControlSettingsMenu
     private int player, column, party;
     private InputBinding[]? capture;
     private string? captureId;
+    private string? captureRowId;
+    private string? pendingAutoScrollRowId;
     public ControlProfile Draft
     {
         get; private set;
@@ -39,6 +57,26 @@ public sealed class ControlSettingsMenu
     public bool Closed
     {
         get; private set;
+    }
+
+    public string? AutoScrollRowId => pendingAutoScrollRowId;
+    public void ClearAutoScrollRowId() => pendingAutoScrollRowId = null;
+
+    public bool Back()
+    {
+        if (capture is not null) return CancelCapture();
+        if (Closed) return false;
+        if (page == Page.Root)
+        {
+            Closed = true;
+            input.Clear();
+        }
+        else
+        {
+            Go(page is Page.Bindings or Page.Moves ? Page.Player : Page.Root);
+        }
+
+        return true;
     }
 
     public ControlSettingsMenu(
@@ -70,7 +108,93 @@ public sealed class ControlSettingsMenu
         input.Clear();
     }
 
-    private void Add(string label, string value, Action? action = null, Action<int>? adjust = null) => rows.Add(new(label, value, action, adjust));
+    private void Add(string id, string label, string value, Action? action = null, Action<int>? adjust = null) => rows.Add(new(label, value, action, adjust, Id: id));
+
+    public ControlSettingsMenuView GetView()
+    {
+        BuildRows();
+        string scene = page switch
+        {
+            Page.Root => "settings.root",
+            Page.Player => $"settings.player.{player}",
+            Page.Bindings => $"settings.bindings.{player}.{column}",
+            Page.Moves => $"settings.moves.{player}.{party}.{column}",
+            _ => throw new InvalidOperationException("Unknown settings page.")
+        };
+        bool same = cachedView is { } previous
+            && previous.Scene == scene
+            && previous.Title == title
+            && previous.Selection == panel.Selection
+            && previous.Scroll == panel.Scroll
+            && previous.Notice == notice
+            && previous.Capturing == (capture is not null)
+            && previous.CaptureRowId == captureRowId
+            && previous.Closed == Closed
+            && previous.Rows.Count == rows.Count;
+        if (same)
+        {
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var old = cachedView!.Rows[i];
+                var current = rows[i];
+                if (old.Id != current.Id || old.Label != current.Label || old.Value != current.Value
+                    || old.CanActivate != (current.Activate is not null) || old.CanAdjust != (current.Adjust is not null))
+                {
+                    same = false;
+                    break;
+                }
+            }
+        }
+
+        if (same) return cachedView!;
+        var viewRows = rows.Select(row => new ControlSettingsMenuRow(
+            row.Id, row.Label, row.Value, row.Activate is not null, row.Adjust is not null)).ToArray();
+        return cachedView = new(scene, title, Array.AsReadOnly(viewRows), panel.Selection, panel.Scroll, notice,
+            capture is not null, captureRowId, Closed);
+    }
+
+    public bool ActivateRow(string id)
+    {
+        if (Closed || capture is not null) return false;
+        BuildRows();
+        return panel.ActivateRow(rows, id);
+    }
+
+    public bool SelectRow(string id)
+    {
+        if (Closed || capture is not null) return false;
+        BuildRows();
+        return panel.SelectRow(rows, id);
+    }
+
+    public bool AdjustRow(string id, int direction)
+    {
+        if (direction is not (-1 or 1)) throw new ArgumentOutOfRangeException(nameof(direction));
+        if (Closed || capture is not null) return false;
+        BuildRows();
+        return panel.AdjustRow(rows, id, direction);
+    }
+
+    public bool CancelCapture()
+    {
+        if (capture is null) return false;
+        capture = null;
+        captureId = captureRowId = null;
+        notice = GameText.Get("ui.settings.cancelled");
+        input.Clear();
+        return true;
+    }
+
+    public bool RemoveCapture()
+    {
+        if (capture is null) return false;
+        capture[column] = default;
+        capture = null;
+        captureId = captureRowId = null;
+        notice = GameText.Get("ui.settings.removed");
+        return true;
+    }
+
     public void Update()
     {
         if (capture is not null)
@@ -78,6 +202,7 @@ public sealed class ControlSettingsMenu
             if (input.Take(1))
             {
                 capture = null;
+                captureRowId = null;
                 notice = GameText.Get("ui.settings.cancelled");
                 input.Clear();
                 return;
@@ -87,6 +212,7 @@ public sealed class ControlSettingsMenu
             {
                 capture[column] = default;
                 capture = null;
+                captureRowId = null;
                 notice = GameText.Get("ui.settings.removed");
                 return;
             }
@@ -144,12 +270,15 @@ public sealed class ControlSettingsMenu
             capture[column] = b;
             p.Preset = "Custom";
             capture = null;
+            captureRowId = null;
             notice = swapped ? GameText.Get("ui.settings.swapped") : GameText.Format("ui.settings.assigned", ("binding", b));
             input.Clear();
             return;
         }
 
         BuildRows();
+        int previousSelection = panel.Selection;
+        Page previousPage = page;
         if (panel.Input(input, rows))
         {
             if (page == Page.Root)
@@ -161,6 +290,13 @@ public sealed class ControlSettingsMenu
             {
                 Go(page is Page.Bindings or Page.Moves ? Page.Player : Page.Root);
             }
+        }
+
+        if (page == previousPage && panel.Selection != previousSelection
+            && input.CurrentInputSource.Kind is InputSourceKind.Keyboard or InputSourceKind.Gamepad
+            && (uint)panel.Selection < (uint)rows.Count)
+        {
+            pendingAutoScrollRowId = rows[panel.Selection].Id;
         }
     }
 
@@ -201,18 +337,21 @@ public sealed class ControlSettingsMenu
     private void BuildRootRows()
     {
         title = GameText.Get("ui.settings.title");
-        if (changeLanguage is not null)
+        if (changeLanguage is not null && GameText.Current.AvailableLanguages.Count > 1)
         {
-            Add(GameText.Get("ui.settings.language"), GameText.Get("ui.languages." + GameText.Current.Language),
+            string languageLabel = GameText.Current.TryGet("ui.languages." + GameText.Current.Language, out var label) ? label : GameText.Current.Language;
+            Add("settings.root.language", GameText.Get("ui.settings.language"), languageLabel,
                 ToggleLanguage, _ => ToggleLanguage());
         }
-        Add(GameText.Get("ui.settings.music"), Audio.Music.ToString(), adjust: d => Audio.Set((byte)Math.Clamp(Audio.Music + d, 0, 4), Audio.Effects, Audio.ThirdOption));
+        Add("settings.root.music", GameText.Get("ui.settings.music"), Audio.Music.ToString(), adjust: d => Audio.Set((byte)Math.Clamp(Audio.Music + d, 0, 4), Audio.Effects, Audio.ThirdOption));
         Add(
+            "settings.root.effects",
             GameText.Get("ui.settings.effects"),
             Audio.Effects.ToString(),
             adjust: d => Audio.Set(Audio.Music, (byte)Math.Clamp(Audio.Effects + d, 0, 4), Audio.ThirdOption)
         );
         Add(
+            "settings.root.players",
             GameText.Get("ui.settings.players"),
             Audio.PlayerCount.ToString(),
             adjust: d => Audio.Set(Audio.Music, Audio.Effects, (byte)Math.Clamp(Audio.PlayerCount + d, 1, 2))
@@ -220,40 +359,39 @@ public sealed class ControlSettingsMenu
         for (int i = 0; i < 2; i++)
         {
             int j = i;
-            Add(GameText.Format("ui.settings.playerControls", ("player", j + 1)), GameText.Get("ui.common.open"), () =>
+            Add($"settings.root.playerControls.{j}", GameText.Format("ui.settings.playerControls", ("player", j + 1)), GameText.Get("ui.common.open"), () =>
             {
                 player = j;
                 Go(Page.Player);
             });
         }
 
-        Add(GameText.Get("ui.settings.hints"), Draft.Hints ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => Draft.Hints = !Draft.Hints);
-        Add(GameText.Get("ui.settings.deadZone"), Draft.DeadZone.ToString(), adjust: d => Draft.DeadZone = Math.Clamp(Draft.DeadZone + d * 1000, 2000, 20000));
+        Add("settings.root.hints", GameText.Get("ui.settings.hints"), Draft.Hints ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => Draft.Hints = !Draft.Hints);
+        Add("settings.root.deadZone", GameText.Get("ui.settings.deadZone"), Draft.DeadZone.ToString(), adjust: d => Draft.DeadZone = Math.Clamp(Draft.DeadZone + d * 1000, 2000, 20000));
         Add(
+            "settings.root.triggerThreshold",
             GameText.Get("ui.settings.triggerThreshold"),
             Draft.TriggerThreshold.ToString(),
             adjust: d => Draft.TriggerThreshold = Math.Clamp(Draft.TriggerThreshold + d * 10, 10, 240)
         );
-        Add(GameText.Get("ui.settings.vibration"), Draft.Vibration ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => Draft.Vibration = !Draft.Vibration);
-        Add(GameText.Get("ui.settings.autosaveCount"), Draft.AutosaveLimit.ToString(), adjust: d => Draft.AutosaveLimit = Math.Clamp(Draft.AutosaveLimit + d, 1, 5));
-        Add(GameText.Get("ui.settings.apply"), "", ApplyChanges);
-        Add(GameText.Get("ui.settings.reset"), GameText.Get("ui.profiles.Modern"), () =>
+        Add("settings.root.vibration", GameText.Get("ui.settings.vibration"), Draft.Vibration ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => Draft.Vibration = !Draft.Vibration);
+        Add("settings.root.autosaveCount", GameText.Get("ui.settings.autosaveCount"), Draft.AutosaveLimit.ToString(), adjust: d => Draft.AutosaveLimit = Math.Clamp(Draft.AutosaveLimit + d, 1, 5));
+        Add("settings.root.apply", GameText.Get("ui.settings.apply"), "", ApplyChanges);
+        Add("settings.root.reset", GameText.Get("ui.settings.reset"), GameText.Get("ui.profiles.Modern"), () =>
         {
             int limit = Draft.AutosaveLimit;
             Draft = ControlProfile.Defaults(legacy);
             Draft.AutosaveLimit = limit;
             notice = GameText.Get("ui.settings.resetNotice");
         });
-        Add(GameText.Get("ui.settings.cancel"), "", () => Closed = true);
+        Add("settings.root.cancel", GameText.Get("ui.settings.cancel"), "", () => Closed = true);
     }
 
     private void ToggleLanguage()
     {
         try
         {
-            string next = GameText.Current.Language == LocalizationCatalog.BaseLanguage
-                ? LocalizationCatalog.BelarusianLanguage : LocalizationCatalog.BaseLanguage;
-            changeLanguage!(next);
+            changeLanguage!(GameText.Current.NextLanguage());
             notice = GameText.Get("ui.settings.languageImmediate");
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
@@ -268,8 +406,8 @@ public sealed class ControlSettingsMenu
         var p = Draft.Players[player];
 
         title = GameText.Format("ui.settings.playerTitle", ("player", player + 1));
-        Add(GameText.Get("ui.settings.keyboardMouse"), p.Keyboard ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => p.Keyboard = !p.Keyboard);
-        Add(GameText.Get("ui.settings.controller"), p.PadSlot < 0 ? GameText.Get("ui.common.none") : GameText.Format(input.Connected(p.PadSlot) ? "ui.settings.controllerConnected" : "ui.settings.controllerDisconnected", ("slot", p.PadSlot + 1)), adjust: d =>
+        Add("settings.player.keyboardMouse", GameText.Get("ui.settings.keyboardMouse"), p.Keyboard ? GameText.Get("ui.common.on") : GameText.Get("ui.common.off"), () => p.Keyboard = !p.Keyboard);
+        Add("settings.player.controller", GameText.Get("ui.settings.controller"), p.PadSlot < 0 ? GameText.Get("ui.common.none") : GameText.Format(input.Connected(p.PadSlot) ? "ui.settings.controllerConnected" : "ui.settings.controllerDisconnected", ("slot", p.PadSlot + 1)), adjust: d =>
         {
             int next = Math.Clamp(p.PadSlot + d, -1, 3);
             if (next >= 0 && Draft.Players[1 - player].PadSlot == next)
@@ -279,7 +417,7 @@ public sealed class ControlSettingsMenu
 
             p.PadSlot = next;
         });
-        Add(GameText.Get("ui.settings.profile"), GameText.Get("ui.profiles." + (p.Preset is "Modern" or "Classic" ? p.Preset : "Custom")), () =>
+        Add("settings.player.profile", GameText.Get("ui.settings.profile"), GameText.Get("ui.profiles." + (p.Preset is "Modern" or "Classic" ? p.Preset : "Custom")), () =>
         {
             int slot = p.PadSlot;
             bool keyboard = p.Keyboard;
@@ -288,10 +426,10 @@ public sealed class ControlSettingsMenu
             Draft.Players[player].Keyboard = keyboard;
             notice = GameText.Get("ui.settings.profileReset");
         });
-        Add(GameText.Get("ui.settings.bindings"), GameText.Get("ui.common.open"), () => Go(Page.Bindings));
-        Add(GameText.Get("ui.settings.moveHero"), catalog.Heroes[party].Name, adjust: d => party = (party + d + catalog.Heroes.Count) % catalog.Heroes.Count);
-        Add(GameText.Get("ui.settings.moveBindings"), GameText.Get("ui.common.open"), () => Go(Page.Moves));
-        Add(GameText.Get("ui.controls.back"), "", () => Go(Page.Root));
+        Add("settings.player.bindings", GameText.Get("ui.settings.bindings"), GameText.Get("ui.common.open"), () => Go(Page.Bindings));
+        Add("settings.player.moveHero", GameText.Get("ui.settings.moveHero"), catalog.Heroes[party].Name, adjust: d => party = (party + d + catalog.Heroes.Count) % catalog.Heroes.Count);
+        Add("settings.player.moveBindings", GameText.Get("ui.settings.moveBindings"), GameText.Get("ui.common.open"), () => Go(Page.Moves));
+        Add("settings.player.back", GameText.Get("ui.controls.back"), "", () => Go(Page.Root));
     }
 
     private void BuildBindingsRows()
@@ -303,10 +441,11 @@ public sealed class ControlSettingsMenu
         {
             int a = i;
             var row = p.Bindings[i];
-            Add(ControlNames.Action((GameAction)i), (GameAction)i is >= GameAction.Quick1 and <= GameAction.Quick4 ? InputRouter.QuickBindingHint(row[column]) : row[column].ToString(), () =>
+            Add($"settings.binding.{(GameAction)i}", ControlNames.Action((GameAction)i), (GameAction)i is >= GameAction.Quick1 and <= GameAction.Quick4 ? InputRouter.QuickBindingHint(row[column]) : row[column].ToString(), () =>
             {
                 capture = row;
                 captureId = null;
+                captureRowId = $"settings.binding.{(GameAction)a}";
                 notice = CaptureHelp("ui.settings.captureHintDynamic");
                 input.Clear();
             }, d => column = (column + d + 3) % 3);
@@ -328,10 +467,11 @@ public sealed class ControlSettingsMenu
                 p.Direct.Add(key, row);
             }
 
-            Add(move.Name, row[column].ToString(), () =>
+            Add("settings.move." + key, move.Name, row[column].ToString(), () =>
             {
                 capture = row;
                 captureId = key;
+                captureRowId = "settings.move." + key;
                 notice = CaptureHelp("ui.settings.assignHintDynamic");
                 input.Clear();
             }, d => column = (column + d + 3) % 3);

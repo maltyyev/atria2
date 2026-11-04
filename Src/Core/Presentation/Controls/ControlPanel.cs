@@ -9,7 +9,7 @@ using Atria.Core.Runtime.Input;
 
 namespace Atria.Core.Presentation.Controls;
 
-public sealed record ControlRow(string Label, string Value, Action? Activate = null, Action<int>? Adjust = null, int Icon = -1);
+public sealed record ControlRow(string Label, string Value, Action? Activate = null, Action<int>? Adjust = null, int Icon = -1, string Id = "");
 /// <summary>Original panel tiles with measured, Unicode-capable text rows.</summary>
 public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
 {
@@ -86,29 +86,21 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
             Selection = Math.Clamp(Selection - input.TakeWheel() * 3, 0, rows.Count - 1);
         }
 
-        if (Selection < Scroll)
-        {
-            Scroll = Selection;
-        }
-
-        if (Selection >= Scroll + RowsPerPage)
-        {
-            Scroll = Selection - RowsPerPage + 1;
-        }
+        EnsureVisible(rows.Count);
 
         if (Menu(MenuAction.Left, true))
         {
-            rows[Selection].Adjust?.Invoke(-1);
+            Adjust(rows[Selection], -1);
         }
         else if (Menu(MenuAction.Right, true))
         {
-            rows[Selection].Adjust?.Invoke(1);
+            Adjust(rows[Selection], 1);
         }
 
         bool click = (player < 0 || input.Profile.Players[player].Keyboard) && input.Take(256);
         if (click && input.MouseY is >= 400 and < 424 && input.MouseX is >= 520 and < 600)
         {
-            rows[Selection].Adjust?.Invoke(input.MouseX < 560 ? -1 : 1);
+            Adjust(rows[Selection], input.MouseX < 560 ? -1 : 1);
             return false;
         }
 
@@ -120,32 +112,70 @@ public sealed class ControlPanel(SpriteFile tiles, BitmapFont font)
             }
 
             var row = rows[Selection];
-            if (row.Activate is not null)
-            {
-                row.Activate();
-            }
-            else
-            {
-                row.Adjust?.Invoke(input.MouseX < 490 ? -1 : 1);
-            }
+            if (!Activate(row)) Adjust(row, input.MouseX < 490 ? -1 : 1);
 
             Clear();
         }
         else if (Menu(MenuAction.Confirm))
         {
-            if (rows[Selection].Activate is { } activate)
-            {
-                activate();
-            }
-            else
-            {
-                rows[Selection].Adjust?.Invoke(1);
-            }
+            if (!Activate(rows[Selection])) Adjust(rows[Selection], 1);
 
             Clear();
         }
 
         return back && Menu(MenuAction.Back);
+    }
+
+    public bool ActivateRow(IReadOnlyList<ControlRow> rows, string id)
+    {
+        if (!SelectRow(rows, id)) return false;
+        return Activate(rows[Selection]) || Adjust(rows[Selection], 1);
+    }
+
+    public bool AdjustRow(IReadOnlyList<ControlRow> rows, string id, int direction)
+    {
+        if (direction is not (-1 or 1)) throw new ArgumentOutOfRangeException(nameof(direction));
+        if (!SelectRow(rows, id)) return false;
+        int index = Selection;
+        return Adjust(rows[index], direction);
+    }
+
+    public bool SelectRow(IReadOnlyList<ControlRow> rows, string id)
+    {
+        int index = FindRow(rows, id);
+        if (index < 0) return false;
+        Selection = index;
+        EnsureVisible(rows.Count);
+        return true;
+    }
+
+    private static bool Activate(ControlRow row)
+    {
+        if (row.Activate is not { } activate) return false;
+        activate();
+        return true;
+    }
+
+    private static bool Adjust(ControlRow row, int direction)
+    {
+        if (row.Adjust is not { } adjust) return false;
+        adjust(direction);
+        return true;
+    }
+
+    private static int FindRow(IReadOnlyList<ControlRow> rows, string id)
+    {
+        if (string.IsNullOrEmpty(id)) return -1;
+        for (int i = 0; i < rows.Count; i++)
+            if (rows[i].Id == id) return i;
+        return -1;
+    }
+
+    private void EnsureVisible(int count)
+    {
+        if (Selection < Scroll) Scroll = Selection;
+        if (Selection >= Scroll + RowsPerPage) Scroll = Selection - RowsPerPage + 1;
+        Scroll = Math.Clamp(Scroll, 0, Math.Max(0, count - RowsPerPage));
     }
 
     public void Draw(Span<ushort> pixels, string title, IReadOnlyList<ControlRow> rows, string footer, string notice = "", SpriteFile? icons = null)

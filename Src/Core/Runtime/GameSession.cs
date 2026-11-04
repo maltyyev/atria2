@@ -261,6 +261,7 @@ public sealed partial class GameSession : IScriptEffects
                 {
                     HandleModeInput();
                 }
+                if (window is IMobileUiChannel mobileChannel) PublishMobileUiSnapshot(mobileChannel);
 
                 if (navigation.ScreenDepth == 0 && resumeScript is not null)
                 {
@@ -329,6 +330,8 @@ public sealed partial class GameSession : IScriptEffects
             ShowPause(false);
             return false;
         }
+
+        if (HandleMobileProfilesInput()) return false;
 
         if (CanChangeProfile && controls.ProfileMenuPressed())
         {
@@ -452,16 +455,16 @@ public sealed partial class GameSession : IScriptEffects
             bool next = false, previous = false, yes = false, no = false, accept = false, cancel = false;
             if (town.LeaveConfirmation)
             {
-                yes = QueryLegacyTownScan(bindings.Previous);
+                yes = controls.TownInput.TakeMobilePrevious() || QueryLegacyTownScan(bindings.Previous);
                 if (!yes)
                 {
-                    no = QueryLegacyTownScan(bindings.Next);
+                    no = controls.TownInput.TakeMobileNext() || QueryLegacyTownScan(bindings.Next);
                 }
             }
             else if (town.Scene.Count > 0)
             {
-                next = QueryLegacyTownScan(bindings.Next);
-                previous = QueryLegacyTownScan(bindings.Previous);
+                next = controls.TownInput.TakeMobileNext() || QueryLegacyTownScan(bindings.Next);
+                previous = controls.TownInput.TakeMobilePrevious() || QueryLegacyTownScan(bindings.Previous);
             }
 
             if (!yes && !no)
@@ -676,12 +679,26 @@ public sealed partial class GameSession : IScriptEffects
 
     private void PlayMovie(string name)
     {
-        var result = hostServices.PlayMovie(Path.Combine(root, name), () =>
+        bool previousMobileMovie = mobileMoviePlaying;
+        mobileMoviePlaying = true;
+        if (window is IMobileUiChannel beforeMovie) PublishMobileUiSnapshot(beforeMovie);
+        try
         {
-            controls.Poll(window);
-            return controls.MenuInput.Menu(MenuAction.Confirm) || controls.MenuInput.Menu(MenuAction.Back);
-        }, muted ? 0 : 1, Math.Max(0, maximumSeconds - lifetime.Elapsed.TotalSeconds));
-        Console.WriteLine($"Session movie {name}: {result}.");
+            var result = hostServices.PlayMovie(Path.Combine(root, name), () =>
+            {
+                if (window is IMobileUiChannel mobileChannel) PublishMobileUiSnapshot(mobileChannel);
+                controls.Poll(window);
+                PollMobileUi();
+                return controls.MenuInput.Menu(MenuAction.Confirm) || controls.MenuInput.Menu(MenuAction.Back);
+            }, muted ? 0 : 1, Math.Max(0, maximumSeconds - lifetime.Elapsed.TotalSeconds));
+            Console.WriteLine($"Session movie {name}: {result}.");
+        }
+        finally
+        {
+            mobileMoviePlaying = previousMobileMovie;
+            if (window is IMobileUiChannel afterMovie) PublishMobileUiSnapshot(afterMovie);
+        }
+
         controls.Clear();
         gate.Resume();
         CheckLifetime();

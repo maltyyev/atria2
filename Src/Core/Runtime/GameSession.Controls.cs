@@ -1,4 +1,5 @@
 using Atria.Core.Contracts.Input;
+using Atria.Core.Contracts.Host;
 using Atria.Core.Contracts.Window;
 using Atria.Core.Game;
 using Atria.Core.Game.Combat;
@@ -86,7 +87,9 @@ public sealed partial class GameSession
     private void PollSessionInput()
     {
         CheckLifetime();
+        if (window is IMobileUiChannel mobileChannel) PublishMobileUiSnapshot(mobileChannel);
         controls?.Poll(window);
+        PollMobileUi();
 
         if (controls?.FocusPauseRequested == true)
         {
@@ -175,7 +178,7 @@ public sealed partial class GameSession
                     rows,
                     GameText.Get("ui.pause.timersStopped")
                 );
-            });
+            }, MobileOverlayKind.Navigation);
         }
         finally
         {
@@ -198,12 +201,20 @@ public sealed partial class GameSession
     {
         var screen = CreateModernSettings();
         controls.Clear();
-        RunControlModal(() => screen.Closed, () =>
+        ControlSettingsMenu? previousMobileSettings = SetMobileSettingsMenu(screen);
+        try
         {
-            screen.Update();
-            background.CopyTo(host.FrameBuffer);
-            screen.Draw(host.FrameBuffer);
-        });
+            RunControlModal(() => screen.Closed, () =>
+            {
+                screen.Update();
+                background.CopyTo(host.FrameBuffer);
+                screen.Draw(host.FrameBuffer);
+            }, MobileOverlayKind.None);
+        }
+        finally
+        {
+            SetMobileSettingsMenu(previousMobileSettings);
+        }
         controls.Clear();
     }
 
@@ -251,7 +262,7 @@ public sealed partial class GameSession
                         ("quick4", controls.Hint(0, GameAction.Quick4))),
                     GameText.Get("ui.controls.shortcutsExplanation")
                 );
-            });
+            }, MobileOverlayKind.Navigation);
         }
         finally
         {
@@ -267,17 +278,24 @@ public sealed partial class GameSession
         }
     }
 
-    private void RunControlModal(Func<bool> closed, Action updateAndDraw)
+    private void RunControlModal(Func<bool> closed, Action updateAndDraw, MobileOverlayKind? overlayOverride = null)
     {
         var customPresentation = host.PresentCustomFrame;
+        var previousOverlay = mobileOverlayOverride;
+        ulong previousModalIdentity = mobileModalIdentity;
+        mobileOverlayOverride = overlayOverride;
+        mobileModalIdentity = checked(++mobileModalSequence);
         host.PresentCustomFrame = null;
         try
         {
+            if (window is IMobileUiChannel initialMobileChannel) PublishMobileUiSnapshot(initialMobileChannel);
             while (!closed())
             {
                 window.Pump();
                 CheckLifetime();
+                if (window is IMobileUiChannel mobileChannel) PublishMobileUiSnapshot(mobileChannel);
                 controls.Poll(window);
+                PollMobileUi();
                 if (!host.Focused)
                 {
                     Thread.Sleep(15);
@@ -285,6 +303,7 @@ public sealed partial class GameSession
                 }
 
                 updateAndDraw();
+                if (window is IMobileUiChannel updatedMobileChannel) PublishMobileUiSnapshot(updatedMobileChannel);
                 host.Present();
                 Thread.Sleep(8);
             }
@@ -292,6 +311,9 @@ public sealed partial class GameSession
         finally
         {
             host.PresentCustomFrame = customPresentation;
+            mobileOverlayOverride = previousOverlay;
+            mobileModalIdentity = previousModalIdentity;
+            if (window is IMobileUiChannel finalMobileChannel) PublishMobileUiSnapshot(finalMobileChannel);
         }
     }
 }

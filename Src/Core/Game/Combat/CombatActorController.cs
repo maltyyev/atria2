@@ -283,12 +283,12 @@ public sealed class CombatActorController : ICombatActorActions
             {
                 if (!CombatJumpRuntime.Begin(a, info, image.Animation!, milliseconds))
                 {
-                    CombatManualControl.Walk(a, info, image.Animation!, semanticDirections, semanticWalk[player], milliseconds, p.Classic ? null : modern.Held(player, CombatAction.Run));
+                    CombatManualControl.Walk(a, info, image.Animation!, semanticDirections, semanticWalk[player], milliseconds, modern.Run(player));
                 }
             }
             else
             {
-                CombatManualControl.Walk(a, info, image.Animation!, semanticDirections, semanticWalk[player], milliseconds, p.Classic ? null : modern.Held(player, CombatAction.Run));
+                CombatManualControl.Walk(a, info, image.Animation!, semanticDirections, semanticWalk[player], milliseconds, modern.Run(player));
             }
         }
         else

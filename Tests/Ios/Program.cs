@@ -38,21 +38,13 @@ window.SubmitPad(0, disconnected);
 Check(window.Read(0) == secondButton && window.Read(1) == down && window.Read(0) == disconnected,
     "Interleaved controller events were consumed by another slot.");
 long activitySequence = window.LastInputActivity.Sequence;
-var touchUp = new PadSample(false, 0, 0, 0, 0, 0, 0, 0);
-window.SubmitVirtualPad(down);
-window.SubmitVirtualPad(touchUp);
-Check(window.ReadVirtualGamepad() == (down with { Connected = true }) &&
-      window.ReadVirtualGamepad() == touchUp, "Virtual controls occupied a physical slot or lost a short edge.");
-Check(window.LastInputActivity.Sequence == activitySequence, "Virtual state resubmission invented a touch contact.");
-window.SubmitVirtualPad(touchUp);
-Check(window.LastInputActivity.Sequence == activitySequence, "A virtual-pad release changed the active source.");
 window.SubmitTouchActivity(0);
 Check(window.LastInputActivity.Sequence > activitySequence && window.LastInputActivity.Kind == InputSourceKind.Touch,
     "A direct touch without a pad-state change was ignored.");
 window.SubmitPad(0, down);
 window.SetSurface(1280, 720, false);
 window.Pump();
-Check(!window.Read(0).Connected && !window.Read(1).Connected && !window.ReadVirtualGamepad().Connected &&
+Check(!window.Read(0).Connected && !window.Read(1).Connected &&
       window.TryDequeueScanInput(out var reset) && reset.Kind == ScanInputEventKind.Reset,
     "Background transition retained input.");
 window.SetSurface(1280, 720, true);
@@ -215,20 +207,16 @@ using (var router = new InputRouter(ControlProfile.Defaults(controlBindings), co
     router.InputSourceChanged += _ => sourceChanges++;
     void PollAt(long now) => router.Poll(window.ScanKeys, window.ScanPressed,
         [window.LeftButton, window.RightButton, window.MiddleButton], window.Focused, now,
-        window.MousePressed, window.ReadVirtualGamepad());
+        window.MousePressed);
     window.SubmitTouchActivity(0);
-    window.SubmitVirtualPad(new PadSample(false, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
     router.Poll(window);
-    Check(router.CurrentInputSource is { Kind: InputSourceKind.Touch, Identity: 0 } &&
-          router.CombatInput.Press(0, CombatAction.Attack), "Touch did not reach the router through its independent virtual source.");
-    Check(router.Hint(0, GameAction.Attack) == router.Profile.Players[0].Bindings[(int)GameAction.Attack][2].ToString(),
-        "Touch activity did not select pad hints.");
+    Check(router.CurrentInputSource is { Kind: InputSourceKind.Touch, Identity: 0 }, "Direct touch metadata did not select touch hints.");
+    Check(router.ProfileMenuHint == GameText.Get("ui.controls.touch"), "Direct touch metadata exposed a physical gamepad hint.");
     int touchChanges = sourceChanges;
-    window.SubmitVirtualPad(touchUp);
     router.Poll(window);
     window.SubmitTouchActivity(0);
     router.Poll(window);
-    Check(sourceChanges == touchChanges, "Touch release or repeated activity changed the source without a device change.");
+    Check(sourceChanges == touchChanges, "Repeated touch metadata changed the source without a device change.");
 
     window.SubmitPad(1, new PadSample(true, 0, 0, 0, 0, 0, 0, 0));
     router.Poll(window);
@@ -239,6 +227,129 @@ using (var router = new InputRouter(ControlProfile.Defaults(controlBindings), co
         "Physical slot activity did not switch the real router independently of touch.");
     Console.WriteLine("Mobile input routing PASS: real window touch source, physical identity and live action hint.");
 }
+
+static MobileTouchLabels Labels() => new("up", "down", "left", "right", "confirm", "back", "attack", "jump", "modifier", "language", "movement", "profiles");
+static MobileUiSnapshot Snapshot(ulong context, string scene, MobileOverlayKind overlay) => new(context, context, scene, overlay, false, Labels());
+
+var combatWindow = new MobileWindow();
+combatWindow.PublishUiSnapshot(Snapshot(7, "combat", MobileOverlayKind.Combat));
+var classicTouchProfile = ControlProfile.Defaults(controlBindings);
+classicTouchProfile.Players[0].Classic = true;
+classicTouchProfile.Players[0].Set(GameAction.Attack, InputBinding.Key(44));
+using (var touchRouter = new InputRouter(classicTouchProfile, controlBindings, combatWindow))
+{
+    touchRouter.SetMobileContext(7, MobileOverlayKind.Combat);
+    combatWindow.SubmitTouchState(new(7, 0, 0, MobileTouchButtons.X));
+    touchRouter.Poll(combatWindow);
+    Check(touchRouter.CombatInput.Press(0, CombatAction.Attack), "Touch X did not map directly to semantic attack under Classic/remapped controls.");
+    Check(!combatWindow.Read(0).Connected && touchRouter.Capture(0, InputKind.Pad).Kind == InputKind.None,
+        "Touch attack was exposed as a physical controller or binding capture.");
+    Check(touchRouter.ProfileMenuHint == GameText.Get("ui.controls.touch"), "Touch activity exposed a physical gamepad profile hint.");
+
+    combatWindow.SubmitTouchState(new(7, 0, 0, MobileTouchButtons.None));
+    touchRouter.Poll(combatWindow);
+    combatWindow.SubmitTouchState(new(7, 0, 0, MobileTouchButtons.A));
+    touchRouter.Poll(combatWindow);
+    Check(touchRouter.CombatInput.Press(0, CombatAction.Jump), "Touch A did not map directly to semantic jump.");
+
+    combatWindow.SubmitTouchState(new(7, 0, 32767, MobileTouchButtons.B));
+    touchRouter.Poll(combatWindow);
+    touchRouter.Poll(combatWindow);
+    Check(touchRouter.CombatInput.PressQuick(0, 0), "Touch B+Up did not invoke quick slot one.");
+    Check(!touchRouter.CombatInput.Held(0, CombatAction.Up) && touchRouter.CombatInput.Run(0) is null,
+        "Touch B modifier did not suppress movement and analog run.");
+    (short X, short Y, int Slot)[] sectors = [(23170, 23170, 1), (23170, -23170, 2), (-23170, -23170, 3), (-23170, 23170, 0)];
+    foreach (var sector in sectors)
+    {
+        combatWindow.SubmitTouchState(new(7, sector.X, sector.Y, MobileTouchButtons.B));
+        touchRouter.Poll(combatWindow);
+        Check(touchRouter.CombatInput.PressQuick(0, sector.Slot), $"Touch quick-slot sector boundary did not map slot {sector.Slot + 1}.");
+    }
+
+    combatWindow.SubmitTouchState(new(7, 32767, 0, MobileTouchButtons.None));
+    touchRouter.Poll(combatWindow);
+    Check(touchRouter.CombatInput.Held(0, CombatAction.Right) && touchRouter.CombatInput.Run(0) == true,
+        "Touch stick did not provide semantic movement and run at high magnitude.");
+    combatWindow.SubmitTouchState(new(7, 12000, 0, MobileTouchButtons.None));
+    touchRouter.Poll(combatWindow);
+    Check(touchRouter.CombatInput.Run(0) == false, "Touch stick did not provide walk at low magnitude.");
+}
+
+var navigationWindow = new MobileWindow();
+navigationWindow.PublishUiSnapshot(Snapshot(8, "world", MobileOverlayKind.Navigation));
+using (var navigationRouter = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, navigationWindow))
+{
+    navigationRouter.SetMobileContext(8, MobileOverlayKind.Navigation);
+    navigationWindow.SubmitTouchState(new(8, 0, 0, MobileTouchButtons.Up));
+    navigationRouter.Poll(navigationWindow);
+    navigationRouter.Poll(navigationWindow);
+    Check(navigationRouter.WorldInput.Press(0, WorldAction.Up) && !navigationRouter.WorldInput.Press(0, WorldAction.Up),
+        "Held navigation arrow repeated or created duplicate actions.");
+    navigationRouter.Clear();
+    navigationWindow.SubmitTouchState(new(8, 0, 0, MobileTouchButtons.None));
+    navigationRouter.Poll(navigationWindow);
+    navigationWindow.SubmitTouchState(new(8, 0, 0, MobileTouchButtons.Up));
+    navigationRouter.Poll(navigationWindow);
+    Check(navigationRouter.WorldInput.Press(0, WorldAction.Up), "Clear while held failed to rearm after physical finger release.");
+    navigationWindow.SubmitTouchState(new(8, 0, 0, MobileTouchButtons.None));
+    navigationRouter.Poll(navigationWindow);
+    navigationRouter.Clear();
+    navigationWindow.SubmitTouchState(new(8, 0, 0, MobileTouchButtons.Up));
+    navigationRouter.Poll(navigationWindow);
+    Check(navigationRouter.WorldInput.Press(0, WorldAction.Up), "Clear while already neutral dropped the next touch press.");
+
+    navigationRouter.SetMobileContext(9, MobileOverlayKind.Navigation, directionsAreMenu: true);
+    navigationWindow.PublishUiSnapshot(Snapshot(9, "status", MobileOverlayKind.Navigation));
+    navigationWindow.SubmitTouchState(new(9, 0, 0, MobileTouchButtons.Down));
+    navigationRouter.Poll(navigationWindow);
+    navigationRouter.Poll(navigationWindow);
+    Check(navigationRouter.MenuInput.Menu(MenuAction.Down) && !navigationRouter.WorldInput.Press(0, WorldAction.Down),
+        "Status touch direction leaked into both menu and world input.");
+}
+
+var townWindow = new MobileWindow();
+townWindow.PublishUiSnapshot(Snapshot(12, "town", MobileOverlayKind.Navigation));
+using (var townRouter = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, townWindow))
+{
+    townRouter.SetMobileContext(12, MobileOverlayKind.Navigation, directionsAreMenu: true);
+    (MobileTouchButtons Button, bool Previous)[] townDirections =
+    [
+        (MobileTouchButtons.Left, true), (MobileTouchButtons.Up, true),
+        (MobileTouchButtons.Right, false), (MobileTouchButtons.Down, false)
+    ];
+    foreach (var (button, previous) in townDirections)
+    {
+        townWindow.SubmitTouchState(new(12, 0, 0, button));
+        townRouter.Poll(townWindow);
+        bool moved = previous ? townRouter.TownInput.TakeMobilePrevious() : townRouter.TownInput.TakeMobileNext();
+        Check(moved, $"Town touch direction {button} did not produce one selection step.");
+        Check(!(previous ? townRouter.TownInput.TakeMobilePrevious() : townRouter.TownInput.TakeMobileNext()),
+            $"Town touch direction {button} repeated without another press.");
+        townWindow.SubmitTouchState(new(12, 0, 0, MobileTouchButtons.None));
+        townRouter.Poll(townWindow);
+    }
+}
+
+var focusTouchWindow = new MobileWindow();
+focusTouchWindow.PublishUiSnapshot(Snapshot(10, "world", MobileOverlayKind.Navigation));
+using (var focusTouchRouter = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, focusTouchWindow))
+{
+    focusTouchRouter.SetMobileContext(10, MobileOverlayKind.Navigation);
+    focusTouchWindow.SubmitTouchState(new(10, 0, 0, MobileTouchButtons.Up));
+    focusTouchRouter.Poll(focusTouchWindow);
+    Check(focusTouchRouter.WorldInput.Press(0, WorldAction.Up), "Focus test setup did not consume the first touch press.");
+    focusTouchWindow.SetSurface(1280, 720, false);
+    focusTouchWindow.Pump();
+    focusTouchRouter.Poll(focusTouchWindow);
+    focusTouchWindow.SetSurface(1280, 720, true);
+    focusTouchWindow.Pump();
+    focusTouchRouter.Poll(focusTouchWindow);
+    focusTouchRouter.Poll(focusTouchWindow);
+    focusTouchWindow.SubmitTouchState(new(10, 0, 0, MobileTouchButtons.Up));
+    focusTouchRouter.Poll(focusTouchWindow);
+    Check(focusTouchRouter.WorldInput.Press(0, WorldAction.Up), "Focus reset did not synthesize neutral and rearm fresh touch input.");
+}
+Console.WriteLine("Mobile semantic input PASS: independent touch actions, sector edges, focus reset and scene rearm.");
 
 var lifecycle = new MobileSession();
 Check(lifecycle.Start((gameWindow, _) => { while (!gameWindow.Closed) Thread.Sleep(1); }) == 1, "Session did not start.");

@@ -13,9 +13,12 @@ import NativeCore
     private var lastSequence: Int32 = 0
     private var frameWidth: Int32 = 0
     private var frameHeight: Int32 = 0
+    private var drawableViewport = RenderedViewportRect.zero
+    private(set) var contentViewport = CGRect.zero
     var onError: ((String) -> Void)?
     var onFirstFrame: ((Int32, Int32) -> Void)?
     var onFrame: (() -> Void)?
+    var onContentViewportChanged: ((CGRect) -> Void)?
 
     /// Builds the Metal view and pipeline before the managed session starts.
     init(frame: CGRect) throws {
@@ -57,7 +60,6 @@ import NativeCore
         onFrame?()
         let sequence = atria_frame(pixels, Int32(Self.maximumPixels), &frameWidth, &frameHeight)
         if sequence > 0 && sequence != lastSequence {
-            if lastSequence == 0 { onFirstFrame?(frameWidth, frameHeight) }
             if texture?.width != Int(frameWidth) || texture?.height != Int(frameHeight) {
                 let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm,
                     width: Int(frameWidth), height: Int(frameHeight), mipmapped: false)
@@ -65,16 +67,18 @@ import NativeCore
                 descriptor.usage = .shaderRead
                 texture = view.device?.makeTexture(descriptor: descriptor)
             }
+            updateContentViewport()
+            if lastSequence == 0 { onFirstFrame?(frameWidth, frameHeight) }
             texture?.replace(region: MTLRegionMake2D(0, 0, Int(frameWidth), Int(frameHeight)), mipmapLevel: 0,
                 withBytes: pixels, bytesPerRow: Int(frameWidth) * 4)
             lastSequence = sequence
         }
+        updateContentViewport()
         if let texture, let pass = view.currentRenderPassDescriptor, let drawable = view.currentDrawable,
            let command = queue.makeCommandBuffer(), let encoder = command.makeRenderCommandEncoder(descriptor: pass) {
-            let scale = min(view.drawableSize.width / Double(texture.width), view.drawableSize.height / Double(texture.height))
-            let width = Double(texture.width) * scale, height = Double(texture.height) * scale
-            encoder.setViewport(MTLViewport(originX: (view.drawableSize.width - width) / 2,
-                originY: (view.drawableSize.height - height) / 2, width: width, height: height, znear: 0, zfar: 1))
+            let viewport = drawableViewport
+            encoder.setViewport(MTLViewport(originX: viewport.x, originY: viewport.y,
+                width: viewport.width, height: viewport.height, znear: 0, zfar: 1))
             encoder.setRenderPipelineState(pipeline)
             encoder.setFragmentTexture(texture, index: 0)
             encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
@@ -87,7 +91,23 @@ import NativeCore
         }
     }
 
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) { }
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) { updateContentViewport(drawableSize: size) }
+
+    /// Recomputes after drawable, frame, or source-texture changes; callbacks run only on geometry changes.
+    func updateContentViewport(drawableSize: CGSize? = nil) {
+        let drawable = drawableSize ?? view.drawableSize
+        let sourceWidth = texture.map { Double($0.width) } ?? 0
+        let sourceHeight = texture.map { Double($0.height) } ?? 0
+        drawableViewport = RenderedViewportGeometry.fit(containerWidth: Double(drawable.width),
+            containerHeight: Double(drawable.height), contentWidth: sourceWidth, contentHeight: sourceHeight)
+        let scaleX = drawable.width > 0 ? view.bounds.width / drawable.width : 0
+        let scaleY = drawable.height > 0 ? view.bounds.height / drawable.height : 0
+        let next = CGRect(x: CGFloat(drawableViewport.x) * scaleX, y: CGFloat(drawableViewport.y) * scaleY,
+            width: CGFloat(drawableViewport.width) * scaleX, height: CGFloat(drawableViewport.height) * scaleY)
+        guard next != contentViewport else { return }
+        contentViewport = next
+        onContentViewportChanged?(next)
+    }
 
     isolated deinit { pixels.deallocate() }
 }

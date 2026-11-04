@@ -1,4 +1,5 @@
 using Atria.Core.Contracts.Input;
+using Atria.Core.Contracts.Host;
 using Atria.Core.Game.Combat;
 using Atria.Core.Resources;
 using Atria.Platforms.Ios;
@@ -69,6 +70,7 @@ public sealed class MobileSession
 
     /// <summary>Indicates that the most recently started worker has exited.</summary>
     public bool Closed { get { lock (sync) return finished; } }
+    public ulong UiRevision { get { lock (sync) return window?.UiRevision ?? 0; } }
 
     /// <summary>Publishes one physical controller sample without combining other devices.</summary>
     public void SubmitPad(int slot, PadSample sample)
@@ -76,13 +78,7 @@ public sealed class MobileSession
         lock (sync) window?.SubmitPad(slot, sample);
     }
 
-    /// <summary>Publishes a touch-control sample on the independent virtual-pad channel.</summary>
-    public void SubmitVirtualPad(PadSample sample)
-    {
-        lock (sync) window?.SubmitVirtualPad(sample);
-    }
-
-    /// <summary>Records a touch action that may not alter the virtual-pad sample.</summary>
+    /// <summary>Records a direct touch action that may not change pointer or touch-control state.</summary>
     public void SubmitTouchActivity(int identity)
     {
         lock (sync) window?.SubmitTouchActivity(identity);
@@ -104,6 +100,22 @@ public sealed class MobileSession
     public void SubmitText(string value)
     {
         lock (sync) window?.SubmitText(value);
+    }
+
+    /// <summary>Copies the cached native UI snapshot into caller-owned memory.</summary>
+    public int CopyUiSnapshot(Span<byte> destination)
+    {
+        lock (sync) return window?.CopyUiSnapshot(destination) ?? 0;
+    }
+
+    public void SubmitUiCommand(MobileUiCommand command)
+    {
+        lock (sync) window?.SubmitUiCommand(command);
+    }
+
+    public void SubmitTouchState(MobileTouchState state)
+    {
+        lock (sync) window?.SubmitTouchState(state);
     }
 
     /// <summary>Copies the current owned frame while protecting it from session disposal.</summary>

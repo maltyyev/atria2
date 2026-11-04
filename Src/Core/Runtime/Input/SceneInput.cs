@@ -191,6 +191,10 @@ public readonly struct TownInputView
 
     /// <summary>Consumes a town action edge for one player.</summary>
     public bool Press(int player, TownAction action, bool allowRepeat = false) => router.Press(player, Map(action), allowRepeat);
+    /// <summary>Consumes one touch-only edge that selects the previous town object.</summary>
+    public bool TakeMobilePrevious() => router.TakeMobileTownPrevious();
+    /// <summary>Consumes one touch-only edge that selects the next town object.</summary>
+    public bool TakeMobileNext() => router.TakeMobileTownNext();
     /// <summary>Reads held action state for one player.</summary>
     public bool Held(int player, TownAction action) => router.Held(player, Map(action));
     /// <summary>Consumes the first matching menu action from either player.</summary>
@@ -231,6 +235,8 @@ public readonly struct CombatInput
     public bool PressDirect(int player, InputBinding[] bindings, bool allowRepeat = false) => router.Press(player, bindings, allowRepeat);
     /// <summary>Reads held movement or action state for one player.</summary>
     public bool Held(int player, CombatAction action) => router.Held(player, Map(action));
+    /// <summary>Gets semantic run state without changing Classic physical bindings.</summary>
+    public bool? Run(int player) => router.Run(player);
     /// <summary>Consumes a configured quick action, including trigger and direction chords.</summary>
     public bool PressQuick(int player, int slot, bool assigning = false) => router.PressQuick(player, slot, assigning);
     /// <summary>Clears pending actions for one player after a combat ownership change.</summary>

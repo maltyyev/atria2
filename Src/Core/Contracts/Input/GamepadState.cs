@@ -27,13 +27,6 @@ public interface IGamepadDevice
     void Vibrate(int slot, ushort left, ushort right);
 }
 
-/// <summary>Provides touch controls independently of the four physical controller slots.</summary>
-public interface IVirtualGamepadSource
-{
-    /// <summary>Returns the current virtual controller sample, or a disconnected neutral sample.</summary>
-    PadSample ReadVirtualGamepad();
-}
-
 /// <summary>Names the device family that produced the latest meaningful user activity.</summary>
 public enum InputSourceKind
 {

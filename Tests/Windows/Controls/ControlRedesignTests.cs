@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Text;
+using Atria.Core.Contracts.Host;
 using Atria.Core.Contracts.Input;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Contracts.Window;
@@ -14,6 +15,7 @@ using Atria.Core.Presentation.Combat;
 using Atria.Core.Presentation.Controls;
 using Atria.Core.Presentation.Dialogue;
 using Atria.Core.Resources;
+using Atria.Core.Resources.Localization;
 using Atria.Core.Resources.Audio;
 using Atria.Core.Resources.Sprites;
 using Atria.Core.Runtime.Input;
@@ -53,8 +55,13 @@ public static class ControlRedesignTests
         }
     }
 
-    private sealed class Window : IGameWindow, IVirtualGamepadSource, IInputActivitySource
+    private sealed class Window : IGameWindow, IInputActivitySource, IMobileUiChannel
     {
+        private readonly Queue<MobileTouchState> mobileTouches = new();
+        private readonly Queue<MobileUiCommand> mobileCommands = new();
+        private MobileTouchState lastMobileTouch;
+        private ulong uiRevision, uiContextId;
+
         public bool Closed { get; set; }
         public bool Focused { get; set; } = true;
         public (int Width, int Height) ClientSize { get; set; } = (640, 480);
@@ -69,12 +76,33 @@ public static class ControlRedesignTests
         public int MouseWheelDelta { get; set; }
         public uint InputClockMilliseconds => 0;
         public InputActivity LastInputActivity { get; set; }
-        public PadSample VirtualPad { get; set; }
-        public PadSample ReadVirtualGamepad() => VirtualPad;
+        public ulong UiRevision => uiRevision;
+        public ulong UiContextId => uiContextId;
         public void Pump() { }
         public bool TryDequeueScanInput(out TimestampedScanInput input) { input = default; return false; }
         public string TakeTextInput() => "";
         public void RequestClose() => Closed = true;
+        public int CopyUiSnapshot(Span<byte> destination) => 0;
+        public void PublishUiSnapshot(MobileUiSnapshot snapshot)
+        {
+            if (uiContextId != snapshot.ContextId)
+            {
+                mobileTouches.Clear();
+                mobileCommands.Clear();
+                lastMobileTouch = new(snapshot.ContextId, 0, 0, MobileTouchButtons.None);
+            }
+            uiContextId = snapshot.ContextId;
+            uiRevision = snapshot.Revision;
+        }
+        public void SubmitUiCommand(MobileUiCommand command) => mobileCommands.Enqueue(command);
+        public bool TryDequeueUiCommand(out MobileUiCommand command) => mobileCommands.TryDequeue(out command);
+        public void SubmitTouchState(MobileTouchState state)
+        {
+            if (!Focused || state.ContextId != uiContextId || state == lastMobileTouch) return;
+            mobileTouches.Enqueue(state);
+            lastMobileTouch = state;
+        }
+        public bool TryDequeueTouchState(out MobileTouchState state) => mobileTouches.TryDequeue(out state);
     }
 
     private sealed class TestModalClock : IModalClock
@@ -673,16 +701,13 @@ public static class ControlRedesignTests
         Poll();
 
         window.LastInputActivity = new(1, InputSourceKind.Touch, 9);
-        window.VirtualPad = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
         Poll();
-        Check(input.CurrentInputSource is { Kind: InputSourceKind.Touch, Identity: 9 } && !input.LastWasPad, "touch metadata survives virtual controller translation");
-        Check(input.CombatInput.Press(0, CombatAction.Attack), "touch virtual control uses player-one profile mapping");
-        Check(input.Hint(0, GameAction.Attack) == input.Profile.Players[0].Bindings[(int)GameAction.Attack][2].ToString(), "touch activity updates virtual control hints");
+        Check(input.CurrentInputSource is { Kind: InputSourceKind.Touch, Identity: 9 } && !input.LastWasPad, "touch metadata remains an independent input source");
+        Check(input.Hint(0, GameAction.Attack) == "X", "touch hints use semantic control labels instead of gamepad bindings");
+        Check(input.Hint(0, GameAction.Run) == GameText.Get("ui.controls.movementStick"), "touch run hint omits the localized movement-stick label");
         int touchChanges = changes;
         Poll();
-        window.VirtualPad = default;
-        Poll();
-        Check(changes == touchChanges, "unchanged touch and release do not re-emit source changes");
+        Check(changes == touchChanges, "unchanged touch activity does not re-emit source changes");
 
         pads.Samples[0] = new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0);
         Poll();
@@ -720,28 +745,56 @@ public static class ControlRedesignTests
         PollReconnect(1601);
         Check(reconnectInput.CurrentInputSource.Kind == InputSourceKind.Gamepad, "a new button press after reconnection selects the controller");
 
-        var virtualOnlyProfile = ControlProfile.Defaults(legacy);
-        virtualOnlyProfile.Players[0].PadSlot = -1;
-        using var virtualOnly = new InputRouter(virtualOnlyProfile, legacy, new Pads());
-        bool[] keys = new bool[256], pressed = new bool[256], mouse = new bool[3];
-        virtualOnly.Poll(keys, pressed, mouse, true, 0, default, new(true, (ushort)GamepadButtons.DpadUp, 0, 255, 0, 0, 0, 0));
-        Check(virtualOnly.PressQuick(0, 0), "touch RT plus D-pad reaches quick actions without a physical pad slot");
-        virtualOnly.Poll(keys, pressed, mouse, true, 1, default, new(true, 0, 0, 0, 0, 0, 0, 0));
-        virtualOnly.Poll(keys, pressed, mouse, true, 2, default, new(true, 0, 0, 0, 0, 20000, 0, 0));
-        Check(virtualOnly.MenuInput.Menu(MenuAction.Up), "touch stick reaches shared menu navigation");
-        virtualOnly.Poll(keys, pressed, mouse, true, 3, default, new(true, 0, 0, 0, 0, 0, 0, 0));
-        virtualOnly.Poll(keys, pressed, mouse, true, 4, default, new(true, (ushort)GamepadButtons.A, 0, 0, 0, 0, 0, 0));
-        Check(virtualOnly.Capture(0, InputKind.Pad).Code == 0, "touch buttons remain capturable without a physical pad slot");
-        virtualOnly.Poll(keys, pressed, mouse, true, 5, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
-        virtualOnly.ClearPlayer(1);
-        Check(virtualOnly.CombatInput.Press(0, CombatAction.Attack), "player two reset leaves player one touch input intact");
-        virtualOnly.Poll(keys, pressed, mouse, true, 6, default, new(true, 0, 0, 0, 0, 0, 0, 0));
-        virtualOnly.Poll(keys, pressed, mouse, true, 7, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
-        virtualOnly.ClearPlayer(0);
-        Check(!virtualOnly.CombatInput.Press(0, CombatAction.Attack), "player one reset clears and blocks held touch edges");
-        virtualOnly.Poll(keys, pressed, mouse, true, 8, default, new(true, 0, 0, 0, 0, 0, 0, 0));
-        virtualOnly.Poll(keys, pressed, mouse, true, 9, default, new(true, (ushort)GamepadButtons.X, 0, 0, 0, 0, 0, 0));
-        Check(virtualOnly.CombatInput.Press(0, CombatAction.Attack), "released touch input rearms after player reset");
+        var touchProfile = ControlProfile.Defaults(legacy);
+        touchProfile.Players[0].PadSlot = -1;
+        var touchPads = new Pads();
+        using var touchInput = new InputRouter(touchProfile, legacy, touchPads);
+        var touchWindow = new Window();
+        static MobileTouchLabels TouchLabels() => new("up", "down", "left", "right", "confirm", "back", "attack", "jump", "modifier", "language", "movement", "profiles");
+        void SetTouchScene(ulong context, string scene, MobileOverlayKind overlay)
+        {
+            touchWindow.PublishUiSnapshot(new(context, context, scene, overlay, false, TouchLabels()));
+            touchInput.SetMobileContext(context, overlay, directionsAreMenu: scene != "world");
+        }
+        void Touch(short x, short y, MobileTouchButtons buttons, ulong context)
+        {
+            touchWindow.SubmitTouchState(new(context, x, y, buttons));
+            touchInput.Poll(touchWindow);
+        }
+
+        SetTouchScene(1, "combat", MobileOverlayKind.Combat);
+        Touch(0, 0, MobileTouchButtons.X, 1);
+        Check(touchInput.CurrentInputSource is { Kind: InputSourceKind.Touch, Identity: 0 } && touchInput.CombatInput.Press(0, CombatAction.Attack),
+            "touch X raises semantic attack without a physical pad slot");
+        Check(touchInput.CombatInput.Held(0, CombatAction.Attack) && !touchPads.Read(0).Connected
+            && touchInput.Capture(0, InputKind.Pad).Kind == InputKind.None,
+            "held touch attack stays independent of physical pad state and binding capture");
+        touchInput.Poll(touchWindow);
+        Check(touchInput.CombatInput.Held(0, CombatAction.Attack) && !touchInput.CombatInput.Press(0, CombatAction.Attack),
+            "held touch attack does not create another action edge");
+        Touch(0, 0, MobileTouchButtons.None, 1);
+        Touch(0, 0, MobileTouchButtons.A, 1);
+        Check(touchInput.CombatInput.Press(0, CombatAction.Jump), "touch A raises semantic jump");
+        Touch(0, 0, MobileTouchButtons.None, 1);
+        Touch(0, 32767, MobileTouchButtons.B, 1);
+        Check(touchInput.CombatInput.PressQuick(0, 0), "touch B plus up invokes quick slot one without a physical pad");
+
+        SetTouchScene(2, "status", MobileOverlayKind.Navigation);
+        Touch(0, 0, MobileTouchButtons.Up, 2);
+        Check(touchInput.MenuInput.Menu(MenuAction.Up) && !touchInput.MenuInput.Menu(MenuAction.Up),
+            "touch direction reaches shared menu navigation as a single edge");
+
+        SetTouchScene(3, "combat", MobileOverlayKind.Combat);
+        Touch(0, 0, MobileTouchButtons.X, 3);
+        touchInput.ClearPlayer(1);
+        Check(touchInput.CombatInput.Press(0, CombatAction.Attack), "player two reset leaves player one touch input intact");
+        Touch(0, 0, MobileTouchButtons.None, 3);
+        Touch(0, 0, MobileTouchButtons.X, 3);
+        touchInput.ClearPlayer(0);
+        Check(!touchInput.CombatInput.Press(0, CombatAction.Attack), "player one reset blocks a held touch edge");
+        Touch(0, 0, MobileTouchButtons.None, 3);
+        Touch(0, 0, MobileTouchButtons.X, 3);
+        Check(touchInput.CombatInput.Press(0, CombatAction.Attack), "released touch input rearms after player reset");
 
         VerifyWorldLegacyQueries(legacy);
         VerifySlowAxisActivity(legacy);

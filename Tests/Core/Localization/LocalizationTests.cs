@@ -1,12 +1,15 @@
 using System.Text;
 using System.Text.Json;
+using Atria.Core.Contracts.Input;
 using Atria.Core.Game.Dialogue;
+using Atria.Core.Game.Progression;
 using Atria.Core.Game.Script;
 using Atria.Core.Game.State;
 using Atria.Core.Game.Status;
 using Atria.Core.Game.Termination;
 using Atria.Core.Game.World;
 using Atria.Core.Persistence.Controls;
+using Atria.Core.Persistence.Settings;
 using Atria.Core.Presentation.Controls;
 using Atria.Core.Presentation.Credits;
 using Atria.Core.Presentation.Dialogue;
@@ -204,9 +207,52 @@ public static class LocalizationTests
             Check(new LocalizationCatalog(temporary).Issues.Count == 0, "Notepad UTF-8 BOM accepted");
             Directory.CreateDirectory(Path.Combine(temporary, "en-GB"));
             File.WriteAllText(Path.Combine(temporary, "en-GB", "ui.json"), "{\"ui.characters.roland\":\"Roland\"}");
+            Directory.CreateDirectory(Path.Combine(temporary, "fr-FR"));
             var partial = new LocalizationCatalog(temporary, "en-GB");
             Check(partial.Get("ui.characters.roland") == "Roland" && partial.Get("items.00.name") == "Новый предмет", "partial locale falls back through edited Russian to embedded text");
             Check(partial.Issues.Count > 0 && partial.Issues.All(i => !i.IsError), "partial locale missing files/keys are warnings");
+            Check(partial.AvailableLanguages.SequenceEqual(new[] { LocalizationCatalog.BaseLanguage, "en-GB" })
+                && partial.SupportsLanguage("en-GB") && !partial.SupportsLanguage("../outside")
+                && new LocalizationCatalog(temporary).NextLanguage() == "en-GB"
+                && partial.NextLanguage() == LocalizationCatalog.BaseLanguage,
+                "language discovery ignores empty folders, is safe per catalog, and cycles in stable order");
+
+            GameText.Use(new LocalizationCatalog(temporary));
+            var bindings = ControlBindings.Parse(File.ReadAllBytes(Path.Combine(resources, "BATTLE.CFG")));
+            var profile = ControlProfile.Defaults(bindings);
+            var audio = new NativeSettingsState();
+            var preferences = new UserPreferencesStore(Path.Combine(temporary, "player", "config"), resources);
+            preferences.Write(new(profile, audio, bindings, "en-GB"));
+            Check(preferences.Read(bindings).Language == "en-GB", "preferences keep a discovered future locale");
+            byte[] previousPreferences = File.ReadAllBytes(preferences.FilePath);
+            bool rejectedLocale = false;
+            try { preferences.Write(new(profile, audio, bindings, "../outside")); }
+            catch (InvalidDataException) { rejectedLocale = true; }
+            Check(rejectedLocale && File.ReadAllBytes(preferences.FilePath).SequenceEqual(previousPreferences),
+                "unsafe preference locale is rejected before replacing the document");
+            File.WriteAllText(preferences.FilePath, File.ReadAllText(preferences.FilePath).Replace("en-GB", "../outside"));
+            var fallback = preferences.Read(bindings);
+            Check(fallback.Language == LocalizationCatalog.BaseLanguage && fallback.Audio.Music == audio.Music,
+                "removed locale falls back without discarding audio preferences");
+
+            using (var archive = BinderArchive.Open(Path.Combine(resources, "AT2SPR.000")))
+            using (var input = new InputRouter(ControlProfile.Defaults(bindings), bindings, new DisconnectedGamepads()))
+            {
+                var tiles = SpriteFile.Decode(archive.ReadMember(archive.FindResource("ETC"u8)));
+                var settingsFont = BitmapFont.DecodeEng(File.ReadAllBytes(Path.Combine(resources, "ENG1.FNT")), true);
+                audio.Set(1, 1, 1);
+                var menu = new ControlSettingsMenu(input, bindings, new MoveCatalog(resources), tiles, settingsFont, audio, (_, _) => { });
+                var firstView = menu.GetView();
+                Check(firstView.Scene == "settings.root" && firstView.Rows.Select(row => row.Id).Distinct(StringComparer.Ordinal).Count() == firstView.Rows.Count
+                    && ReferenceEquals(firstView, menu.GetView()), "settings rows have stable unique IDs and unchanged view reuses its row array");
+                Check(menu.AdjustRow("settings.root.music", 1) && menu.Audio.Music == 2,
+                    "typed settings adjustment uses the existing row behavior");
+                var changedView = menu.GetView();
+                Check(!ReferenceEquals(firstView, changedView) && changedView.Rows.Single(row => row.Id == "settings.root.music").Value == "2",
+                    "settings view refreshes after a visible selector change");
+                Check(menu.ActivateRow("settings.root.playerControls.1") && menu.GetView().Scene == "settings.player.1",
+                    "typed settings activation navigates through the existing child page");
+            }
             return $"localization: {LocalizationCatalog.Defaults.Values.Sum(f => f.Count)} entries; edits, render pixels, dialogue IDs, fallback, JSON positions/BOM, duplicates, placeholders and font limits passed";
 
             string PathFor(string file) => Path.Combine(temporary, LocalizationCatalog.BaseLanguage, file);
@@ -247,6 +293,12 @@ public static class LocalizationTests
     {
         int end = bytes.IndexOf((byte)0);
         return GameText.Encoding.GetString(end < 0 ? bytes : bytes[..end]);
+    }
+
+    private sealed class DisconnectedGamepads : IGamepadDevice
+    {
+        public PadSample Read(int slot) => default;
+        public void Vibrate(int slot, ushort left, ushort right) { }
     }
 
     private static void Check(bool condition, string message)

@@ -73,6 +73,32 @@ public sealed class SaveLoadMenuController
         EnsureVisible();
     }
 
+    /// <summary>Selects a visible library entry from a typed UI adapter.</summary>
+    public bool Select(int selection)
+    {
+        if (Countdown > 0 || PendingOperation || Failure is not null || Confirmation || EmptyNotice
+            || (uint)selection >= (uint)Count)
+        {
+            return false;
+        }
+
+        Selection = selection;
+        EnsureVisible();
+        return true;
+    }
+
+    /// <summary>Sets the selected confirmation choice from a native modal button.</summary>
+    public bool PointerConfirm(bool yes)
+    {
+        if (!Confirmation || Countdown > 0 || PendingOperation || Failure is not null)
+        {
+            return false;
+        }
+
+        ConfirmationChoice = yes ? 0 : 1;
+        return true;
+    }
+
     private void EnsureVisible()
     {
         Top = Math.Clamp(Top, Math.Max(0, Selection - 4), Selection);

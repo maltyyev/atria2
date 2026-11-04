@@ -56,6 +56,39 @@ internal static class WindowsSessionProbeHost
         }
     }
 
+    /// <summary>Creates a session whose window also records native mobile snapshots and stale commands.</summary>
+    public static GameSessionProbeHost CreateMobile(string root, string musicRoot, string output, double maximumSeconds, bool muted)
+    {
+        var owned = new List<IDisposable>();
+        ITextRasterizer? rasterizer = null;
+        try
+        {
+            var nativeWindow = new NativeWindow("Atria mobile session verification", 2560, 1440);
+            owned.Add(nativeWindow);
+            var window = new MobileSessionProbeWindow(nativeWindow);
+            var presenter = new D3D11Presenter(nativeWindow.Handle, 2560, 1440);
+            owned.Add(presenter);
+            var audio = new AudioDevice();
+            owned.Add(audio);
+            var music = new FileMusicTransport(audio, musicRoot, muted ? 0 : 1);
+            owned.Add(music);
+            var faces = new FaceSpriteSource(Path.Combine(root, "face.SPR"));
+            owned.Add(faces);
+            rasterizer = new DirectWriteRasterizer();
+            var services = new GameHostServices(Path.Combine(AppContext.BaseDirectory, "assets"), new XInputDevice(),
+                (path, skip, volume, duration) => MoviePlayer.Play(path, nativeWindow, presenter, audio, skip, volume, duration), rasterizer);
+            var session = GameSession.CreateProbeSession(root, window, presenter, audio, music, faces, maximumSeconds, muted, output, services);
+            return new(session, window, rasterizer, new Lifetime(owned.ToArray()));
+        }
+        catch
+        {
+            if (rasterizer is not null) UnicodeText.ReleaseRasterizer(rasterizer);
+            try { new Lifetime(owned.ToArray()).Dispose(); }
+            catch { }
+            throw;
+        }
+    }
+
     /// <summary>Checks reverse-order disposal and cleanup after one owned resource throws.</summary>
     public static void VerifyLifetimeContract()
     {

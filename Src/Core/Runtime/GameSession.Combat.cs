@@ -218,6 +218,7 @@ public sealed partial class GameSession
             if (combat.Coordinator.NativePause)
             {
                 var current = transport.RefreshFrozenInput();
+                PollSessionInput();
                 CheckLifetime();
                 if (!current.Ready)
                 {
