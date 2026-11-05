@@ -155,6 +155,7 @@ public sealed partial class GameSession : IScriptEffects
             () => CurrentEffectsVolume,
             PollSessionInput
         );
+        host.BeginMobileOverlayScope = BeginMobileOverlayScope;
         dialogue = new(DialogueCatalog.Load(Path.Combine(root, "roland.idx"), Path.Combine(root, "ROLAND.DAT")), new DialogueModalDriver(host, etc, smallFont, faces, DrawModalHud));
         host.PresentCustomFrame = PresentMainMenu;
         try
@@ -440,7 +441,7 @@ public sealed partial class GameSession : IScriptEffects
                 }
             }
 
-            menu.Input(new(next, previous, accept, cancel), saveDisabled, HandleMenu);
+            menu.Input(new(next, previous, accept, cancel), saveDisabled, HandleMenu, CurrentMainMenuPolicy);
             return;
         }
 

@@ -221,6 +221,7 @@ struct GameScreen: UIViewControllerRepresentable {
         guard revision != snapshotRevision, let next = readMobileSnapshot() else { return }
         let contextChanged = mobileSnapshot?.contextId != next.contextId
         let touchLayoutChanged = mobileSnapshot?.overlayKind != next.overlayKind
+        let overlayMode = TouchOverlayMode(rawValue: next.overlayKind.rawValue) ?? .none
         snapshotRevision = next.revision
         touchContextId = next.contextId
         mobileSnapshot = next
@@ -231,7 +232,7 @@ struct GameScreen: UIViewControllerRepresentable {
         confirmButton.updateAccessibilityLabel(next.labels.confirm)
         backButton.updateAccessibilityLabel(next.labels.back)
         attackButton.updateAccessibilityLabel(next.labels.attack)
-        jumpButton.updateAccessibilityLabel(next.labels.jump)
+        jumpButton.updateAccessibilityLabel(overlayMode == .combatSelection ? next.labels.confirm : next.labels.jump)
         modifierButton.updateAccessibilityLabel(next.labels.modifier)
         languageButton.updateTitle(next.labels.language, accessibilityLabel: next.labels.language)
         profilesButton.updateTitle(next.labels.profiles, accessibilityLabel: next.labels.profiles)
@@ -358,11 +359,7 @@ struct GameScreen: UIViewControllerRepresentable {
         let languageWidth = min(languageMaxWidth, max(TouchControlMetrics.buttonSide,
             languageButton.intrinsicContentSize.width))
         let languageHeight = languageButton.fittingHeight(forWidth: languageWidth)
-        let overlayMode: TouchOverlayMode = switch mobileSnapshot?.overlayKind ?? .none {
-        case .none: .none
-        case .navigation: .navigation
-        case .combat: .combat
-        }
+        let overlayMode = TouchOverlayMode(rawValue: mobileSnapshot?.overlayKind.rawValue ?? 0) ?? .none
         let next = TouchControlGeometry.overlayLayout(viewport: viewport, screenBounds: view.bounds, safeArea: safe,
             overlayKind: overlayMode,
             showLanguageButton: mobileSnapshot?.showLanguageButton == true,
@@ -379,15 +376,21 @@ struct GameScreen: UIViewControllerRepresentable {
         languageButton.frame = next.languageButton ?? .zero
         let faceFrames = TouchControlGeometry.faceButtonFrames(in: CGRect(origin: .zero,
             size: TouchControlGeometry.directionPadSize))
+        let actionButtons = TouchControlGeometry.visibleActionButtons(for: overlayMode)
         confirmButton.frame = faceFrames.jump
         backButton.frame = faceFrames.modifier
         attackButton.frame = faceFrames.attack
         jumpButton.frame = faceFrames.jump
         modifierButton.frame = faceFrames.modifier
+        confirmButton.isHidden = !actionButtons.contains(.a) || overlayMode == .combat || overlayMode == .combatSelection
+        backButton.isHidden = !actionButtons.contains(.b) || overlayMode == .combat || overlayMode == .combatSelection
+        attackButton.isHidden = !actionButtons.contains(.x)
+        jumpButton.isHidden = !actionButtons.contains(.a) || overlayMode == .navigation || overlayMode == .experienceAllocation
+        modifierButton.isHidden = !actionButtons.contains(.b) || overlayMode == .navigation || overlayMode == .experienceAllocation
         dpad.isHidden = next.directionPad == nil
-        navigationButtons.isHidden = next.navigationButtons == nil
+        navigationButtons.isHidden = next.navigationButtons == nil || (overlayMode != .navigation && overlayMode != .experienceAllocation)
         stick.isHidden = next.stick == nil
-        combatButtons.isHidden = next.combatButtons == nil
+        combatButtons.isHidden = next.combatButtons == nil || (overlayMode != .combat && overlayMode != .combatSelection)
         languageButton.isHidden = next.languageButton == nil
     }
 

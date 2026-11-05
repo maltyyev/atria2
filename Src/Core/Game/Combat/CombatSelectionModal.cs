@@ -1,3 +1,4 @@
+using Atria.Core.Contracts.Host;
 using Atria.Core.Game.Dialogue;
 using Atria.Core.Game.Progression;
 using Atria.Core.Game.State;
@@ -28,25 +29,39 @@ public sealed class CombatSelectionModal(
 {
     private bool active;
     private bool pointerToggle, pointerFinish;
-    private readonly Func<int, CombatSelectionInput, bool> query = (player, input) => host is NativeDialogueFrameHost { Controls: { } controls } ? controls.PlayerMenu(player, input switch
+    private readonly Func<int, CombatSelectionInput, bool> query = (player, input) =>
     {
-        CombatSelectionInput.Previous => GameAction.MenuUp,
-        CombatSelectionInput.Next => GameAction.MenuDown,
-        CombatSelectionInput.Toggle => GameAction.Attack,
-        _ => GameAction.Confirm
-    }, input is CombatSelectionInput.Previous or CombatSelectionInput.Next) : host.QueryScan(input switch
-    {
-        CombatSelectionInput.Previous => bindings[player, 2],
-        CombatSelectionInput.Next => bindings[player, 3],
-        CombatSelectionInput.Toggle => bindings[player, 4],
-        _ => bindings[0, 5]
-    });
+        if (host is NativeDialogueFrameHost { Controls: { } controls })
+        {
+            bool touch = player == 0 && controls.CombatSelection.TakeCombatSelection(input);
+            bool physical = controls.PlayerMenu(player, input switch
+            {
+                CombatSelectionInput.Previous => GameAction.MenuUp,
+                CombatSelectionInput.Next => GameAction.MenuDown,
+                CombatSelectionInput.Toggle => GameAction.Attack,
+                _ => GameAction.Confirm
+            }, input is CombatSelectionInput.Previous or CombatSelectionInput.Next);
+            return touch || physical;
+        }
+
+        return host.QueryScan(input switch
+        {
+            CombatSelectionInput.Previous => bindings[player, 2],
+            CombatSelectionInput.Next => bindings[player, 3],
+            CombatSelectionInput.Toggle => bindings[player, 4],
+            _ => bindings[0, 5]
+        });
+    };
     public CombatPartySelection Run(int configuredPlayers)
     {
         if (active)
         {
             throw new InvalidOperationException("Native party-selection state cannot reenter itself.");
         }
+
+        using IDisposable? mobileInputScope = host is NativeDialogueFrameHost nativeHost
+            ? nativeHost.BeginMobileOverlayScope?.Invoke(MobileOverlayKind.CombatSelection)
+            : null;
 
         var selection = new CombatPartySelection(state, configuredPlayers);
         active = true;

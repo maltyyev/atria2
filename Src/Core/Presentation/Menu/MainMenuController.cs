@@ -84,8 +84,12 @@ public sealed partial class MainMenuController
     }
 
     public void PointerSelect(int item, bool saveDisabled)
+        => PointerSelect(item, saveDisabled, MainMenuPresentationPolicy.Desktop);
+
+    public void PointerSelect(int item, bool saveDisabled, MainMenuPresentationPolicy policy)
     {
-        if (Confirmation || item < 0 || item >= 6 || saveDisabled && item == 2 || Selection == item)
+        if (Confirmation || !MainMenuLayout.OrderFor(policy).Contains(item)
+            || saveDisabled && item == MainMenuLayout.SaveItem || Selection == item)
         {
             return;
         }
@@ -127,14 +131,21 @@ public sealed partial class MainMenuController
     }
 
     public void Input(MenuInput input, bool saveDisabled, Action<MenuCommand> emit)
+        => Input(input, saveDisabled, emit, MainMenuPresentationPolicy.Desktop);
+
+    public void Input(MenuInput input, bool saveDisabled, Action<MenuCommand> emit, MainMenuPresentationPolicy policy)
     {
         ArgumentNullException.ThrowIfNull(emit);
         void Sound(int id) => emit(new(MenuEffect.Sound, id));
         if (!Confirmation)
         {
+            ReadOnlySpan<int> order = MainMenuLayout.OrderFor(policy);
+            if (!order.Contains(Selection))
+                Selection = PanelItem = order[0];
+
             if (input.Next || input.Previous)
             {
-                Selection = PanelItem = MainMenuLayout.Navigate(Selection, input.Next ? 1 : -1, saveDisabled);
+                Selection = PanelItem = MainMenuLayout.Navigate(Selection, input.Next ? 1 : -1, saveDisabled, policy);
                 Sound(0);
                 VisualState = MenuVisualState.Stable;
                 Reveal = 7;
@@ -153,6 +164,12 @@ public sealed partial class MainMenuController
 
             if (saveDisabled && Selection == MainMenuLayout.SaveItem)
                 return;
+            if (policy.CanContinue && Selection == MainMenuLayout.NewItem)
+            {
+                emit(new(MenuEffect.TryReturnToPreviousMode));
+                return;
+            }
+
             PanelItem = Selection;
             VisualState = MenuVisualState.Modal;
             Sound(3);

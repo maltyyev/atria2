@@ -42,6 +42,9 @@ func testStart(_ resources: UnsafePointer<CChar>?, _ storage: UnsafePointer<CCha
         precondition(TouchControlGeometry.directionPadSize == CGSize(width: 138, height: 90) &&
                      TouchControlMetrics.buttonSide == 42 && TouchControlMetrics.buttonGap == 6,
             "Gameplay controls must keep the approved 42-point buttons and 6-point gaps.")
+        precondition(TouchOverlayMode.combatSelection.rawValue == 3 &&
+                     TouchOverlayMode.experienceAllocation.rawValue == 4,
+            "New Swift overlay modes must match the appended Core contract IDs.")
         let fittedMenu = RenderedViewportGeometry.fit(containerWidth: 852, containerHeight: 393,
             contentWidth: 2560, contentHeight: 1440).cgRect
         precondition(abs(fittedMenu.width - 698.6666666667) < 0.001 && fittedMenu.minX > 76,
@@ -59,21 +62,41 @@ func testStart(_ resources: UnsafePointer<CChar>?, _ storage: UnsafePointer<CCha
             let combatLayout = TouchControlGeometry.overlayLayout(viewport: fittedGameplay,
                 screenBounds: screenBounds, safeArea: safeArea, overlayKind: .combat,
                 showLanguageButton: true, languageSize: CGSize(width: 70, height: 42))
+            let selectionLayout = TouchControlGeometry.overlayLayout(viewport: fittedGameplay,
+                screenBounds: screenBounds, safeArea: safeArea, overlayKind: .combatSelection,
+                showLanguageButton: true, languageSize: CGSize(width: 70, height: 42))
+            let experienceLayout = TouchControlGeometry.overlayLayout(viewport: fittedGameplay,
+                screenBounds: screenBounds, safeArea: safeArea, overlayKind: .experienceAllocation,
+                showLanguageButton: true, languageSize: CGSize(width: 70, height: 42))
             precondition(navigationLayout.directionPad != nil && navigationLayout.navigationButtons != nil,
                 "The 4:3 navigation controls must fit in both landscape safe-area orientations.")
             precondition(combatLayout.stick != nil && combatLayout.combatButtons != nil,
                 "The 4:3 combat controls must fit in both landscape safe-area orientations.")
             precondition(combatLayout.stick?.width == 120,
                 "The combat stick should use the available black gutter without approaching the notch.")
+            precondition(selectionLayout.directionPad != nil && selectionLayout.combatButtons != nil &&
+                         selectionLayout.navigationButtons == nil && selectionLayout.stick == nil &&
+                         selectionLayout.languageButton == nil,
+                "Pre-battle selection shows arrows and X/A only, with no stick or language button.")
+            precondition(experienceLayout.directionPad != nil && experienceLayout.navigationButtons != nil &&
+                         experienceLayout.combatButtons == nil && experienceLayout.stick == nil &&
+                         experienceLayout.languageButton == nil,
+                "Experience allocation shows arrows and A/B only, with no stick or language button.")
             precondition(navigationLayout.navigationButtons?.size == TouchControlGeometry.directionPadSize &&
-                         combatLayout.combatButtons?.size == TouchControlGeometry.directionPadSize,
+                         combatLayout.combatButtons?.size == TouchControlGeometry.directionPadSize &&
+                         selectionLayout.combatButtons?.size == TouchControlGeometry.directionPadSize,
                 "Face buttons must fit the 138-by-90 gutter group.")
             let navigationFaces = TouchControlGeometry.faceButtonFrames(in: CGRect(origin: .zero,
                 size: navigationLayout.navigationButtons!.size))
             let combatFaces = TouchControlGeometry.faceButtonFrames(in: CGRect(origin: .zero,
                 size: combatLayout.combatButtons!.size))
+            let selectionFaces = TouchControlGeometry.faceButtonFrames(in: CGRect(origin: .zero,
+                size: selectionLayout.combatButtons!.size))
             precondition(navigationFaces.jump == combatFaces.jump && navigationFaces.modifier == combatFaces.modifier,
                 "Navigation A/B must keep the same positions as combat A/B.")
+            precondition(selectionFaces.attack == combatFaces.attack && selectionFaces.jump == combatFaces.jump &&
+                         experienceLayout.navigationButtons?.origin == navigationLayout.navigationButtons?.origin,
+                "Selection X/A and XP A/B must keep their agreed positions across scenes.")
             precondition(navigationFaces.jump.midX == navigationLayout.navigationButtons!.midX - navigationLayout.navigationButtons!.minX &&
                          navigationFaces.jump.minY > navigationFaces.modifier.minY &&
                          combatFaces.attack.minX < combatFaces.jump.minX &&
@@ -96,6 +119,11 @@ func testStart(_ resources: UnsafePointer<CChar>?, _ storage: UnsafePointer<CCha
             }
             precondition(navigationLayout.directionPad!.minX < safeArea.minX,
                 "Lower controls should use the wider black gutter while avoiding the notch vertically.")
+            precondition(TouchControlGeometry.visibleActionButtons(for: .combatSelection) == [.a, .x] &&
+                         TouchControlGeometry.visibleActionButtons(for: .experienceAllocation) == [.a, .b] &&
+                         TouchControlGeometry.visibleActionButtons(for: .combat) == [.a, .b, .x] &&
+                         TouchControlGeometry.visibleActionButtons(for: .navigation) == [.a, .b],
+                "Each scene must expose only its Core-defined face buttons.")
             let dpad = TouchControlGeometry.directionPadFrames(in: CGRect(origin: .zero,
                 size: TouchControlGeometry.directionPadSize))
             precondition(dpad.left.minY == dpad.down.minY && dpad.down.minY == dpad.right.minY &&

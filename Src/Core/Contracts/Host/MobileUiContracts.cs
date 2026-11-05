@@ -5,7 +5,9 @@ public enum MobileOverlayKind
 {
     None = 0,
     Navigation = 1,
-    Combat = 2
+    Combat = 2,
+    CombatSelection = 3,
+    ExperienceAllocation = 4
 }
 
 /// <summary>Native-menu action IDs shared by mobile adapters and the Core session.</summary>

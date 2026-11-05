@@ -281,10 +281,7 @@ public sealed partial class GameSession
     private void RunControlModal(Func<bool> closed, Action updateAndDraw, MobileOverlayKind? overlayOverride = null)
     {
         var customPresentation = host.PresentCustomFrame;
-        var previousOverlay = mobileOverlayOverride;
-        ulong previousModalIdentity = mobileModalIdentity;
-        mobileOverlayOverride = overlayOverride;
-        mobileModalIdentity = checked(++mobileModalSequence);
+        using IDisposable? mobileInputScope = host.BeginMobileOverlayScope?.Invoke(overlayOverride);
         host.PresentCustomFrame = null;
         try
         {
@@ -311,9 +308,6 @@ public sealed partial class GameSession
         finally
         {
             host.PresentCustomFrame = customPresentation;
-            mobileOverlayOverride = previousOverlay;
-            mobileModalIdentity = previousModalIdentity;
-            if (window is IMobileUiChannel finalMobileChannel) PublishMobileUiSnapshot(finalMobileChannel);
         }
     }
 }

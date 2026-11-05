@@ -58,6 +58,8 @@ public sealed partial class GameSession
                 MobileUiSnapshot snapshot = CopyMobileSnapshot(channel);
                 Check(snapshot.Scene == "main" && snapshot.ShowProfilesButton,
                     "the main menu publishes a localized profile action when profile changes are allowed");
+                Check(!session.CurrentMainMenuPolicy.CanContinue && !session.CurrentMainMenuPolicy.ShowQuit,
+                    "a fresh mobile launch keeps New Game and omits Quit");
                 ulong idleRevision = snapshot.Revision;
                 session.PollMobileUi();
                 Check(CopyMobileSnapshot(channel).Revision == idleRevision,
@@ -253,7 +255,37 @@ public sealed partial class GameSession
                 Check(CopyMobileSnapshot(channel).Menu?.Modal is null && !session.persistenceMenu.PendingOperation,
                     "current ConfirmNo dismisses the Save modal without writing a save");
 
-                return "Mobile menu session PASS: profile validation/rejection/cancel, live RU/BE settings labels, localized Save/Load titles and confirmations, stale Load activation/confirmation, and stable idle revisions. Evidence: " + output;
+                Check(session.CloseScreen(), "the Save screen returns to Main Menu before the resume probe");
+                session.navigation.RestoreLocation(LocationKind.World);
+                session.SetVisibleMode(GameMode.World);
+                session.hasStartedGame = true;
+                session.state.Money = 12_345;
+                session.state.WorldX = 123;
+                session.state.Party[0].Level = 7;
+                session.OpenScreen(UiScreen.MainMenu);
+                Check(session.CurrentMainMenuPolicy.CanContinue && !session.CurrentMainMenuPolicy.ShowQuit,
+                    "a retained world location exposes Continue on the mobile Main Menu");
+                session.OpenScreen(UiScreen.Settings);
+                Check(session.CloseScreen() && session.CurrentMainMenuPolicy.CanContinue,
+                    "returning from Settings preserves Continue eligibility");
+                session.OpenScreen(UiScreen.Load);
+                Check(session.CloseScreen() && session.CurrentMainMenuPolicy.CanContinue,
+                    "returning from Load preserves Continue eligibility");
+                int retainedMoney = session.state.Money;
+                int retainedWorldX = session.state.WorldX;
+                int retainedLevel = session.state.Party[0].Level;
+                session.menu.Input(new(Accept: true), session.saveDisabled, session.HandleMenu, session.CurrentMainMenuPolicy);
+                Check(session.state.Mode == GameMode.World && session.navigation.Location == LocationKind.World
+                    && session.navigation.ScreenDepth == 0 && session.state.Money == retainedMoney
+                    && session.state.WorldX == retainedWorldX && session.state.Party[0].Level == retainedLevel
+                    && session.hasStartedGame && session.saveDisabled,
+                    "Continue closes the pushed Main Menu to the existing world without resetting session or save permission");
+                session.navigation.Reset();
+                session.SetVisibleMode(GameMode.MainMenu);
+                Check(!session.CurrentMainMenuPolicy.CanContinue,
+                    "a termination-style navigation reset with no returnable location does not expose Continue");
+
+                return "Mobile menu session PASS: profile/settings/persistence, active-session Continue after Settings/Load, non-destructive resume, termination eligibility and stable revisions. Evidence: " + output;
             }
             finally
             {

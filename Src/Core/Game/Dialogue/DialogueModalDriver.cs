@@ -1,4 +1,5 @@
 using Atria.Core.Contracts.Audio;
+using Atria.Core.Contracts.Host;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Contracts.Window;
 using Atria.Core.Game.Progression;
@@ -70,6 +71,10 @@ public sealed class NativeDialogueFrameHost : IDialogueFrameHost
     private readonly uint[] presentation = new uint[640 * 480];
     private readonly ushort[] overlayFrame = new ushort[640 * 480];
     public InputRouter? Controls
+    {
+        get; set;
+    }
+    public Func<MobileOverlayKind?, IDisposable?>? BeginMobileOverlayScope
     {
         get; set;
     }

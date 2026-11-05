@@ -79,6 +79,7 @@ public sealed class MobileWindow : IGameWindow, IGamepadDevice, IInputActivitySo
             {
                 touchChanges.Clear();
                 touchState = lastTouchState = new(snapshot.ContextId, 0, 0, MobileTouchButtons.None);
+                touchChanges.Add(touchState);
                 uiCommands.Clear();
             }
 

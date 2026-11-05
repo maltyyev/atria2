@@ -1,7 +1,30 @@
 using Atria.Core.Game.Progression;
+using Atria.Core.Game.Combat;
 using Atria.Core.Resources;
 
 namespace Atria.Core.Runtime.Input;
+
+/// <summary>Typed touch actions for the native party-selection scene.</summary>
+public readonly struct CombatSelectionInputView
+{
+    private readonly InputRouter router;
+    internal CombatSelectionInputView(InputRouter router) => this.router = router;
+
+    /// <summary>Consumes one queued touch action while the party-selection scene owns input.</summary>
+    public bool TakeCombatSelection(CombatSelectionInput input) => router.TakeMobileCombatSelectionInput(input);
+}
+
+/// <summary>Typed touch actions for native XP allocation and notices.</summary>
+public readonly struct ExperienceInputView
+{
+    private readonly InputRouter router;
+    internal ExperienceInputView(InputRouter router) => this.router = router;
+
+    /// <summary>Consumes a touch press or reads held XP allocation transfer while its scene owns input.</summary>
+    public bool TakeExperience(ExperienceInput input) => router.TakeMobileExperienceInput(input);
+    /// <summary>Reads the touch B button while the XP scene owns input.</summary>
+    public bool FinishHeld => router.IsMobileExperienceFinishHeld();
+}
 
 /// <summary>Actions available while navigating menus and modal UI.</summary>
 public enum MenuAction
@@ -195,6 +218,8 @@ public readonly struct TownInputView
     public bool TakeMobilePrevious() => router.TakeMobileTownPrevious();
     /// <summary>Consumes one touch-only edge that selects the next town object.</summary>
     public bool TakeMobileNext() => router.TakeMobileTownNext();
+    /// <summary>Consumes one queued touch quantity step: Up is +1 and Down is -1.</summary>
+    public int TakeMobileQuantityAdjustment() => router.TakeMobileTownQuantityAdjustment();
     /// <summary>Reads held action state for one player.</summary>
     public bool Held(int player, TownAction action) => router.Held(player, Map(action));
     /// <summary>Consumes the first matching menu action from either player.</summary>

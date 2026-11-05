@@ -14,6 +14,12 @@ public sealed partial class GameSession
     private MainMenuView? mainMenuView;
     private bool inputHintsDirty = true;
 
+    private MainMenuPresentationPolicy CurrentMainMenuPolicy => window is IMobileUiChannel
+        ? MainMenuPresentationPolicy.Mobile(navigation.Location is not null
+            && navigation.ScreenDepth > 0
+            && navigation.Mode == GameMode.MainMenu)
+        : MainMenuPresentationPolicy.Desktop;
+
     private bool PresentMainMenu()
     {
         if (blockingControls || state.Mode is not (GameMode.MainMenu or GameMode.QuitConfirmation))
@@ -21,7 +27,7 @@ public sealed partial class GameSession
         var size = window.ClientSize;
         if (size.Width <= 0 || size.Height <= 0)
             return true;
-        mainMenuView ??= new(hostServices.InterfaceRoot);
+        mainMenuView ??= new(hostServices.InterfaceRoot, window is IMobileUiChannel);
         if (inputHintsDirty)
         {
             mainMenuView.InvalidateProfileHint();
@@ -31,7 +37,8 @@ public sealed partial class GameSession
             ? ""
             : GameText.Format(CanChangeProfile ? "ui.profiles.menuHintDynamic" : "ui.profiles.menuCurrent",
                 ("name", playerProfiles.Active.Name), ("button", controls.ProfileMenuHint));
-        var frame = mainMenuView.Render(menu.Selection, saveDisabled, menu.Confirmation, quitting ? quit.Selection == 1 : menu.YesSelected, quitting, profile);
+        var frame = mainMenuView.Render(menu.Selection, saveDisabled, menu.Confirmation,
+            quitting ? quit.Selection == 1 : menu.YesSelected, quitting, profile, CurrentMainMenuPolicy);
         inputHintsDirty = false;
         presenter.Resize(size.Width, size.Height);
         presenter.SetFrameSize(MainMenuLayout.Width, MainMenuLayout.Height);

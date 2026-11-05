@@ -1,5 +1,6 @@
 using System.Text;
 using Atria.Core.Contracts.Audio;
+using Atria.Core.Contracts.Host;
 using Atria.Core.Game.Dialogue;
 using Atria.Core.Game.State;
 using Atria.Core.Presentation.Dialogue;
@@ -193,6 +194,10 @@ public sealed class NativeExperienceModalEffects : IExperienceModalEffects, IDis
             throw new InvalidOperationException("XP modal is already active.");
         }
 
+        using IDisposable? mobileInputScope = host is NativeDialogueFrameHost nativeHost
+            ? nativeHost.BeginMobileOverlayScope?.Invoke(MobileOverlayKind.ExperienceAllocation)
+            : null;
+
         current = session;
         PumpFocused();
         session.TakeRedraw(Milliseconds);
@@ -237,6 +242,10 @@ public sealed class NativeExperienceModalEffects : IExperienceModalEffects, IDis
             throw new InvalidOperationException("Level notice requires completed XP allocation.");
         }
 
+        using IDisposable? mobileInputScope = host is NativeDialogueFrameHost nativeHost
+            ? nativeHost.BeginMobileOverlayScope?.Invoke(MobileOverlayKind.ExperienceAllocation)
+            : null;
+
         if (soundEnabled())
         {
             stopExclusiveSound();
@@ -254,7 +263,8 @@ public sealed class NativeExperienceModalEffects : IExperienceModalEffects, IDis
                 ticks++;
                 ApplyFocusPause(notice, ref observedPause);
                 Draw(awardedParty, notice.Frame, notice.Deadline);
-                notice.AfterRenderedFrame(Milliseconds, held(bindings.Confirm));
+                bool mobileFinish = MobileExperienceFinishPressedOrHeld();
+                notice.AfterRenderedFrame(Milliseconds, held(bindings.Confirm) || mobileFinish);
             }
 
             ApplyFocusPause(notice, ref observedPause);
@@ -280,18 +290,22 @@ public sealed class NativeExperienceModalEffects : IExperienceModalEffects, IDis
             throw new InvalidOperationException("No native XP modal is active.");
         }
 
+        using IDisposable? mobileInputScope = host is NativeDialogueFrameHost nativeHost
+            ? nativeHost.BeginMobileOverlayScope?.Invoke(MobileOverlayKind.ExperienceAllocation)
+            : null;
+
         PumpFocused();
-        while (held(bindings.Cancel))
+        while (held(bindings.Cancel) || MobileExperienceFinishHeld())
         {
             PumpFocused();
             int ticks = 0;
-            while (held(bindings.Cancel) && ticks < MaximumTicksPerBatch && TryLogicalTick())
+            while ((held(bindings.Cancel) || MobileExperienceFinishHeld()) && ticks < MaximumTicksPerBatch && TryLogicalTick())
             {
                 ticks++;
                 updateAwardMusic();
             }
 
-            if (held(bindings.Cancel) && !host.Gate.IsDue)
+            if ((held(bindings.Cancel) || MobileExperienceFinishHeld()) && !host.Gate.IsDue)
             {
                 host.Gate.Clock.Yield();
             }
@@ -302,15 +316,31 @@ public sealed class NativeExperienceModalEffects : IExperienceModalEffects, IDis
         current = null;
     }
 
-    private bool Query(ExperienceInput input) => input switch
+    private bool Query(ExperienceInput input)
     {
-        ExperienceInput.CycleMode => host.QueryScan(bindings.Confirm),
-        ExperienceInput.PreviousMember => host.QueryScan(bindings.Up),
-        ExperienceInput.NextMember => host.QueryScan(bindings.Down),
-        ExperienceInput.GiveFromSelectedHeld => held(bindings.Previous),
-        ExperienceInput.TakeFromOthersHeld => held(bindings.Next),
-        _ => host.QueryScan(bindings.Cancel)
-    };
+        bool touch = host is NativeDialogueFrameHost { Controls: { } controls }
+            && controls.Experience.TakeExperience(input);
+        bool physical = input switch
+        {
+            ExperienceInput.CycleMode => host.QueryScan(bindings.Confirm),
+            ExperienceInput.PreviousMember => host.QueryScan(bindings.Up),
+            ExperienceInput.NextMember => host.QueryScan(bindings.Down),
+            ExperienceInput.GiveFromSelectedHeld => held(bindings.Previous),
+            ExperienceInput.TakeFromOthersHeld => held(bindings.Next),
+            _ => host.QueryScan(bindings.Cancel)
+        };
+        return touch || physical;
+    }
+
+    private bool MobileExperienceFinishPressedOrHeld()
+    {
+        bool pressed = host is NativeDialogueFrameHost { Controls: { } controls }
+            && controls.Experience.TakeExperience(ExperienceInput.Finish);
+        return pressed || MobileExperienceFinishHeld();
+    }
+
+    private bool MobileExperienceFinishHeld() => host is NativeDialogueFrameHost { Controls: { } controls }
+        && controls.Experience.FinishHeld;
     private void Draw(IReadOnlyList<PartyMember> party, LevelUpNoticeFrame? notice, uint nativeCombatMilliseconds)
     {
         ExperienceAllocationSession session = current ?? throw new InvalidOperationException("No XP scene.");

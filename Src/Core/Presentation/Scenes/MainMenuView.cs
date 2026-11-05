@@ -7,31 +7,46 @@ using Atria.Core.Resources.Localization;
 namespace Atria.Core.Presentation.Scenes;
 
 /// <summary>Cached full-resolution menu; drawing never advances game or menu state.</summary>
-public sealed class MainMenuView(string assetRoot)
+public sealed class MainMenuView(string assetRoot, bool mobile = false)
 {
     private static readonly RasterClip profileHintBounds = new(320, 1280, 2240, 1360);
-    private readonly ushort[] background = MainMenuArtwork.LoadNative(assetRoot);
+    private readonly ushort[] background = MainMenuArtwork.LoadNative(assetRoot, mobile);
     private readonly ushort[] pixels = new ushort[MainMenuLayout.Width * MainMenuLayout.Height];
     private readonly uint[] presentation = new uint[MainMenuLayout.Width * MainMenuLayout.Height];
     private (int Selection, bool SaveDisabled, bool Confirmation, bool Yes, bool Quit, LocalizationCatalog Catalog)? cached;
     private string? cachedProfile;
+    private bool cachedCanContinue, cachedShowQuit;
     private bool profileHintDirty = true;
 
     /// <summary>Forces the cached profile hint strip to redraw on the next frame.</summary>
     internal void InvalidateProfileHint() => profileHintDirty = true;
 
-    public ReadOnlySpan<uint> Render(int selection, bool saveDisabled, bool confirmation, bool yes, bool quit, string profile = "")
+    public ReadOnlySpan<uint> Render(int selection, bool saveDisabled, bool confirmation, bool yes, bool quit, string profile = "") =>
+        Render(selection, saveDisabled, confirmation, yes, quit, profile, MainMenuPresentationPolicy.Desktop);
+
+    public ReadOnlySpan<uint> Render(int selection, bool saveDisabled, bool confirmation, bool yes, bool quit,
+        string profile, MainMenuPresentationPolicy policy)
     {
-        var key = (selection, saveDisabled, confirmation, yes, quit, GameText.Current);
-        if (cached != key)
+        LocalizationCatalog catalog = GameText.Current;
+        if (cached is not { } previous
+            || previous.Selection != selection
+            || previous.SaveDisabled != saveDisabled
+            || previous.Confirmation != confirmation
+            || previous.Yes != yes
+            || previous.Quit != quit
+            || cachedCanContinue != policy.CanContinue
+            || cachedShowQuit != policy.ShowQuit
+            || !ReferenceEquals(previous.Catalog, catalog))
         {
             background.CopyTo(pixels, 0);
-            MainMenuArtwork.DrawLabels(selection, pixels, MainMenuLayout.Width, MainMenuLayout.Height, MainMenuLayout.Width, null, saveDisabled);
+            MainMenuArtwork.DrawLabels(selection, pixels, MainMenuLayout.Width, MainMenuLayout.Height, MainMenuLayout.Width, null, saveDisabled, policy);
             if (confirmation || quit)
                 DrawConfirmation(yes, quit);
             for (int i = 0; i < pixels.Length; i++)
                 presentation[i] = SpriteRaster.ToBgra32(pixels[i]);
-            cached = key;
+            cached = (selection, saveDisabled, confirmation, yes, quit, catalog);
+            cachedCanContinue = policy.CanContinue;
+            cachedShowQuit = policy.ShowQuit;
             cachedProfile = null;
             profileHintDirty = true;
         }

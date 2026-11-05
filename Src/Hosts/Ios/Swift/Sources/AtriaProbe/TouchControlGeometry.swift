@@ -36,8 +36,19 @@ struct TouchOverlayLayout: Equatable {
     let languageButton: CGRect?
 }
 
-enum TouchOverlayMode {
-    case none, navigation, combat
+enum TouchOverlayMode: Int {
+    case none = 0
+    case navigation = 1
+    case combat = 2
+    case combatSelection = 3
+    case experienceAllocation = 4
+}
+
+struct TouchOverlayActionButtons: OptionSet {
+    let rawValue: UInt8
+    static let a = Self(rawValue: 1 << 0)
+    static let b = Self(rawValue: 1 << 1)
+    static let x = Self(rawValue: 1 << 2)
 }
 
 enum TouchControlMetrics {
@@ -53,6 +64,15 @@ enum TouchControlMetrics {
 
 /// Converts UIKit touch positions to raw signed axes without applying game thresholds.
 enum TouchControlGeometry {
+    static func visibleActionButtons(for mode: TouchOverlayMode) -> TouchOverlayActionButtons {
+        switch mode {
+        case .none: []
+        case .navigation, .experienceAllocation: [.a, .b]
+        case .combat: [.a, .b, .x]
+        case .combatSelection: [.a, .x]
+        }
+    }
+
     static var directionPadSize: CGSize {
         CGSize(width: TouchControlMetrics.buttonSide * 3 + TouchControlMetrics.buttonGap * 2,
                height: TouchControlMetrics.buttonSide * 2 + TouchControlMetrics.buttonGap)
@@ -114,9 +134,12 @@ enum TouchControlGeometry {
         let languageGutter = rightGutter(viewport: viewport, safeArea: safeArea)
         let usableHeight = safeArea.height - margin * 2
         let dpadSize = directionPadSize
-        let canPlaceLeftControls = left.width - margin * 2 >= dpadSize.width && usableHeight >= dpadSize.height
+        let hasDpad = overlayKind == .navigation || overlayKind == .combatSelection || overlayKind == .experienceAllocation
+        let hasNavigationButtons = overlayKind == .navigation || overlayKind == .experienceAllocation
+        let hasCombatButtons = overlayKind == .combat || overlayKind == .combatSelection
+        let canPlaceLeftControls = hasDpad && left.width - margin * 2 >= dpadSize.width && usableHeight >= dpadSize.height
         let canPlaceRightButtons = right.width - margin * 2 >= directionPadSize.width && usableHeight >= directionPadSize.height
-        let directionPad = overlayKind == .navigation && canPlaceLeftControls
+        let directionPad = canPlaceLeftControls
             ? CGRect(x: left.maxX - margin - dpadSize.width, y: safeArea.maxY - margin - dpadSize.height,
                      width: dpadSize.width, height: dpadSize.height) : nil
         let stickDiameter = min(TouchControlMetrics.stickMaximumDiameter,
@@ -124,11 +147,11 @@ enum TouchControlGeometry {
         let stickFrame = overlayKind == .combat && stickDiameter >= TouchControlMetrics.stickMinimumDiameter
             ? CGRect(x: left.maxX - margin - stickDiameter, y: safeArea.maxY - margin - stickDiameter,
                      width: stickDiameter, height: stickDiameter) : nil
-        let navigationFrame = overlayKind == .navigation && canPlaceRightButtons
+        let navigationFrame = hasNavigationButtons && canPlaceRightButtons
             ? CGRect(x: right.maxX - margin - directionPadSize.width,
                      y: safeArea.maxY - margin - directionPadSize.height, width: directionPadSize.width,
                      height: directionPadSize.height) : nil
-        let combatFrame = overlayKind == .combat && canPlaceRightButtons
+        let combatFrame = hasCombatButtons && canPlaceRightButtons
             ? CGRect(x: right.maxX - margin - directionPadSize.width,
                      y: safeArea.maxY - margin - directionPadSize.height, width: directionPadSize.width,
                      height: directionPadSize.height) : nil
@@ -136,7 +159,8 @@ enum TouchControlGeometry {
         let languageHeight = min(max(buttonSide, languageSize.height), usableHeight)
         let languageWidth = min(languageMaxWidth, max(buttonSide, languageSize.width))
         var languageFrame: CGRect? = nil
-        if showLanguageButton, languageWidth >= buttonSide, languageHeight >= buttonSide {
+        let languageAllowed = overlayKind != .combat && overlayKind != .combatSelection && overlayKind != .experienceAllocation
+        if showLanguageButton, languageAllowed, languageWidth >= buttonSide, languageHeight >= buttonSide {
             let proposed = CGRect(x: languageGutter.maxX - margin - languageWidth, y: safeArea.minY + margin,
                                   width: languageWidth, height: languageHeight)
             if combatFrame.map({ !$0.intersects(proposed) }) ?? true,

@@ -6,6 +6,12 @@ using Atria.Platforms.Windows.Win32;
 UnicodeText.UseRasterizer(new DirectWriteRasterizer());
 Tests.Windows.WindowsSessionProbeHost.VerifyLifetimeContract();
 
+if (args.Length == 2 && args[1] == "--dialogue")
+{
+    Console.WriteLine(Tests.Windows.Dialogue.DialogueTests.Run(args[0]));
+    return;
+}
+
 if (args.Length == 4 && args[3] == "--expedition-session")
 {
     Console.WriteLine(Atria.Core.Runtime.GameSession.VerifyExpedition(args[0], args[1], args[2], Tests.Windows.Render.UnicodeTextTests.SaveBitmap, Tests.Windows.WindowsSessionProbeHost.Create));

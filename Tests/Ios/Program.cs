@@ -3,7 +3,11 @@ using Atria.Core.Resources.Audio;
 using Atria.Core.Runtime.Audio;
 using Atria.Core.Contracts.Host;
 using Atria.Core.Game;
+using Atria.Core.Game.Combat;
+using Atria.Core.Game.Progression;
+using Atria.Core.Game.State;
 using Atria.Core.Runtime;
+using Atria.Core.Persistence;
 using Atria.Core.Persistence.Controls;
 using Atria.Core.Presentation.Controls;
 using Atria.Core.Runtime.Input;
@@ -19,6 +23,12 @@ using Atria.Core.Resources;
 static void Check(bool condition, string description)
 {
     if (!condition) throw new Exception(description);
+}
+
+if (args.Length == 1 && args[0] == "--mobile-handoff")
+{
+    Console.WriteLine(MobileInputChecks.RunContextHandoff());
+    return;
 }
 
 var window = new MobileWindow();
@@ -330,6 +340,30 @@ using (var townRouter = new InputRouter(ControlProfile.Defaults(controlBindings)
     }
 }
 
+var townQuantityWindow = new MobileWindow();
+townQuantityWindow.PublishUiSnapshot(Snapshot(13, "shop", MobileOverlayKind.Navigation));
+using (var townQuantityRouter = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, townQuantityWindow))
+{
+    townQuantityRouter.SetMobileContext(13, MobileOverlayKind.Navigation, directionsAreMenu: true);
+    foreach ((MobileTouchButtons Button, int Step) direction in new[]
+    {
+        (MobileTouchButtons.Up, 1),
+        (MobileTouchButtons.Down, -1)
+    })
+    {
+        townQuantityWindow.SubmitTouchState(new(13, 0, 0, direction.Button));
+        townQuantityRouter.Poll(townQuantityWindow);
+        townQuantityRouter.Poll(townQuantityWindow);
+        Check(townQuantityRouter.TownInput.TakeMobileQuantityAdjustment() == direction.Step
+            && townQuantityRouter.TownInput.TakeMobileQuantityAdjustment() == 0,
+            $"Shop touch {direction.Button} did not produce exactly one quantity step.");
+        townQuantityWindow.SubmitTouchState(new(13, 0, 0, MobileTouchButtons.None));
+        townQuantityRouter.Poll(townQuantityWindow);
+        Check(townQuantityRouter.TownInput.TakeMobileQuantityAdjustment() == 0,
+            $"Shop touch {direction.Button} repeated after release.");
+    }
+}
+
 var focusTouchWindow = new MobileWindow();
 focusTouchWindow.PublishUiSnapshot(Snapshot(10, "world", MobileOverlayKind.Navigation));
 using (var focusTouchRouter = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, focusTouchWindow))
@@ -350,6 +384,128 @@ using (var focusTouchRouter = new InputRouter(ControlProfile.Defaults(controlBin
     Check(focusTouchRouter.WorldInput.Press(0, WorldAction.Up), "Focus reset did not synthesize neutral and rearm fresh touch input.");
 }
 Console.WriteLine("Mobile semantic input PASS: independent touch actions, sector edges, focus reset and scene rearm.");
+
+var battleModalWindow = new MobileWindow();
+var battleModalRouter = new InputRouter(ControlProfile.Defaults(controlBindings), controlBindings, battleModalWindow);
+using (battleModalRouter)
+{
+    var battleState = new GameState();
+    foreach (PartyMember member in battleState.Heroes.Take(3))
+    {
+        member.MemberStatus = 1;
+        member.SelectedForBattle = 1;
+        member.Health = 10;
+        member.Level = 1;
+        member.NextExperience = ProgressionRules.Thresholds[0];
+        member.Class = 0;
+    }
+
+    const ulong selectionContext = 20;
+    battleModalWindow.PublishUiSnapshot(Snapshot(selectionContext, "combat.selection", MobileOverlayKind.CombatSelection));
+    battleModalRouter.SetMobileContext(selectionContext, MobileOverlayKind.CombatSelection);
+    var selection = new CombatPartySelection(battleState, 1);
+    void TapSelection(MobileTouchButtons button)
+    {
+        battleModalWindow.SubmitTouchState(new(selectionContext, 0, 0, button));
+        battleModalWindow.SubmitTouchState(new(selectionContext, 0, 0, MobileTouchButtons.None));
+        battleModalRouter.Poll(battleModalWindow);
+        battleModalRouter.Poll(battleModalWindow);
+    }
+    void ApplySelection() => selection.ApplyInput((player, action) =>
+        player == 0 && battleModalRouter.CombatSelection.TakeCombatSelection(action), _ => { });
+
+    TapSelection(MobileTouchButtons.Down);
+    ApplySelection();
+    Check(selection.Leaders[0] == 1, "Short touch Down did not reach the real party-selection consumer after repeated polls.");
+    TapSelection(MobileTouchButtons.X);
+    ApplySelection();
+    Check(selection.Selected[1] == 0, "Touch X did not toggle the selected party member.");
+    TapSelection(MobileTouchButtons.X);
+    ApplySelection();
+    Check(selection.Selected[1] == 1, "Touch X did not re-toggle the selected party member after release.");
+
+    battleModalWindow.SubmitTouchState(new(selectionContext, 0, 0, MobileTouchButtons.A));
+    battleModalRouter.Poll(battleModalWindow);
+    battleModalRouter.Poll(battleModalWindow);
+    ApplySelection();
+    Check(selection.Completed, "Touch A did not start the real party-selection consumer.");
+
+    const ulong combatContext = 21;
+    battleModalRouter.SetMobileContext(combatContext, MobileOverlayKind.Combat);
+    battleModalWindow.PublishUiSnapshot(Snapshot(combatContext, "combat", MobileOverlayKind.Combat));
+    battleModalRouter.Poll(battleModalWindow);
+    Check(!battleModalRouter.CombatInput.Press(0, CombatAction.Jump), "Held selection A leaked into combat after the scene transition.");
+    Check(!battleModalRouter.CombatSelection.TakeCombatSelection(CombatSelectionInput.Toggle),
+        "Selection X action remained available after battle start.");
+    battleModalWindow.SubmitTouchState(new(combatContext, 0, 0, MobileTouchButtons.A));
+    battleModalRouter.Poll(battleModalWindow);
+    Check(battleModalRouter.CombatInput.Press(0, CombatAction.Jump), "Fresh combat A did not rearm after Core delivered the context-reset release.");
+
+    battleModalWindow.SubmitTouchState(new(combatContext, 0, 0, MobileTouchButtons.None));
+    battleModalRouter.Poll(battleModalWindow);
+    const ulong experienceContext = 22;
+    battleModalRouter.SetMobileContext(experienceContext, MobileOverlayKind.ExperienceAllocation);
+    battleModalWindow.PublishUiSnapshot(Snapshot(experienceContext, "combat.experience", MobileOverlayKind.ExperienceAllocation));
+    var experienceState = new GameState();
+    foreach (PartyMember member in experienceState.Heroes.Take(3))
+    {
+        member.MemberStatus = 1;
+        member.Level = 1;
+        member.NextExperience = ProgressionRules.Thresholds[0];
+        member.Class = 0;
+    }
+
+    var experience = new ExperienceAllocationSession(PartyCodec.Encode(experienceState.Party), 30);
+    void TapExperience(MobileTouchButtons button)
+    {
+        battleModalWindow.SubmitTouchState(new(experienceContext, 0, 0, button));
+        battleModalWindow.SubmitTouchState(new(experienceContext, 0, 0, MobileTouchButtons.None));
+        battleModalRouter.Poll(battleModalWindow);
+        battleModalRouter.Poll(battleModalWindow);
+    }
+    void ApplyExperience() => experience.ApplyInput(action => battleModalRouter.Experience.TakeExperience(action));
+
+    TapExperience(MobileTouchButtons.A);
+    ApplyExperience();
+    Check(experience.Mode == 1 && !experience.Finished, "Short touch A did not cycle XP allocation mode without finishing it.");
+    TapExperience(MobileTouchButtons.A);
+    ApplyExperience();
+    Check(experience.Mode == 2 && experience.Allocation[0] == 30, "Touch A did not select the all-to-one XP preset.");
+
+    battleModalWindow.SubmitTouchState(new(experienceContext, 0, 0, MobileTouchButtons.Left));
+    battleModalRouter.Poll(battleModalWindow);
+    battleModalRouter.Poll(battleModalWindow);
+    ApplyExperience();
+    ApplyExperience();
+    int[] redistributed = new int[experience.Allocation.Length];
+    redistributed[0] = redistributed[1] = redistributed[2] = 10;
+    Check(experience.Allocation.SequenceEqual(redistributed),
+        "Held touch Left did not repeat XP redistribution like the gamepad transfer action.");
+    battleModalWindow.SubmitTouchState(new(experienceContext, 0, 0, MobileTouchButtons.None));
+    battleModalRouter.Poll(battleModalWindow);
+
+    TapExperience(MobileTouchButtons.Up);
+    ApplyExperience();
+    Check(experience.SelectedMember == 2, "Touch Up did not move XP selection to the previous active member.");
+    TapExperience(MobileTouchButtons.Down);
+    ApplyExperience();
+    Check(experience.SelectedMember == 0, "Touch Down did not move XP selection to the next active member.");
+    TapExperience(MobileTouchButtons.B);
+    ApplyExperience();
+    Check(experience.Finished, "Short touch B did not confirm the real XP allocation consumer.");
+
+    const ulong afterExperienceContext = 23;
+    battleModalRouter.SetMobileContext(afterExperienceContext, MobileOverlayKind.Navigation);
+    battleModalWindow.PublishUiSnapshot(Snapshot(afterExperienceContext, "world", MobileOverlayKind.Navigation));
+    battleModalWindow.SubmitTouchState(new(afterExperienceContext, 0, 0, MobileTouchButtons.A));
+    battleModalWindow.SubmitTouchState(new(afterExperienceContext, 0, 0, MobileTouchButtons.None));
+    battleModalRouter.Poll(battleModalWindow);
+    battleModalRouter.Poll(battleModalWindow);
+    Check(!battleModalRouter.Experience.TakeExperience(ExperienceInput.CycleMode)
+        && battleModalRouter.WorldInput.Press(0, WorldAction.Confirm),
+        "XP preset A action leaked into the following navigation scene.");
+}
+Console.WriteLine("Mobile battle scenes PASS: selection and XP consumers, tap queues, held transfer, and phase rearm.");
 
 var lifecycle = new MobileSession();
 Check(lifecycle.Start((gameWindow, _) => { while (!gameWindow.Closed) Thread.Sleep(1); }) == 1, "Session did not start.");

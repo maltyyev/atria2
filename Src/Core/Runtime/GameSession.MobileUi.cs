@@ -27,6 +27,46 @@ public sealed partial class GameSession
             session = probeHost.Session;
             IMobileUiChannel channel = probeHost.Window as IMobileUiChannel
                 ?? throw new InvalidOperationException("Mobile world input probe requires a host with IMobileUiChannel.");
+            session.PublishMobileUiSnapshot(channel);
+            ulong lastContext = session.mobileUiSnapshot?.ContextId
+                ?? throw new InvalidOperationException("Mobile overlay probe did not publish its initial context.");
+            void VerifyScopeSnapshot(string expectedScene, MobileOverlayKind expectedOverlay)
+            {
+                MobileUiSnapshot snapshot = session.mobileUiSnapshot
+                    ?? throw new InvalidOperationException("Mobile overlay probe lost its snapshot.");
+                if (snapshot.Scene != expectedScene || snapshot.OverlayKind != expectedOverlay || snapshot.ContextId <= lastContext)
+                    throw new InvalidOperationException($"Mobile overlay scope expected a fresh {expectedScene}/{expectedOverlay} context.");
+                lastContext = snapshot.ContextId;
+            }
+
+            using (session.BeginMobileOverlayScope(MobileOverlayKind.CombatSelection)
+                ?? throw new InvalidOperationException("Selection scope was unavailable on a mobile host."))
+            {
+                VerifyScopeSnapshot("combat.selection", MobileOverlayKind.CombatSelection);
+                using (session.BeginMobileOverlayScope(MobileOverlayKind.Navigation)
+                    ?? throw new InvalidOperationException("Nested navigation scope was unavailable."))
+                {
+                    VerifyScopeSnapshot("controls.reference", MobileOverlayKind.Navigation);
+                }
+
+                VerifyScopeSnapshot("combat.selection", MobileOverlayKind.CombatSelection);
+                try
+                {
+                    using (session.BeginMobileOverlayScope(MobileOverlayKind.ExperienceAllocation)
+                        ?? throw new InvalidOperationException("XP scope was unavailable."))
+                    {
+                        VerifyScopeSnapshot("combat.experience", MobileOverlayKind.ExperienceAllocation);
+                        throw new InvalidOperationException("expected overlay-scope unwind");
+                    }
+                }
+                catch (InvalidOperationException error) when (error.Message == "expected overlay-scope unwind")
+                {
+                }
+
+                VerifyScopeSnapshot("combat.selection", MobileOverlayKind.CombatSelection);
+            }
+
+            VerifyScopeSnapshot("main", MobileOverlayKind.None);
             session.HandleMenu(new(MenuEffect.ResetGame));
             session.HandleMenu(new(MenuEffect.SetNewGameGlobals));
             session.HandleMenu(new(MenuEffect.LoadGroundMap, Resource: "ground1.amf"));
@@ -114,6 +154,8 @@ public sealed partial class GameSession
         int StatusPage,
         bool StatusDetail,
         bool TownLeaveConfirmation,
+        bool ShopQuantityActive,
+        bool ShopBuying,
         string MenuIdentity,
         string? TextRequestId);
 
@@ -127,6 +169,37 @@ public sealed partial class GameSession
     private bool mobileMoviePlaying;
     private MobileMenuSnapshot? mobileMenuIdentitySource;
     private string mobileMenuIdentity = "";
+
+    private IDisposable? BeginMobileOverlayScope(MobileOverlayKind? overlay)
+    {
+        if (window is not IMobileUiChannel channel) return null;
+        MobileOverlayKind? previousOverlay = mobileOverlayOverride;
+        ulong previousIdentity = mobileModalIdentity;
+        mobileOverlayOverride = overlay;
+        mobileModalIdentity = checked(++mobileModalSequence);
+        try
+        {
+            PublishMobileUiSnapshot(channel);
+            return new MobileOverlayLease(() =>
+            {
+                mobileOverlayOverride = previousOverlay;
+                mobileModalIdentity = previousIdentity;
+                PublishMobileUiSnapshot(channel);
+            });
+        }
+        catch
+        {
+            mobileOverlayOverride = previousOverlay;
+            mobileModalIdentity = previousIdentity;
+            throw;
+        }
+    }
+
+    private sealed class MobileOverlayLease(Action close) : IDisposable
+    {
+        private Action? close = close;
+        public void Dispose() => Interlocked.Exchange(ref close, null)?.Invoke();
+    }
 
     private ControlSettingsMenu? SetMobileSettingsMenu(ControlSettingsMenu? menu)
     {
@@ -183,6 +256,8 @@ public sealed partial class GameSession
             dialogueActive, mobileMoviePlaying, state.Mode == GameMode.Status ? statusRuntime.Menu.Page : -1,
             state.Mode == GameMode.Status && statusRuntime.Menu.DetailActive,
             state.Mode == GameMode.Town && town.LeaveConfirmation,
+            state.Mode == GameMode.Shop && trade?.QuantityActive == true,
+            state.Mode == GameMode.Shop && trade?.Buying == true,
             menuIdentity,
             textRequest?.Id);
         if (mobileUiContextKey != contextKey)
@@ -194,6 +269,7 @@ public sealed partial class GameSession
         controls?.SetMobileContext(mobileUiContextId, overlay, menuDirections);
         bool showLanguage = GameText.Current.AvailableLanguages.Count > 1
             && !battleActive
+            && overlay is not (MobileOverlayKind.CombatSelection or MobileOverlayKind.ExperienceAllocation)
             && !mobileMoviePlaying
             && textRequest is null
             && state.Mode is not (GameMode.MainMenu or GameMode.Settings or GameMode.Save or GameMode.Load)
@@ -210,9 +286,17 @@ public sealed partial class GameSession
                 GameText.Get("ui.controls.down"),
                 GameText.Get("ui.controls.left"),
                 GameText.Get("ui.controls.right"),
-                GameText.Get("ui.controls.confirm"),
-                GameText.Get("ui.controls.back"),
-                GameText.Get("ui.controls.attack"),
+                overlay == MobileOverlayKind.CombatSelection
+                    ? GameText.Format("ui.combat.start", ("button", "A"))
+                    : overlay == MobileOverlayKind.ExperienceAllocation
+                        ? GameText.Get("ui.mobile.experience.cycleMode")
+                        : GameText.Get("ui.controls.confirm"),
+                overlay == MobileOverlayKind.ExperienceAllocation
+                    ? GameText.Get("ui.mobile.experience.finish")
+                    : GameText.Get("ui.controls.back"),
+                overlay == MobileOverlayKind.CombatSelection
+                    ? GameText.Format("ui.combat.toggleHero", ("button", "X"))
+                    : GameText.Get("ui.controls.attack"),
                 GameText.Get("ui.controls.jump"),
                 GameText.Get("ui.mobile.quickModifier"),
                 GameText.Get("ui.settings.language"),
@@ -236,6 +320,8 @@ public sealed partial class GameSession
         if (menuSnapshot is not null) return menuSnapshot.Scene;
         if (blockingControls) return "pause";
         if (mobileOverlayOverride == MobileOverlayKind.Navigation) return "controls.reference";
+        if (mobileOverlayOverride == MobileOverlayKind.CombatSelection) return "combat.selection";
+        if (mobileOverlayOverride == MobileOverlayKind.ExperienceAllocation) return "combat.experience";
         if (battleActive) return "combat";
         return state.Mode switch
         {
@@ -262,9 +348,9 @@ public sealed partial class GameSession
     {
         if (mobileMoviePlaying) return MobileOverlayKind.None;
         if (textRequest is not null || menuSnapshot is not null) return MobileOverlayKind.None;
-        if (mobileOverlayOverride is { } forced) return forced;
         if (blockingControls) return MobileOverlayKind.Navigation;
         if (dialogueActive) return MobileOverlayKind.Navigation;
+        if (mobileOverlayOverride is { } forced) return forced;
         if (battleActive) return MobileOverlayKind.Combat;
         return state.Mode is GameMode.World or GameMode.WorldEntry or GameMode.Dungeon or GameMode.Town or GameMode.Interior
             or GameMode.Inn or GameMode.Shop or GameMode.Status or GameMode.Credits or GameMode.Defeat

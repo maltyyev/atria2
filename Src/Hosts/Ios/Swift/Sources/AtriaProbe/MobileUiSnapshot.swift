@@ -4,6 +4,8 @@ enum MobileOverlayKind: Int, Decodable {
     case none = 0
     case navigation = 1
     case combat = 2
+    case combatSelection = 3
+    case experienceAllocation = 4
 }
 
 enum MobileUiAction: Int32 {

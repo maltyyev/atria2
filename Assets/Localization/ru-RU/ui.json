@@ -77,6 +77,8 @@
   "ui.controls.menuDown": "Меню: вниз",
   "ui.controls.confirm": "Подтвердить",
   "ui.controls.back": "Назад",
+  "ui.mobile.experience.cycleMode": "Сменить способ распределения опыта",
+  "ui.mobile.experience.finish": "Подтвердить и продолжить",
   "ui.controls.status": "Персонажи и журнал",
   "ui.controls.moveDownBack": "Приём вниз-назад",
   "ui.controls.moveDown": "Приём вниз",

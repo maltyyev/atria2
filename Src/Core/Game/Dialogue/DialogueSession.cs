@@ -183,21 +183,19 @@ public sealed class DialogueSession
             throw new InvalidOperationException("Dialogue has finished.");
         }
 
+        if (opening > 2) return;
+
         if (Request.ChoiceByRow is { } choiceByRow)
         {
             if (readPressed(DialogueInputAction.Confirm))
             {
-                if (opening > 2)
-                {
-                    return;
-                }
                 sound(5);
                 state.Globals[10] = checked((short)(choiceByRow[SelectedLine] + 1));
                 Completed = true;
                 return;
             }
             int direction = readPressed(DialogueInputAction.Up) ? -1 : readPressed(DialogueInputAction.Down) ? 1 : 0;
-            if (direction != 0 && opening <= 2)
+            if (direction != 0)
             {
                 int selected = Math.Clamp(SelectedLine + direction, 0, choiceByRow.Length - 1);
                 if (selected != SelectedLine)
@@ -212,11 +210,6 @@ public sealed class DialogueSession
 
         if (readPressed(DialogueInputAction.Confirm))
         {
-            if (opening > 2)
-            {
-                return;
-            }
-
             sound(5);
             if ((Request.DisplayLines?.Length ?? Request.Lines.Count) <= FirstLine + 4)
             {
@@ -239,7 +232,7 @@ public sealed class DialogueSession
 
         if (readPressed(DialogueInputAction.Up))
         {
-            if (opening > 2 || !QuestionInputEnabled)
+            if (!QuestionInputEnabled)
             {
                 return;
             }
@@ -251,7 +244,7 @@ public sealed class DialogueSession
             }
         }
 
-        if (readPressed(DialogueInputAction.Down) && opening <= 2 && QuestionInputEnabled)
+        if (readPressed(DialogueInputAction.Down) && QuestionInputEnabled)
         {
             sound(1);
             if (SelectedLine < Request.Lines.Count - 1)

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>Atria.Ios</AssemblyName>
-    <Version>0.18.0-ios.4</Version>
+    <Version>0.18.0-ios.7</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <RootNamespace>Atria.Hosts.Ios</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

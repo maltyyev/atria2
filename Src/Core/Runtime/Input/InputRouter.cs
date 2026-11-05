@@ -2,6 +2,7 @@ using Atria.Core.Contracts.Input;
 using Atria.Core.Contracts.Host;
 using Atria.Core.Contracts.Presentation;
 using Atria.Core.Contracts.Window;
+using Atria.Core.Game.Combat;
 using Atria.Core.Game.Menu;
 using Atria.Core.Game.Progression;
 using Atria.Core.Game.Town;
@@ -72,6 +73,8 @@ public sealed class InputRouter : IDisposable
     private bool mobileAxisBlocked;
     private readonly int[] mobilePendingActions = new int[(int)GameAction.Count];
     private readonly int[] mobilePendingQuick = new int[4];
+    private readonly int[] mobilePendingSelection = new int[Enum.GetValues<CombatSelectionInput>().Length];
+    private readonly int[] mobilePendingExperience = new int[Enum.GetValues<ExperienceInput>().Length];
     private int mobileQuickSector = -1;
     private InputActivity activityCandidate;
     private readonly int[] contextVersions = new int[2];
@@ -84,6 +87,10 @@ public sealed class InputRouter : IDisposable
     public TownInputView TownInput => new(this);
     /// <summary>Gets a non-allocating combat action view over the shared input state.</summary>
     public CombatInput CombatInput => new(this);
+    /// <summary>Gets typed touch actions for the party-selection scene.</summary>
+    public CombatSelectionInputView CombatSelection => new(this);
+    /// <summary>Gets typed touch actions for XP allocation and notices.</summary>
+    public ExperienceInputView Experience => new(this);
     private int wheel;
     public int TakeWheel()
     {
@@ -146,7 +153,7 @@ public sealed class InputRouter : IDisposable
         mobileContextId = contextId;
         mobileOverlay = overlay;
         mobileDirectionsAreMenu = directionsAreMenu;
-        ResetMobileTouch(blockHeld: false);
+        ResetMobileTouch(blockHeld: true);
     }
 
     private void ResetMobileTouch(bool blockHeld)
@@ -165,6 +172,8 @@ public sealed class InputRouter : IDisposable
         mobileQuickSector = -1;
         Array.Clear(mobilePendingActions);
         Array.Clear(mobilePendingQuick);
+        Array.Clear(mobilePendingSelection);
+        Array.Clear(mobilePendingExperience);
     }
 
     private void ApplyMobileTouchState(MobileTouchState state)
@@ -173,7 +182,7 @@ public sealed class InputRouter : IDisposable
         mobileBlockedButtons &= state.Buttons;
         if (state.LeftX == 0 && state.LeftY == 0) mobileAxisBlocked = false;
 
-        MobileTouchButtons pressed = state.Buttons & ~mobileTouch.Buttons;
+        MobileTouchButtons pressed = state.Buttons & ~mobileTouch.Buttons & ~mobileBlockedButtons;
         if (mobileOverlay == MobileOverlayKind.Navigation)
         {
             QueueNavigationDirections(pressed, mobileDirectionsAreMenu);
@@ -188,6 +197,22 @@ public sealed class InputRouter : IDisposable
                 ? TouchSector(state.LeftX, state.LeftY) : -1;
             if (sector >= 0 && sector != mobileQuickSector) mobilePendingQuick[sector] = Math.Min(255, mobilePendingQuick[sector] + 1);
             mobileQuickSector = sector;
+        }
+        else if (mobileOverlay == MobileOverlayKind.CombatSelection)
+        {
+            if ((pressed & (MobileTouchButtons.Up | MobileTouchButtons.Left)) != 0) QueueMobileSelection(CombatSelectionInput.Previous);
+            if ((pressed & (MobileTouchButtons.Down | MobileTouchButtons.Right)) != 0) QueueMobileSelection(CombatSelectionInput.Next);
+            if ((pressed & MobileTouchButtons.X) != 0) QueueMobileSelection(CombatSelectionInput.Toggle);
+            if ((pressed & MobileTouchButtons.A) != 0) QueueMobileSelection(CombatSelectionInput.Finish);
+        }
+        else if (mobileOverlay == MobileOverlayKind.ExperienceAllocation)
+        {
+            if ((pressed & MobileTouchButtons.Up) != 0) QueueMobileExperience(ExperienceInput.PreviousMember);
+            if ((pressed & MobileTouchButtons.Down) != 0) QueueMobileExperience(ExperienceInput.NextMember);
+            if ((pressed & MobileTouchButtons.Left) != 0) QueueMobileExperience(ExperienceInput.GiveFromSelectedHeld);
+            if ((pressed & MobileTouchButtons.Right) != 0) QueueMobileExperience(ExperienceInput.TakeFromOthersHeld);
+            if ((pressed & MobileTouchButtons.A) != 0) QueueMobileExperience(ExperienceInput.CycleMode);
+            if ((pressed & MobileTouchButtons.B) != 0) QueueMobileExperience(ExperienceInput.Finish);
         }
 
         bool axisMoved = Math.Abs((int)state.LeftX - mobileTouch.LeftX) >= AxisHysteresis && Math.Abs((int)state.LeftX) >= Profile.DeadZone
@@ -233,6 +258,54 @@ public sealed class InputRouter : IDisposable
 
     internal bool TakeMobileTownNext() => mobileOverlay == MobileOverlayKind.Navigation && mobileDirectionsAreMenu
         && (TakeMobileAction(GameAction.MenuRight) || TakeMobileAction(GameAction.MenuDown));
+
+    internal int TakeMobileTownQuantityAdjustment()
+    {
+        if (mobileOverlay != MobileOverlayKind.Navigation || !mobileDirectionsAreMenu) return 0;
+        if (TakeMobileAction(GameAction.MenuUp)) return 1;
+        return TakeMobileAction(GameAction.MenuDown) ? -1 : 0;
+    }
+
+    private void QueueMobileSelection(CombatSelectionInput input)
+    {
+        ref int count = ref mobilePendingSelection[(int)input];
+        if (count < 255) count++;
+    }
+
+    internal bool TakeMobileCombatSelectionInput(CombatSelectionInput input)
+    {
+        if (mobileOverlay != MobileOverlayKind.CombatSelection) return false;
+        ref int count = ref mobilePendingSelection[(int)input];
+        if (count == 0) return false;
+        count--;
+        return true;
+    }
+
+    private void QueueMobileExperience(ExperienceInput input)
+    {
+        ref int count = ref mobilePendingExperience[(int)input];
+        if (count < 255) count++;
+    }
+
+    internal bool TakeMobileExperienceInput(ExperienceInput input)
+    {
+        if (mobileOverlay != MobileOverlayKind.ExperienceAllocation) return false;
+        ref int count = ref mobilePendingExperience[(int)input];
+        bool pressed = count != 0;
+        if (pressed) count--;
+        return pressed || (input switch
+        {
+            ExperienceInput.GiveFromSelectedHeld => IsMobileTouchHeld(MobileTouchButtons.Left),
+            ExperienceInput.TakeFromOthersHeld => IsMobileTouchHeld(MobileTouchButtons.Right),
+            _ => false
+        });
+    }
+
+    internal bool IsMobileExperienceFinishHeld() => mobileOverlay == MobileOverlayKind.ExperienceAllocation
+        && IsMobileTouchHeld(MobileTouchButtons.B);
+
+    private bool IsMobileTouchHeld(MobileTouchButtons button) =>
+        (mobileTouch.Buttons & button) != 0 && (mobileBlockedButtons & button) == 0;
 
     private int TouchSector(short x, short y)
     {

@@ -96,10 +96,13 @@ public sealed partial class GameSession
             var current = trade ?? throw new InvalidOperationException("Trade state is absent.");
             bool confirm = QueryLegacyTownScan(bindings.Confirm), cancel = !confirm && QueryLegacyTownScan(bindings.Cancel);
             bool left = false, right = false, up = false, down = false, heldUp = false, heldDown = false;
+            int quantityAdjustment = current.QuantityActive ? controls.TownInput.TakeMobileQuantityAdjustment() : 0;
             if (!confirm && !cancel)
             {
                 if (current.QuantityActive)
                 {
+                    up = quantityAdjustment > 0;
+                    down = quantityAdjustment < 0;
                     heldUp = HeldLegacyTownScan(bindings.Up);
                     if (!heldUp)
                     {

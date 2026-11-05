@@ -406,15 +406,19 @@ public sealed class ShopSession
             return new(4);
         }
 
-        if (input.HeldUp)
+        if (input.Up || (input.HeldUp && !input.Down))
         {
-            repeatCounter = unchecked(repeatCounter + 1);
-            if (repeatCounter < 2)
+            if (input.Up)
             {
-                return new();
+                repeatCounter = 0;
+            }
+            else
+            {
+                repeatCounter = unchecked(repeatCounter + 1);
+                if (repeatCounter < 2) return new();
+                repeatCounter = 0;
             }
 
-            repeatCounter = 0;
             if (Quantity < available && !InsufficientFunds)
             {
                 Quantity++;
@@ -424,16 +428,20 @@ public sealed class ShopSession
             return Buying ? new() : new(1);
         }
 
-        if (input.HeldDown && !InsufficientFunds)
+        if (input.Down || (input.HeldDown && !InsufficientFunds))
         {
-            repeatCounter = unchecked(repeatCounter + 1);
-            if (repeatCounter < 2)
+            if (input.Down)
             {
-                return new();
+                repeatCounter = 0;
+            }
+            else
+            {
+                repeatCounter = unchecked(repeatCounter + 1);
+                if (repeatCounter < 2) return new();
+                repeatCounter = 0;
             }
 
-            repeatCounter = 0;
-            if (Quantity > 1)
+            if (Quantity > 1 && !InsufficientFunds)
             {
                 Quantity--;
                 return new(1);

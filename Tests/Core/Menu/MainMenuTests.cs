@@ -1,5 +1,6 @@
 using Atria.Core.Game.Menu;
 using Atria.Core.Presentation.Menu;
+using Atria.Core.Presentation.Scenes;
 using Tests.Core.Persistence;
 
 namespace Tests.Core.Menu;
@@ -42,6 +43,30 @@ public static class MainMenuTests
         Input(new(Accept: true));
         Check(commands.Select(c => c.Effect).SequenceEqual([MenuEffect.ReleaseMenuSprite, MenuEffect.StopAudio, MenuEffect.PrepareMovieDisplay, MenuEffect.PlayMovie, MenuEffect.RestoreMovieDisplay, MenuEffect.ResetGame, MenuEffect.SetNewGameGlobals, MenuEffect.LoadGroundMap, MenuEffect.InitializeGroundMap, MenuEffect.CopyInitialGroundLocation, MenuEffect.ChangeMode]), "new game ordered effects");
         Check(commands[3].Resource == "jamie1.jad" && commands[^1].Value == 400, "new game destination");
+
+        MainMenuPresentationPolicy mobileStart = MainMenuPresentationPolicy.Mobile(false);
+        MainMenuPresentationPolicy mobileContinue = MainMenuPresentationPolicy.Mobile(true);
+        Check(MainMenuLayout.OrderFor(mobileStart).SequenceEqual([0, 1, 2, 5, 4])
+            && MainMenuLayout.OrderFor(mobileContinue).SequenceEqual([0, 1, 2, 5, 4]),
+            "mobile main menu always omits Quit while retaining the five original row positions");
+        var mobileInitial = new MainMenuController();
+        commands.Clear();
+        mobileInitial.Input(new(Accept: true), false, commands.Add, mobileStart);
+        Check(mobileInitial.Confirmation && mobileInitial.YesSelected
+            && !commands.Any(command => command.Effect == MenuEffect.TryReturnToPreviousMode),
+            "the initial mobile menu keeps New Game and its existing confirmation");
+
+        var staleQuit = new MainMenuController();
+        staleQuit.PointerSelect(MainMenuLayout.QuitItem, false);
+        commands.Clear();
+        staleQuit.Input(new(Accept: true), false, commands.Add, mobileContinue);
+        Check(staleQuit.Selection == MainMenuLayout.NewItem && !staleQuit.Confirmation
+            && commands.Select(command => command.Effect).SequenceEqual([MenuEffect.TryReturnToPreviousMode]),
+            "a stale hidden Quit selection is normalized and Continue reuses the existing return path");
+        Check(MainMenuLayout.Navigate(MainMenuLayout.CreditsItem, 1, false, mobileStart) == MainMenuLayout.NewItem
+            && MainMenuLayout.Navigate(MainMenuLayout.NewItem, -1, false, mobileStart) == MainMenuLayout.CreditsItem,
+            "mobile navigation wraps across only visible rows");
+
         foreach (var (item, mode) in new[]
         {
             (1, 230),

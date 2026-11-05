@@ -13,6 +13,7 @@ using Atria.Core.Resources;
 using Atria.Core.Resources.Localization;
 using Atria.Core.Runtime.Input;
 using Atria.Platforms.Windows.Win32;
+using Tests.Core.Render;
 
 namespace Tests.Windows.Menu;
 
@@ -85,6 +86,23 @@ public static class VerticalMenuTests
             Check(input.MenuInput.Menu(MenuAction.Confirm), "pointer rejection preserves keyboard confirmation");
         }
 
+        var resumePad = new Pad();
+        using (var resumeInput = new InputRouter(ControlProfile.Defaults(bindings), bindings, resumePad))
+        {
+            var resumeMenu = new MainMenuController();
+            resumeMenu.PointerSelect(MainMenuLayout.QuitItem, false);
+            resumePad.Sample = new(true, 0, 0, 0, 0, 0, 0, 0);
+            resumeInput.Poll(new bool[256], new bool[256], new bool[3], true, 2000);
+            resumePad.Sample = resumePad.Sample with { Buttons = 0x1000 };
+            resumeInput.Poll(new bool[256], new bool[256], new bool[3], true, 2001);
+            var commands = new List<MenuCommand>();
+            resumeMenu.Input(new(Accept: resumeInput.MenuInput.QueryLegacyMenuScan(bindings.Confirm)), false,
+                commands.Add, MainMenuPresentationPolicy.Mobile(canContinue: true));
+            Check(commands.Select(command => command.Effect).SequenceEqual([MenuEffect.TryReturnToPreviousMode])
+                && !resumeMenu.Confirmation,
+                "a physical gamepad confirm dispatches Continue under the mobile policy, even from a stale hidden Quit selection");
+        }
+
         foreach (var size in new[] { (2560, 1440), (1920, 1080), (1024, 768), (3440, 1440) })
         {
             var viewport = Viewport.Fit(size.Item1, size.Item2, MainMenuLayout.Width, MainMenuLayout.Height);
@@ -123,8 +141,64 @@ public static class VerticalMenuTests
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int i = 0; i < 100; i++)
             view.Render(0, true, false, true, false);
-        Check(GC.GetAllocatedBytesForCurrentThread() == before, "unchanged presentation reuses frame without allocation");
-        return "Vertical menu: keyboard/XInput routing, immediate activation, six targets at four aspect ratios, save skip, confirmation restore and cached full-resolution rendering passed.";
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Check(allocated == 0, $"unchanged presentation reuses frame without allocation (allocated {allocated} bytes)");
+        VerifyMobileMainMenu(Path.Combine(AppContext.BaseDirectory, "assets"));
+        return "Vertical menu: keyboard/XInput routing, mobile continue policy, hidden Quit hit/navigation, RU/BE captures, Windows baseline and cached full-resolution rendering passed.";
+    }
+
+    private static void VerifyMobileMainMenu(string assetRoot)
+    {
+        string localizationRoot = Path.Combine(assetRoot, "localization");
+        string output = Path.GetFullPath(Path.Combine(assetRoot, "..", "audit", "mobile-main-menu"));
+        Directory.CreateDirectory(output);
+        LocalizationCatalog previous = GameText.Current;
+        try
+        {
+            var mobileStart = MainMenuPresentationPolicy.Mobile(false);
+            var mobileContinue = MainMenuPresentationPolicy.Mobile(true);
+            foreach (string language in new[] { LocalizationCatalog.BaseLanguage, LocalizationCatalog.BelarusianLanguage })
+            {
+                GameText.Use(new LocalizationCatalog(localizationRoot, language));
+                var mobileView = new MainMenuView(assetRoot, mobile: true);
+                uint[] initial = mobileView.Render(0, false, false, true, false, "", mobileStart).ToArray();
+                BitmapTestWriter.Save(Path.Combine(output, $"mobile-{language}-new-game.bmp"), initial,
+                    MainMenuLayout.Width, MainMenuLayout.Height);
+                uint[] continuing = mobileView.Render(0, false, false, true, false, "", mobileContinue).ToArray();
+                BitmapTestWriter.Save(Path.Combine(output, $"mobile-{language}-continue.bmp"), continuing,
+                    MainMenuLayout.Width, MainMenuLayout.Height);
+                Check(!initial.AsSpan().SequenceEqual(continuing), $"{language} policy change redraws New Game as Continue");
+                Check(mobileView.Render(0, false, false, true, false, "", mobileStart).SequenceEqual(initial),
+                    $"{language} policy flip back restores the cached initial mobile menu");
+
+                foreach (int item in MainMenuLayout.OrderFor(mobileStart))
+                    Check(MainMenuLayout.Button(item, mobileStart) == MainMenuLayout.Button(item),
+                        $"{language} mobile row {item} retains its approved artwork position");
+
+                RasterClip hiddenQuit = MainMenuLayout.Button(MainMenuLayout.QuitItem);
+                Check(MainMenuLayout.HitTest((hiddenQuit.Left + hiddenQuit.RightExclusive) / 2,
+                    (hiddenQuit.Top + hiddenQuit.BottomExclusive) / 2, mobileStart) == -1,
+                    $"{language} mobile hit testing ignores the removed Quit plaque");
+                var hiddenPointer = new MainMenuController();
+                hiddenPointer.PointerSelect(MainMenuLayout.QuitItem, false, mobileStart);
+                Check(hiddenPointer.Selection == MainMenuLayout.NewItem,
+                    $"{language} pointer cannot select hidden Quit");
+            }
+
+            GameText.Use(new LocalizationCatalog(localizationRoot, LocalizationCatalog.BaseLanguage));
+            var windowsView = new MainMenuView(assetRoot);
+            uint[] windows = windowsView.Render(0, false, false, true, false).ToArray();
+            BitmapTestWriter.Save(Path.Combine(output, "windows-baseline.bmp"), windows,
+                MainMenuLayout.Width, MainMenuLayout.Height);
+            RasterClip quitButton = MainMenuLayout.Button(MainMenuLayout.QuitItem);
+            Check(MainMenuLayout.HitTest((quitButton.Left + quitButton.RightExclusive) / 2,
+                (quitButton.Top + quitButton.BottomExclusive) / 2) == MainMenuLayout.QuitItem,
+                "Windows baseline retains the Quit pointer target");
+        }
+        finally
+        {
+            GameText.Use(previous);
+        }
     }
 
     private static void VerifyProfileHintCompositing(string assetRoot)

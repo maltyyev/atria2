@@ -73,6 +73,34 @@ public static class InteriorTests
         Put(shopBytes, 104, 1);
         Put(shopBytes, 108, 2);
         var stock = ShopStock.FromCatalog(ShopCatalog.Parse(shopBytes), 0);
+        byte[] quantityShopBytes = shopBytes.ToArray();
+        Put(quantityShopBytes, 104, 3);
+        var quantityStock = ShopStock.FromCatalog(ShopCatalog.Parse(quantityShopBytes), 0);
+        var touchQuantityState = new GameState { Money = 100 };
+        var touchQuantityShop = new ShopSession(touchQuantityState, items);
+        touchQuantityShop.BeginBuy(quantityStock);
+        touchQuantityShop.HandleInput(new(Confirm: true));
+        touchQuantityShop.HandleInput(new(Up: true));
+        for (int i = 0; i < 5; i++) touchQuantityShop.HandleInput(new());
+        Check(touchQuantityShop.Quantity == 2, "One touch quantity-up edge increments once and stays put while held without another edge.");
+        touchQuantityShop.HandleInput(new(Up: true));
+        touchQuantityShop.HandleInput(new(Up: true));
+        Check(touchQuantityShop.Quantity == 3, "Touch quantity-up stops at available stock.");
+        touchQuantityShop.HandleInput(new(Down: true));
+        touchQuantityShop.HandleInput(new(Down: true));
+        touchQuantityShop.HandleInput(new(Down: true));
+        Check(touchQuantityShop.Quantity == 1 && touchQuantityState.Money == 100
+            && touchQuantityState.OwnedItems[0] == 0 && touchQuantityState.AvailableItems[0] == 0,
+            "Touch quantity-down stops at one without charging or changing inventory before confirmation.");
+
+        var heldQuantityShop = new ShopSession(new GameState { Money = 100 }, items);
+        heldQuantityShop.BeginBuy(ShopStock.FromCatalog(ShopCatalog.Parse(quantityShopBytes), 0));
+        heldQuantityShop.HandleInput(new(Confirm: true));
+        heldQuantityShop.HandleInput(new(HeldUp: true));
+        Check(heldQuantityShop.Quantity == 1, "Physical quantity hold waits for its existing repeat cadence.");
+        heldQuantityShop.HandleInput(new(HeldUp: true));
+        Check(heldQuantityShop.Quantity == 2, "Physical quantity hold still repeats after two polls.");
+
         state = new GameState
         {
             Money = 10

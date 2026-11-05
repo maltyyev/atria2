@@ -1,14 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <Version>0.17.7</Version>
+    <Version>0.18.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <AssemblyName>Atria</AssemblyName>
     <RootNamespace>Atria.Hosts.Windows</RootNamespace>
     <PublishAot>true</PublishAot>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeFrameworkVersion>10.0.14</RuntimeFrameworkVersion>
   </PropertyGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64' and '$(PublishAot)' == 'true'">
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../Core/Atria.Core.csproj" />
     <ProjectReference Include="../../Platforms/Windows/Atria.Platforms.Windows.csproj" />

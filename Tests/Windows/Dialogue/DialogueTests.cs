@@ -158,8 +158,14 @@ public static class DialogueTests
         var driver = new DialogueModalDriver(host, tiles, font, _ => throw new InvalidOperationException("Unexpected face load."));
         driver.Run(session, state);
         Check(host.LogicalTicks == 6 && host.Presents > 0 && session.Completed && state.Globals[10] == 1, "Real driver waits for explicit post-opening input on sixth scheduled tick.");
-        Check(host.Events.Take(7).SequenceEqual(new[] { "music", "scan78", "scan74", "before", "Confirm", "Up", "Down" }), "Music/speed/input priority before compositor.");
-        Check(host.Events.IndexOf("Confirm") < host.Events.IndexOf("scene") && host.Events.IndexOf("scene") < host.Events.IndexOf("present"), "Input -> scene -> strict gate -> present order.");
+        Check(host.Events.Take(5).SequenceEqual(new[] { "music", "scan78", "scan74", "before", "scene" }), "Music/speed processing stays ahead of the opening scene draw.");
+        int firstConfirm = host.Events.IndexOf("Confirm");
+        Check(firstConfirm >= 0, "Dialogue input resumes after the opening.");
+        int openingScenes = host.Events.Take(firstConfirm).Count(value => value == "scene");
+        int actionableScene = host.Events.IndexOf("scene", firstConfirm);
+        int actionablePresent = host.Events.IndexOf("present", actionableScene);
+        Check(openingScenes == 5 && firstConfirm < actionableScene && actionableScene < actionablePresent,
+            "Opening skips input reads, then input -> scene -> present order remains intact.");
         var slow = RunAtPresentationInterval(33, 0, tiles, font);
         var fast = RunAtPresentationInterval(7, 0, tiles, font);
         Check(slow.Ticks.SequenceEqual(fast.Ticks) && slow.Ticks.SequenceEqual(new uint[] { 21, 42, 63, 84, 105, 126 }), "30Hz/144Hz presentations retain identical logical dialogue schedule/input outcome.");
@@ -173,15 +179,39 @@ public static class DialogueTests
         new DialogueModalDriver(bypassHost, tiles, font, _ => throw new InvalidOperationException()).Run(session, state);
         Check(session.NativeLoopBypassed && !session.Completed && state.Globals[10] == 77 && bypassHost.Presents == 0, "Native pending-transition bypass does not fabricate answer.");
         var queries = new List<DialogueInputAction>();
-        session = new(new(-1, -1, true, ["one"u8.ToArray()]), false);
+        session = new(new(-1, -1, true, ["one"u8.ToArray(), "two"u8.ToArray(), "three"u8.ToArray(), "four"u8.ToArray(), "five"u8.ToArray()]), false);
+        int pendingConfirms = 2;
         session.ApplyInput(action =>
         {
             queries.Add(action);
+            if (action != DialogueInputAction.Confirm || pendingConfirms == 0) return false;
+            pendingConfirms--;
             return true;
         }, state, _ =>
         {
         });
-        Check(queries.SequenceEqual(new[] { DialogueInputAction.Confirm }), "Opening confirm consumes only its own edge query.");
+        Check(queries.Count == 0 && pendingConfirms == 2, "Opening defers input reads without consuming queued presses.");
+        for (int i = 0; i < 5; i++) session.AdvancePresentation();
+        session.ApplyInput(action =>
+        {
+            queries.Add(action);
+            if (action != DialogueInputAction.Confirm || pendingConfirms == 0) return false;
+            pendingConfirms--;
+            return true;
+        }, state, _ =>
+        {
+        });
+        Check(!session.Completed && session.FirstLine == 4 && pendingConfirms == 1, "First rapid confirm advances one dialogue page after the opening.");
+        session.ApplyInput(action =>
+        {
+            queries.Add(action);
+            if (action != DialogueInputAction.Confirm || pendingConfirms == 0) return false;
+            pendingConfirms--;
+            return true;
+        }, state, _ =>
+        {
+        });
+        Check(session.Completed && pendingConfirms == 0, "Second rapid confirm remains a distinct press after the first page advance.");
     }
 
     private static FixtureFrameHost RunAtPresentationInterval(uint interval, uint stall, SpriteFile tiles, BitmapFont font, uint confirmAt = 126)

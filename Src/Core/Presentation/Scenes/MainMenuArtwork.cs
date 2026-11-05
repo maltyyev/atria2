@@ -16,9 +16,10 @@ public static class MainMenuArtwork
     private static long labelsRasterizerGeneration = -1;
     private const ushort Gold = 0xe653, SelectedGold = 0xff79, SelectedBorder = 0xfe4b, DisabledBronze = 0x8bc9;
 
-    public static ushort[] LoadNative(string assetRoot)
+    public static ushort[] LoadNative(string assetRoot, bool mobile = false)
     {
-        var image = BmpImage.Decode(File.ReadAllBytes(Path.Combine(assetRoot, "interface", "MainMenuTemple.bmp")));
+        string fileName = mobile ? "MainMenuTempleMobile.bmp" : "MainMenuTemple.bmp";
+        var image = BmpImage.Decode(File.ReadAllBytes(Path.Combine(assetRoot, "interface", fileName)));
         if (image.Width != MainMenuLayout.Width || image.Height != MainMenuLayout.Height)
             throw new InvalidDataException("Temple menu artwork must be 2560x1440.");
         return image.ToRgb565();
@@ -35,12 +36,16 @@ public static class MainMenuArtwork
         return result;
     }
 
-    public static void DrawLabels(int selected, Span<ushort> target, int width, int height, int stride, RasterClip? clip, bool saveDisabled = false)
+    public static void DrawLabels(int selected, Span<ushort> target, int width, int height, int stride, RasterClip? clip, bool saveDisabled = false) =>
+        DrawLabels(selected, target, width, height, stride, clip, saveDisabled, MainMenuPresentationPolicy.Desktop);
+
+    public static void DrawLabels(int selected, Span<ushort> target, int width, int height, int stride, RasterClip? clip,
+        bool saveDisabled, MainMenuPresentationPolicy policy)
     {
         var viewport = Viewport.Fit(width, height, MainMenuLayout.Width, MainMenuLayout.Height);
-        foreach (int item in MainMenuLayout.Order)
+        foreach (int item in MainMenuLayout.OrderFor(policy))
         {
-            var original = MainMenuLayout.Button(item);
+            var original = MainMenuLayout.Button(item, policy);
             var box = new RasterClip(
                 viewport.X + original.Left * viewport.Width / MainMenuLayout.Width,
                 viewport.Y + original.Top * viewport.Height / MainMenuLayout.Height,
@@ -53,7 +58,10 @@ public static class MainMenuArtwork
             bool disabled = saveDisabled && item == MainMenuLayout.SaveItem;
             if (item == selected && !disabled)
                 Border(target, width, height, stride, box, SelectedBorder, Math.Max(1, viewport.Width / 640), clip);
-            DrawCentered(GameText.Get(keys[item]), target, width, height, stride, inside,
+            string label = item == MainMenuLayout.NewItem && policy.CanContinue
+                ? GameText.Get("ui.pause.resume").ToUpperInvariant()
+                : GameText.Get(keys[item]);
+            DrawCentered(label, target, width, height, stride, inside,
                 78f * viewport.Width / MainMenuLayout.Width, disabled ? DisabledBronze : item == selected ? SelectedGold : Gold, clip);
         }
     }

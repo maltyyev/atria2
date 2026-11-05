@@ -21,7 +21,9 @@ public sealed partial class GameSession
                 x = y = -1;
             int pixelX = x * MainMenuLayout.Width / 640, pixelY = y * MainMenuLayout.Height / 480;
             bool confirming = menu.Confirmation || state.Mode == GameMode.QuitConfirmation;
-            int item = confirming ? MainMenuLayout.HitTestConfirmation(pixelX, pixelY) : MainMenuLayout.HitTest(pixelX, pixelY);
+            int item = confirming
+                ? MainMenuLayout.HitTestConfirmation(pixelX, pixelY)
+                : MainMenuLayout.HitTest(pixelX, pixelY, CurrentMainMenuPolicy);
             if (item < 0 || !confirming && saveDisabled && item == MainMenuLayout.SaveItem)
             {
                 controls.DiscardPointerConfirmation();
@@ -51,9 +53,10 @@ public sealed partial class GameSession
         }
         else if (state.Mode == GameMode.MainMenu && !menu.Confirmation)
         {
-            int item = MainMenuLayout.HitTest(x * MainMenuLayout.Width / 640, y * MainMenuLayout.Height / 480);
+            MainMenuPresentationPolicy policy = CurrentMainMenuPolicy;
+            int item = MainMenuLayout.HitTest(x * MainMenuLayout.Width / 640, y * MainMenuLayout.Height / 480, policy);
             if (item >= 0)
-                menu.PointerSelect(item, saveDisabled);
+                menu.PointerSelect(item, saveDisabled, policy);
         }
         else if (state.Mode == GameMode.QuitConfirmation)
         {
